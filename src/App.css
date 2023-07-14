@@ -1,0 +1,242 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: linear-gradient(to top, #c60d44, #d43440, #e14f3c, #ea6839, #f28037, #f68e36, #f89c36, #faaa38, #fab237, #f9bb37, #f9c338, #f7cc3a);
+  height: 100vh;
+  margin: 0;
+  background-repeat: no-repeat;
+  position: fixed;
+  width: 100vw;
+  /*background-attachment: fixed;*/
+  font-family: "Source Serif Pro", sans-serif; 
+}
+
+.container {
+  max-width: 95%;
+  margin: 0 auto;
+}
+
+.nav-top {
+margin:auto;
+margin-top:60px;
+width: 100%;
+padding: 10px;
+color:#FFF;
+font-size: 32px;
+font-weight:700;
+}
+
+.section-top {
+  text-align: center;
+}
+
+.section-top-content {
+  font-size: 21px !important;
+  font-weight:600;
+  line-height: 1.2em;
+}
+
+.logo-top {
+margin: auto;
+padding-top: 20px;
+width: 99%; 
+text-align: left;
+border: 2px solid #ff6666;
+position:static;
+}
+
+.logo-top img{
+    width: 50%;
+    height: auto;
+    max-width: 100%
+}
+
+.parallax {
+  perspective: 100px;
+  height: 100vh;
+  min-height: 900px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  right: 0;
+  bottom: 0;
+  margin-left: -1500px;
+}
+
+.parallax__layer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+.parallax__layer img {
+  display: block;
+  position: absolute;
+  bottom: 0;
+}
+
+/* Increase OR Descrease whitespace by modifying height below: */
+
+.parallax__cover {
+  display: block;
+  position: absolute;
+  background: #FFF;
+  height: 2000px;
+  width: 3000px;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 2;
+}
+
+.cover-content {
+  width: 100vw;
+  margin: 0 auto;
+  margin-bottom: -1px;
+  padding: 40px 180px 60px;
+  position: relative;
+ 
+}
+
+.cover-content.ctop {
+  background: #276970;
+  height: 1400px;
+  color: #D6EAEA;
+}
+
+.cover-content.cbttm {
+  background: #D6EAEA; /* D6EAEA 8FC5C7 */
+  height: 100%;
+  color: #1B474B;
+  overflow-y: auto;
+}
+
+.cover-div {
+  margin: 0 auto;
+  margin-bottom: -1px;
+  position: relative;
+  background: #276970;
+  display: flex;
+}
+
+.section.quests {
+	text-align: left;
+	line-height: 1.4em;
+	margin-top: 20px;
+    margin-bottom: 40px;
+	max-width: 900px;
+    min-width: 600px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.section-quests p{
+  font-size: 16px;
+}
+
+.quest-examples {
+  color: #1B474B;
+}
+
+.quest-detail {
+  font-weight: 400;
+}
+
+.linkedin-link {
+  color: #D6EAEA;
+}
+
+/*  GUILD ACTION SECTION & TABLES  */
+
+.action-table-grid {
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); 
+    column-gap: 40px; 
+    row-gap: 30px; 
+    margin-bottom: 40px
+}
+
+.action-table-header {
+    margin: 20px 0px 20px 20px;
+}
+
+.action-table-subheader {
+  margin: 20px 0px 20px 40px;
+}
+
+.action-table-container {
+    overflow: auto;
+    padding: 20px;
+    box-shadow: 3px 5px 40px 0px rgba(65, 75, 79, 0.20);
+    border-radius: 26px;
+    background: #F1F8F8
+}
+
+.action-table {
+    table-layout: auto; 
+    border-collapse: collapse; 
+    width: 100%
+}
+
+.action-table-td {
+    border-bottom: 1px solid #DAE2E3; 
+    padding-top: 12px; 
+    padding-bottom: 12px; 
+    font-size: 16px; 
+}
+
+.action-table-td.left-col {
+    text-align: left; 
+    white-space: normal; 
+    padding-right: 10px; 
+    width: auto; 
+    font-weight: 400;
+}
+
+.action-table-td.right-col {
+    text-align: right;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.action-table-td.bttm-row {
+    padding-bottom: 18px !important;
+    border-bottom: none !important;
+}
+
+/*  PARALLAX LAYERS  */
+
+.parallax__layer__0 {
+  transform: translateZ(-300px) scale(4);
+}
+
+.parallax__layer__1 {
+  transform: translateZ(-250px) scale(3.5);
+}
+
+.parallax__layer__2 {
+  transform: translateZ(-200px) scale(3);
+}
+
+.parallax__layer__3 {
+  transform: translateZ(-150px) scale(2.5);
+}
+
+.parallax__layer__4 {
+  transform: translateZ(-100px) scale(2);
+}
+
+.parallax__layer__5 {
+  transform: translateZ(-50px) scale(1.5);
+}
+
+.parallax__layer__6 {
+  transform: translateZ(0px) scale(1);
+  margin-bottom: -1px;
+}
