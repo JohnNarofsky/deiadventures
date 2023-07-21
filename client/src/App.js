@@ -1,5 +1,4 @@
 import './App.css';
-
 import { Routes, Route } from "react-router-dom";
 import GuildManagement from './contentpages/guildmanagement';
 import MyAdventures from './contentpages/myadventures';
