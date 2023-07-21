@@ -4,6 +4,7 @@ import GuildManagement from './contentpages/guildmanagement';
 import MyAdventures from './contentpages/myadventures';
 import MyHistory from './contentpages/myhistory';
 import Home from './contentpages/home';
+import GuildLeadership from './contentpages/guildleadership';
 
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
             <Route path="/guildmanagement" element={<GuildManagement />} />
             <Route path="/myadventures" element={<MyAdventures />} />
             <Route path="/myhistory" element={<MyHistory />} />
+            <Route path="/guildleadership" element={<GuildLeadership />} />
         </Routes>
     </>
   );
