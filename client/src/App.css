@@ -17,6 +17,16 @@ body {
 .container {
   max-width: 95%;
   margin: 0 auto;
+  /*Adding margin for navbar*/
+  /* margin-top: 30px; */
+}
+
+.nav-top {
+  overflow: hidden;
+  background-color: #333;
+  position: fixed; /* Set the navbar to fixed position */
+  top: 0; /* Position the navbar at the top of the page */
+  width: 100%; /* Full width */
 }
 
 .nav-top {
@@ -53,6 +63,7 @@ position:static;
     height: auto;
     max-width: 100%
 }
+/* The absolute position is blocking the navbar, need to figure out*/
 
 .parallax {
   perspective: 100px;
