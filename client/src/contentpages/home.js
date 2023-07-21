@@ -1,6 +1,6 @@
 import React from "react";
-import Decorations from '../landingpage/decorations';
-import Quest, {QuestActions} from '../landingpage/quest';
+import Decorations from '../common/decorations';
+import Quest, {QuestActions} from '../common/quest';
 
 function Home() {
   return (
