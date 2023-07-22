@@ -18,16 +18,17 @@ const GuildManagement = () => {
                   guildTitle={"Current Guilds"}
                   guildDescription={"These are the current guilds."}
                   guildDetails={[
-                    {title:"Warrior", detail:"Negotiating, Partnering"},
-                    {title:"Scribe", detail:"Illuminating, Clarifying"},
-                    {title:"Cultivator", detail:"Growing, Nurturing"},
-                    {title:"Wizard", detail:"Experimenting, Testing"},
-                    {title:"Artisan", detail:"Building, Securing"},
-                    {title:"Storyteller", detail:"Inspiring, Sharing"},
+                    {title:"Warrior", detail:"Guild Leader: Abby Dryer"},
+                    {title:"Scribe", detail:"No current Guild Leader"},
+                    {title:"Cultivator", detail:"No current Guild Leader"},
+                    {title:"Wizard", detail:"No current Guild Leader"},
+                    {title:"Artisan", detail:"Guild Leader: John Narofsky"},
+                    {title:"Storyteller", detail:"Guild Leader: Abby Dryer"},
                   ]}
                   guildActions={[
                     {description:"Add a Guild", action:"add-guild"},
                     {description:"Remove a Guild", action:"remove-guild"},
+                    {description:"Change a Guild Leader", action:"change-guildleader"},
                     {description:"Accept Adventurers", action:"accept-adventurers"},
                     {description:"Remove Adventurers", action:"remove-adventurers"},
                   ]}

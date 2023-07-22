@@ -1,6 +1,6 @@
 import React from "react";
 import Decorations from "../common/decorations";
-import Guilds from "../common/guilds";
+import {QuestActions} from "../common/quest";
 
 const GuildLeadership = () => {
 
@@ -15,24 +15,22 @@ const GuildLeadership = () => {
                 <p className="section-top-content">As a leader of a guild, it's your task to open and close actions for players to complete.</p>
                 <p className="section-top-content">Additionally, from time to time you may run quests that groups of players can sign up for as a party. This is an upcoming feature.</p>
             </div>
-            <Guilds
-                  guildTitle={"Current Quests"}
-                  guildDescription={"These are the current guilds."}
-                  guildDetails={[
-                    {title:"Warrior", detail:"Negotiating, Partnering"},
-                    {title:"Scribe", detail:"Illuminating, Clarifying"},
-                    {title:"Cultivator", detail:"Growing, Nurturing"},
-                    {title:"Wizard", detail:"Experimenting, Testing"},
-                    {title:"Artisan", detail:"Building, Securing"},
-                    {title:"Storyteller", detail:"Inspiring, Sharing"},
+            <div className="action-table-header"><h2>Scribe Actions</h2></div>
+              <QuestActions
+                  questActions={[
+                      {description:"Schedule a DEI meeting", xp: "10", guild: ""},
+                      {description:"Update Zoom name with pronouns", xp: "15", guild: ""},
+                      {description:"Update email signature with pronouns", xp: "15", guild: ""},
+                      {description:"Track a set of DEI metrics", xp: "50", guild: ""},
+                      {description:"Draft a DEI or ERG-related survey", xp: "50", guild: ""},
+                      {description:"Review Job Descriptions to help remove bias", xp: "75", guild: ""},
+                      {description:"Review a presentation draft for Accessibility needs", xp: "75", guild: ""},
+                      {description:"Help plan a DEI-related event", xp: "100", guild: ""},
+                      {description:"Create a Fundraising Campaign", xp: "200", guild: ""},
+                      {description:"Submit a DEI presentation for an external conference", xp: "250", guild: ""},
                   ]}
-                  guildActions={[
-                    {description:"Add a Guild", action:"add-guild"},
-                    {description:"Remove a Guild", action:"remove-guild"},
-                    {description:"Accept Adventurers", action:"accept-adventurers"},
-                    {description:"Remove Adventurers", action:"remove-adventurers"},
-                  ]}
-                ></Guilds>
+                  editStatus="true"
+              ></QuestActions>
           </div>
         </div>
       </div>

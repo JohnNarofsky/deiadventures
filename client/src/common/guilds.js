@@ -15,7 +15,7 @@ export const GuildDescription = ({guildDescription}) => {
 
 const GuildDetail = ({title, detail}) => {
     return(
-        <div className="action-table-header"><h3>{title}</h3></div>
+        <div className="action-table-header"><h3>{title}</h3><span>{detail}</span></div>
     );
 }
 
