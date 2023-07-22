@@ -31,7 +31,7 @@ const QuestActionChanges = ({questActionChanges}) => {
     );
 }
 
-const QuestAction = ({description, xp, guild, editStatus}) => {
+const QuestAction = ({description, xp, guild, editStatus, participateStatus}) => {
     let questActionChanges = [];
 
     if (editStatus==="true"){
@@ -40,8 +40,14 @@ const QuestAction = ({description, xp, guild, editStatus}) => {
             {description:"Copy", path:"copy"},
             {description:"Edit", path:"edit"}
           ];
-    
     }
+    if (participateStatus==="true"){
+        questActionChanges = [
+            {description:"Complete", path:"complete"},
+            {description:"Retire", path:"retire"},
+          ];
+    }
+
     let actionChanges = <QuestActionChanges questActionChanges={questActionChanges}></QuestActionChanges>;
 
     return (
@@ -54,12 +60,18 @@ const QuestAction = ({description, xp, guild, editStatus}) => {
     );
 };
 
-export const QuestActions = ({questActions, editStatus}) => {
+export const QuestActions = ({questActions, editStatus, participateStatus, reviewStatus}) => {
     return(
         <div className="action-table-container">
             <table className="action-table quest-examples">
             {questActions.map((questAction,index)=>{
-                return <QuestAction description={questAction.description} xp={questAction.xp} guild={questAction.guild} editStatus={editStatus} />
+                return <QuestAction 
+                    description={questAction.description} 
+                    xp={questAction.xp} 
+                    guild={questAction.guild} 
+                    editStatus={editStatus} 
+                    participateStatus={participateStatus} 
+                    reviewStatus={reviewStatus} />
             })}
             </table>
         </div>
