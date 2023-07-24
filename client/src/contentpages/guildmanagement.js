@@ -1,8 +1,62 @@
 import React from "react";
+import { useEffect, useCallback, useState } from 'react';
 import Decorations from "../common/decorations";
-import Guilds from "../common/guilds";
+import Button from 'react-bootstrap/Button';
 
 const GuildManagement = () => {
+
+  const [guilds, setGuilds] = useState([{id:-1, title:"", leader: ""}]);
+  const [adventurers, setAdventures] = useState([{id:-1, participation: []}]);
+  const [targetGuild, setTargetGuild] = useState(-1);
+
+  useEffect(()=>{
+    let currentGuilds = [
+      {id:1, title:"Warrior", leader: "Abby Dryer"},
+      {id:2, title:"Scribe", leader: null},
+      {id:3, title:"Cultivator", leader: null},
+      {id:4, title:"Wizard", leader: null},
+      {id:5, title:"Artisan", leader: "John Narofsky"},
+      {id:6, title:"Storyteller", leader: "Abby Dryer"},
+    ];
+    setGuilds(currentGuilds);
+
+    let currentAdventurers = [
+      {id:1, name:"Abby Dryer", participation: ["adventurer", "leader", "management"]},
+      {id:1, name:"John Narofsky", participation: ["adventurer", "leader", "management"]},
+      {id:1, name:"Amelia Dryer", participation: []},
+      {id:1, name:"Matthew Narofsky", participation: []},
+
+    ];
+    setAdventures(currentAdventurers);
+
+  }, {});
+
+  const Guild = ({guild}) => {
+    let leaderText = guild.leader !== null ? "Guild Leader: " + guild.leader : "No Current Guild Leader";
+    return (
+        <tr>
+          <td className="action-table-td left-col">{guild.title}</td>
+          <td className="action-table-td left-col">{leaderText}</td>
+          <td className="action-table-td right-col"><Button variant="dark" onClick={() => this.setTargetGuild(guild.id)}>Edit</Button></td>
+        </tr>
+    );
+  };
+
+  const clearParticipation = ({id}) => {
+
+  };
+
+  const Adventurer = ({adventurer}) => {
+    let participationText = adventurer.participation?.join(", ");
+    return (
+        <tr>
+          <td className="action-table-td left-col">{adventurer.name}</td>
+          <td className="action-table-td left-col">{participationText}</td>
+          <td className="action-table-td right-col"><Button variant="dark" onClick={() => this.clearParticipation(adventurer.id)}>Edit</Button></td>
+        </tr>
+    );
+  };
+
 
   return (
     <div className="container">
@@ -14,25 +68,48 @@ const GuildManagement = () => {
                 <h1 className="section-top">Guild Management</h1>
                 <p className="section-top-content">As a manager of guilds, it's your task to add guilds, remove guilds, accept adventurers into the game, and remove adventurers from the game.</p>
             </div>
-            <Guilds
-                  guildTitle={"Current Guilds"}
-                  guildDescription={"These are the current guilds."}
-                  guildDetails={[
-                    {title:"Warrior", detail:"Guild Leader: Abby Dryer"},
-                    {title:"Scribe", detail:"No current Guild Leader"},
-                    {title:"Cultivator", detail:"No current Guild Leader"},
-                    {title:"Wizard", detail:"No current Guild Leader"},
-                    {title:"Artisan", detail:"Guild Leader: John Narofsky"},
-                    {title:"Storyteller", detail:"Guild Leader: Abby Dryer"},
-                  ]}
-                  guildActions={[
-                    {description:"Add a Guild", action:"add-guild"},
-                    {description:"Remove a Guild", action:"remove-guild"},
-                    {description:"Change a Guild Leader", action:"change-guildleader"},
-                    {description:"Accept Adventurers", action:"accept-adventurers"},
-                    {description:"Remove Adventurers", action:"remove-adventurers"},
-                  ]}
-                ></Guilds>
+
+            <div className="section quests">
+              <h2>Current Guilds</h2>
+              <div className="action-table-container">
+                  <table className="action-table quest-examples">
+                    {guilds.map((guild,index)=>{
+                        return <Guild key={guild.id} guild={guild} />
+                    })}
+                  </table>
+              </div>
+            </div>
+            <br/>
+
+            <div className="section quests">
+              <h2>Current Adventurers</h2>
+              <div className="action-table-container">
+                  <table className="action-table quest-examples">
+                    {adventurers.filter((v)=>{return v.participation.length > 0}).map((adventurer,index)=>{
+                        return <Adventurer key={adventurer.id} adventurer={adventurer} />
+                    })}
+                  </table>
+              </div>
+            </div>
+
+            <div className="section quests">
+              <h2>Prospective Adventurers</h2>
+              <p>These are adventurers that have asked to join your game.</p>
+              <div className="action-table-container">
+                  <table className="action-table quest-examples">
+                    {adventurers.filter((v)=>{return v.participation.length === 0}).map((adventurer,index)=>{
+                        return <Adventurer key={adventurer.id} adventurer={adventurer} />
+                    })}
+                  </table>
+              </div>
+            </div>
+
+            <div className="section quests">
+              <h2>Is there a Guild Missing?</h2>
+              <Button variant="dark" onClick={() => this.setTargetGuild()}>Add a Guild</Button> 
+              </div>
+
+
           </div>
         </div>
       </div>
