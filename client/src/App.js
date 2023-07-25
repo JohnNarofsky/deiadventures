@@ -4,15 +4,13 @@ import GuildManagement from './contentpages/guildmanagement';
 import MyAdventures from './contentpages/myadventures';
 import MyHistory from './contentpages/myhistory';
 import Home from './contentpages/home';
-import Navbar from './components/navbar';
-
+import NavigationBar from './components/navigationbar';
+import 'bootstrap/dist/css/bootstrap.css';
 
 function App() {
   return (
     <>
-      <div>
-        <Navbar />
-      </div>
+      <NavigationBar />
       <div className='container'>
         <Routes>
             <Route path="/" element={<Home />} />

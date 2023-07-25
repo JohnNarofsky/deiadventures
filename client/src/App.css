@@ -17,16 +17,6 @@ body {
 .container {
   max-width: 95%;
   margin: 0 auto;
-  /*Adding margin for navbar*/
-  /* margin-top: 30px; */
-}
-
-.nav-top {
-  overflow: hidden;
-  background-color: #333;
-  position: fixed; /* Set the navbar to fixed position */
-  top: 0; /* Position the navbar at the top of the page */
-  width: 100%; /* Full width */
 }
 
 .nav-top {
@@ -71,8 +61,8 @@ position:static;
   min-height: 900px;
   overflow-x: hidden;
   overflow-y: auto;
-  position: absolute;
-  top: 0;
+  position: fixed;
+  top: 56px;
   left: 50%;
   right: 0;
   bottom: 0;
@@ -80,7 +70,7 @@ position:static;
 }
 
 .parallax__layer {
-  position: absolute;
+  position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
@@ -96,7 +86,7 @@ position:static;
 
 .parallax__cover {
   display: block;
-  position: absolute;
+  position: fixed;
   background: #FFF;
   height: 2000px;
   width: 3000px;

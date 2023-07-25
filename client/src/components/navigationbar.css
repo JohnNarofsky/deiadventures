@@ -1,0 +1,8 @@
+.navbar-custom {
+    z-index: 9999;
+    background-color: #f9c338;
+  }
+
+#responsive-navbar-nav{
+    background-color: #f9c338;
+}
