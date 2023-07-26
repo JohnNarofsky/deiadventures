@@ -19,7 +19,6 @@ const QuestDetail = ({title, detail}) => {
     );
 }
 
-
 const QuestActionChanges = ({questActionChanges}) => {
     if (questActionChanges.length === 0){
         return <></>;
@@ -31,20 +30,20 @@ const QuestActionChanges = ({questActionChanges}) => {
     );
 }
 
-const QuestAction = ({description, xp, guild, editStatus, participateStatus}) => {
+const QuestAction = ({id,description, xp, guild, editStatus, participateStatus}) => {
     let questActionChanges = [];
 
     if (editStatus==="true"){
         questActionChanges = [
-            {description:"Retire", path:"retire"},
-            {description:"Copy", path:"copy"},
-            {description:"Edit", path:"edit"}
+            {description:"Edit", path:"./quest-edit:" + id},
+            {description:"Copy", path:"./quest-copy:" + id},
+            {description:"Retire", path:"./quest-retire:" + id},
           ];
     }
     if (participateStatus==="true"){
         questActionChanges = [
-            {description:"Complete", path:"complete"},
-            {description:"Retire", path:"retire"},
+            {description:"Complete", path:"./complete:" + id},
+            {description:"Retire", path:"./retire:" + id},
           ];
     }
 
@@ -52,7 +51,7 @@ const QuestAction = ({description, xp, guild, editStatus, participateStatus}) =>
 
     return (
         <tr>
-            <td className="action-table-td left-col">{description}{editStatus}</td>
+            <td className="action-table-td left-col">{description}</td>
             <td className="action-table-td right-col">{xp} xp</td>
             <td className="action-table-td right-col">{guild}</td>
             {actionChanges}
@@ -65,7 +64,8 @@ export const QuestActions = ({questActions, editStatus, participateStatus, revie
         <div className="action-table-container">
             <table className="action-table quest-examples">
             {questActions.map((questAction,index)=>{
-                return <QuestAction 
+                return <QuestAction
+                    id={questAction.id}
                     description={questAction.description} 
                     xp={questAction.xp} 
                     guild={questAction.guild} 
