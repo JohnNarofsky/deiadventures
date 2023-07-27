@@ -21,10 +21,14 @@ CREATE TABLE Guild (
 -- Also, prevents null primary keys from being inserted,
 -- which are a thing that SQLite has kept around for backward compatibility.
 
+-- quest_type currently has two accepted values:
+--  - Guild      (0)
+--  - Adventurer (1)
 CREATE TABLE Quest (
     id INTEGER PRIMARY KEY,
     guild_id INTEGER NOT NULL REFERENCES Guild (id),
     name TEXT,
+    quest_type INTEGER NOT NULL,
     status TEXT NOT NULL,
     open_date INTEGER,
     close_date INTEGER
