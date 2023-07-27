@@ -1,0 +1,2 @@
+-- This file creates all the tables we need in the database.
+-- It is written with SQLite in mind.

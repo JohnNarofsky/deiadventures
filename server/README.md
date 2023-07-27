@@ -1,40 +1,34 @@
-# Getting Started with Create React App
+# Getting Started with Cargo
+This subproject is made with Cargo, the official tool for building Rust applications.
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Cargo subcommands
+In the subproject directory, you can run:
 
-## Available Scripts
+### `cargo run`
+Runs the app with the debug profile.
 
-In the project directory, you can run:
+You can pass `--release` to this command to build with optimizations.
 
-### `npm start`
+### `cargo build`
+Builds the app with the debug profile.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+You can pass `--release` to this command to build with optimizations.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+The binary is placed at `target/<profile>/server`.
 
-### `npm test`
+### `cargo test`
+We don't actually *have* any tests defined in this subproject yet,
+but they'd be run with this.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Deployment
+To deploy this project, build it with `cargo build --release`
+(or just `cargo build` if you're in a hurry and the service isn't public yet)
+and copy the `server` binary over to your server machine,
+then run it with the appropriate environment variables.
 
-### `npm run build`
+(I'll be adding a script for doing all those steps at once,
+and making us run at server boot, but that's low priority right now.)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-
-### Making a Progressive Web App - a nice to have we're not doing yet
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## Making an Axum web server
+I don't have time to write a tutorial, but you can read this for an introduction to Axum:
+<https://docs.rs/axum/latest/axum/index.html>.
