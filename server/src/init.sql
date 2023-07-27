@@ -8,6 +8,11 @@
 
 -- Note: We use "PascalCase" for table names, and "snake_case" for column names.
 
+-- Unlike other journaling modes, WAL mode needs only to be set once,
+-- instead of upon each connection to the database.
+PRAGMA journal_mode = WAL;
+
+
 -- Honestly, calling these character classes would still be more intuitive to me,
 -- since "guild" sounds like "organization" or "company" to me.
 -- Oh well.
@@ -52,10 +57,13 @@ CREATE TABLE QuestTask (
 CREATE TABLE Adventurer (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
-    -- email_address and password are used for authentication,
+    -- email_address and password_hash are used for authentication,
     -- and are required at least until we have OAuth2 working in their stead
     email_address TEXT NOT NULL,
-    password TEXT NOT NULL
+    password_hash TEXT NOT NULL,
+    -- randomly generated for each user, to make attacking many hashes at once
+    -- more difficult. this is standard practice.
+    password_salt TEXT NOT NULL
 ) STRICT;
 
 -- Note: This table reflects permissions which the backend code knows about,
