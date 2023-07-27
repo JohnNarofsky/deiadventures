@@ -34,7 +34,6 @@ CREATE TABLE Quest (
     guild_id INTEGER NOT NULL REFERENCES Guild (id),
     name TEXT,
     quest_type INTEGER NOT NULL,
-    status TEXT NOT NULL,
     open_date INTEGER,
     close_date INTEGER
 ) STRICT;
@@ -50,7 +49,7 @@ CREATE TABLE QuestTask (
     id INTEGER PRIMARY KEY,
     quest_id INTEGER NOT NULL REFERENCES Quest (id),
     name TEXT NOT NULL,
-    description TEXT NOT NULL,
+    description TEXT,
     xp INTEGER NOT NULL
 ) STRICT;
 
