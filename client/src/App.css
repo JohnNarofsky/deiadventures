@@ -53,6 +53,7 @@ position:static;
     height: auto;
     max-width: 100%
 }
+/* The absolute position is blocking the navbar, need to figure out*/
 
 .parallax {
   perspective: 100px;
@@ -60,8 +61,8 @@ position:static;
   min-height: 900px;
   overflow-x: hidden;
   overflow-y: auto;
-  position: absolute;
-  top: 0;
+  position: fixed;
+  top: 56px;
   left: 50%;
   right: 0;
   bottom: 0;
@@ -69,7 +70,7 @@ position:static;
 }
 
 .parallax__layer {
-  position: absolute;
+  position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
@@ -85,7 +86,7 @@ position:static;
 
 .parallax__cover {
   display: block;
-  position: absolute;
+  position: fixed;
   background: #FFF;
   height: 2000px;
   width: 3000px;
