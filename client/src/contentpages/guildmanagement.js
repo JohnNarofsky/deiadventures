@@ -31,13 +31,28 @@ const GuildManagement = () => {
 
   }, {});
 
+  const saveGuild = (guild) => {
+    console.log(guild);
+    setTargetGuild(-1);
+  }
+
   const Guild = ({guild}) => {
     let leaderText = guild.leader !== null ? "Guild Leader: " + guild.leader : "No Current Guild Leader";
+    if (guild?.id === targetGuild){
+      return (
+        <tr>
+          <td className="action-table-td left-col">{guild.title}</td>
+          <td className="action-table-td left-col">{leaderText}</td>
+          <td className="action-table-td right-col"><Button variant="dark" onClick={() => this.saveGuild(guild)}>Done</Button></td>
+        </tr>
+      );
+
+    }
     return (
         <tr>
           <td className="action-table-td left-col">{guild.title}</td>
           <td className="action-table-td left-col">{leaderText}</td>
-          <td className="action-table-td right-col"><Button variant="dark" onClick={() => this.setTargetGuild(guild.id)}>Edit</Button></td>
+          <td className="action-table-td right-col"><Button variant="dark" onClick={() => this.saveGuild(guild.id)}>Edit</Button></td>
         </tr>
     );
   };
