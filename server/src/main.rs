@@ -51,6 +51,7 @@ async fn main() {
         // - PUT for setting a property of an existing object (things which feel like an UPDATE)
         .route("/user/:user_id", get(get_user))
         .route("/user/:user_id/accept-quest", post(accept_quest))
+        .route("/guild", get(get_guilds))
         .route("/guild", post(create_guild))
         .route("/guild/:guild_id/name", put(set_guild_name))
         .route("/guild/:guild_id/name", get(get_guild_name))
@@ -267,6 +268,32 @@ async fn accept_quest(
 
 /// Get the list of people who are allowed to be guild leaders.
 async fn get_allowed_guild_leaders() {}
+
+#[derive(Serialize, Debug)]
+struct Guild {
+    id: GuildId,
+    name: String,
+}
+async fn get_guilds(State(state): State<ArcState>) -> Result<Json<Vec<Guild>>, (StatusCode, String)> {
+    let data = state.read_transaction(|db| {
+        let mut query = db.prepare_cached(
+            "SELECT id, name FROM Guild;"
+        )?;
+        let guilds = query.query_map(named_params! {}, |row| Ok(Guild {
+            id: row.get(0)?,
+            name: row.get(1)?,
+        }))?.collect::<Result<Vec<_>, _>>()?;
+
+        Ok(guilds)
+    });
+    match data {
+        Ok(x) => Ok(Json(x)),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "database access failed".to_string()))
+        }
+    }
+}
 
 #[derive(Deserialize, Debug)]
 struct CreateGuild {
