@@ -1,6 +1,5 @@
 mod db;
 
-use crate::PermissionType::SuperUser;
 use axum::extract::{Path, State};
 use axum::http::{StatusCode, Uri};
 use axum::routing::{get, post, put};
@@ -58,6 +57,7 @@ async fn main() {
         .route("/guild/:guild_id/name", put(set_guild_name))
         .route("/guild/:guild_id/name", get(get_guild_name))
         .route("/guild/:guild_id/leader", put(set_guild_leader))
+        .route("/perm/allowed-leaders", get(get_allowed_guild_leaders))
         // .route("/guild/:guild_id/leader", get(get_guild_leader))
         // .route("/guild/:guild_id/quests", get(get_guild_quests))
         .fallback(fallback)
@@ -364,8 +364,38 @@ async fn accept_quest(
     }
 }
 
+#[derive(Serialize, Debug)]
+struct AllowedGuildLeader {
+    id: UserId,
+    name: String,
+}
+
 /// Get the list of people who are allowed to be guild leaders.
-async fn get_allowed_guild_leaders() {}
+async fn get_allowed_guild_leaders(State(state): State<ArcState>) -> Result<Json<Vec<AllowedGuildLeader>>, (StatusCode, String)> {
+    let data = state.read_transaction(|db| {
+        let mut query = db.prepare_cached(
+            "SELECT adventurer_id FROM Permission
+                 WHERE permission_type = 2 OR permission_type = 0;"
+        )?;
+        let leaders = query.query_map([], |row| {
+            let mut query = db.prepare_cached(
+                "SELECT name FROM Adventurer WHERE id = :id;"
+            )?;
+            let id = row.get(0)?;
+            let name = query.query_row(named_params! { ":id": id }, |row| row.get(0))?;
+            Ok(AllowedGuildLeader { id, name })
+        })?.collect::<Result<Vec<_>, _>>()?;
+        Ok(leaders)
+    });
+
+    match data {
+        Ok(leaders) => Ok(Json(leaders)),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((StatusCode::INTERNAL_SERVER_ERROR, "database access failed".to_string()))
+        }
+    }
+}
 
 #[derive(Serialize, Debug)]
 struct Guild {
