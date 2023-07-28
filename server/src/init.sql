@@ -88,6 +88,7 @@ CREATE TABLE PartyMember (
     quest_id INTEGER NOT NULL REFERENCES Quest (id)
 ) STRICT;
 
+-- Note: Currently, the only Role is 'leader'.
 CREATE TABLE AdventurerRole (
     id INTEGER PRIMARY KEY,
     adventurer_id INTEGER NOT NULL REFERENCES Adventurer (id),

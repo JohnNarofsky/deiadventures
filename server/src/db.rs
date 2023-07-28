@@ -1,4 +1,4 @@
-use crate::{QuestId, UserId};
+use crate::{GuildId, QuestId, UserId};
 use rusqlite::{named_params, Transaction};
 
 // A randomly generated number. This is hardcoded elsewhere,
@@ -29,6 +29,11 @@ pub(crate) fn adventurer_exists(db: &Transaction, user: UserId) -> Result<bool, 
 
 pub(crate) fn quest_exists(db: &Transaction, quest: QuestId) -> Result<bool, rusqlite::Error> {
     let mut query = db.prepare_cached("SELECT 0 FROM Quest WHERE id = :id")?;
+    query.exists(named_params! { ":id": quest })
+}
+
+pub(crate) fn guild_exists(db: &Transaction, quest: GuildId) -> Result<bool, rusqlite::Error> {
+    let mut query = db.prepare_cached("SELECT 0 FROM Guild WHERE id = :id")?;
     query.exists(named_params! { ":id": quest })
 }
 
