@@ -2,57 +2,96 @@ import React from "react";
 import { useEffect, useCallback, useState } from 'react';
 import Decorations from "../common/decorations";
 import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
 
 const GuildManagement = () => {
 
   const [guilds, setGuilds] = useState([{id:-1, title:"", leader: ""}]);
   const [adventurers, setAdventures] = useState([{id:-1, participation: []}]);
-  const [targetGuild, setTargetGuild] = useState(-1);
+  const [availableGuildLeaders, setAvailableGuildLeaders] = useState([]);
+  const [targetGuild, setTargetGuild] = useState({id:-1, title:"", leaderId:-1, leader: ""});
 
   useEffect(()=>{
     let currentGuilds = [
-      {id:1, title:"Warrior", leader: "Abby Dryer"},
-      {id:2, title:"Scribe", leader: null},
-      {id:3, title:"Cultivator", leader: null},
-      {id:4, title:"Wizard", leader: null},
-      {id:5, title:"Artisan", leader: "John Narofsky"},
-      {id:6, title:"Storyteller", leader: "Abby Dryer"},
+      {id:1, title:"Warrior", leaderId: 1, leader: "Abby Dryer"},
+      {id:2, title:"Scribe", leaderId: -1, leader: null},
+      {id:3, title:"Cultivator", leaderId: -1, leader: null},
+      {id:4, title:"Wizard", leaderId: -1,  leader: null},
+      {id:5, title:"Artisan", leaderId: 2, leader: "John Narofsky"},
+      {id:6, title:"Storyteller", leaderId: 1, leader: "Abby Dryer"},
     ];
     setGuilds(currentGuilds);
 
     let currentAdventurers = [
       {id:1, name:"Abby Dryer", participation: ["adventurer", "leader", "management"]},
-      {id:1, name:"John Narofsky", participation: ["adventurer", "leader", "management"]},
-      {id:1, name:"Amelia Dryer", participation: []},
-      {id:1, name:"Matthew Narofsky", participation: []},
+      {id:2, name:"John Narofsky", participation: ["adventurer", "leader", "management"]},
+      {id:3, name:"Amelia Dryer", participation: []},
+      {id:4, name:"Matthew Narofsky", participation: []},
 
     ];
     setAdventures(currentAdventurers);
 
-  }, {});
+    let currentAvailableGuildLeaders = [
+        {id:1, name:"Abby Dryer", participation: ["adventurer", "leader", "management"]},
+        {id:2, name:"John Narofsky", participation: ["adventurer", "leader", "management"]},
+    ];
+    setAvailableGuildLeaders(currentAvailableGuildLeaders);
 
-  const saveGuild = (guild) => {
-    console.log(guild);
-    setTargetGuild(-1);
+  }, []);
+
+  useEffect(()=>{
+    setTargetGuild({id:-1, title:"", leaderId: -1, leader: ""});
+  }, [guilds]);
+
+  const saveGuild = (targetGuild) => {
+    let leaderName = availableGuildLeaders.filter(v=>v.id === targetGuild.leaderId)[0]?.name;
+
+    let newGuilds = guilds.map((e) => {
+      if (e.id === targetGuild.id){
+        return {...e, leaderId: targetGuild.leaderId, leader: leaderName}
+      }
+      return {...e};
+    });
+
+    setGuilds(newGuilds);
   }
 
-  const Guild = ({guild}) => {
-    let leaderText = guild.leader !== null ? "Guild Leader: " + guild.leader : "No Current Guild Leader";
-    if (guild?.id === targetGuild){
-      return (
-        <tr>
-          <td className="action-table-td left-col">{guild.title}</td>
-          <td className="action-table-td left-col">{leaderText}</td>
-          <td className="action-table-td right-col"><Button variant="dark" onClick={() => this.saveGuild(guild)}>Done</Button></td>
-        </tr>
-      );
-
+  const TargetGuild = ({saveGuild, targetGuild, availableGuildLeaders}) => {
+    const [currentTitle, setCurrentTitle] = useState(targetGuild.title);
+    const [currentLeaderId, setCurrentLeaderId] = useState(targetGuild.leaderId)
+    const handleChangeTitle = (event) => {
+      setCurrentTitle(event.target.value);
     }
+
+    const handleChangeLeader = (event) => {
+      setCurrentLeaderId(event.target.value);
+    }
+
+    return (
+      <tr>
+        <td className="action-table-td left-col"><input onChange={handleChangeTitle} value={currentTitle} /></td>
+        <td className="action-table-td left-col">
+          <select value={currentLeaderId} onChange={handleChangeLeader}>
+            <option value="-1">No Guild Leader</option>
+            {availableGuildLeaders.map((option) => (
+              <option key={option.id} value={option.id}>{option.name}</option>
+            ))}
+          </select>
+        </td>
+        <td className="action-table-td right-col"><Button variant="dark" onClick={() => {
+          saveGuild({...targetGuild, leaderId: parseInt(currentLeaderId), title: currentTitle});
+          }}>Done</Button></td>
+      </tr>
+    );
+  }
+
+  const Guild = ({guild, setTargetGuild}) => {
+      let leaderText = guild.leader !== null ? "Guild Leader: " + guild.leader : "No Current Guild Leader";
     return (
         <tr>
           <td className="action-table-td left-col">{guild.title}</td>
           <td className="action-table-td left-col">{leaderText}</td>
-          <td className="action-table-td right-col"><Button variant="dark" onClick={() => this.saveGuild(guild.id)}>Edit</Button></td>
+          <td className="action-table-td right-col"><Button variant="dark" onClick={() => setTargetGuild({...guild})}>Edit</Button></td>
         </tr>
     );
   };
@@ -89,7 +128,10 @@ const GuildManagement = () => {
               <div className="action-table-container">
                   <table className="action-table quest-examples">
                     {guilds.map((guild,index)=>{
-                        return <Guild key={guild.id} guild={guild} />
+                      if (guild.id === targetGuild.id){
+                        return <TargetGuild key={index} saveGuild={saveGuild} targetGuild={targetGuild} availableGuildLeaders={availableGuildLeaders} />  
+                      }
+                      return <Guild key={index} guild={guild} setTargetGuild={setTargetGuild} availableGuildLeaders={availableGuildLeaders} />
                     })}
                   </table>
               </div>
