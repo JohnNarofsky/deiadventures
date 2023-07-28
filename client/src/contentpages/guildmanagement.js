@@ -45,10 +45,13 @@ const GuildManagement = () => {
 
   const saveGuild = (targetGuild) => {
     let leaderName = availableGuildLeaders.filter(v=>v.id === targetGuild.leaderId)[0]?.name;
+    if (leaderName === undefined){
+      leaderName = null;
+    }
 
     let newGuilds = guilds.map((e) => {
       if (e.id === targetGuild.id){
-        return {...e, leaderId: targetGuild.leaderId, leader: leaderName}
+        return {...e, title:targetGuild.title, leaderId: targetGuild.leaderId, leader: leaderName}
       }
       return {...e};
     });
@@ -79,6 +82,7 @@ const GuildManagement = () => {
           </select>
         </td>
         <td className="action-table-td right-col"><Button variant="dark" onClick={() => {
+          //console.log({...targetGuild, leaderId: parseInt(currentLeaderId), title: currentTitle});
           saveGuild({...targetGuild, leaderId: parseInt(currentLeaderId), title: currentTitle});
           }}>Done</Button></td>
       </tr>
