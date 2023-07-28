@@ -2,7 +2,7 @@ import React from "react";
 import { useEffect, useCallback, useState } from 'react';
 import Decorations from "../common/decorations";
 import Button from 'react-bootstrap/Button';
-import Form from 'react-bootstrap/Form';
+import axios from 'axios';
 
 const GuildManagement = () => {
 
@@ -12,7 +12,14 @@ const GuildManagement = () => {
   const [targetGuild, setTargetGuild] = useState({id:-1, title:"", leaderId:-1, leader: ""});
   const [newGuildCreation, setNewGuildCreation] = useState(false);
 
+  const baseURL="https://testdei.narofsky.org/api";
+
   useEffect(()=>{
+
+    axios.get(baseURL + "/guild").then((response) => {
+      console.log(response);
+    });
+
     let currentGuilds = [
       {id:1, title:"Warrior", leaderId: 1, leader: "Abby Dryer"},
       {id:2, title:"Scribe", leaderId: -1, leader: null},
@@ -90,14 +97,15 @@ const GuildManagement = () => {
 
   }
 
-
   const NewGuild = ({saveGuild, cancelGuild, availableGuildLeaders, setNewGuildCreation}) => {
     if (newGuildCreation){
       return (
         <>
           <div className="action-table-container">
               <table className="action-table quest-examples">
-                <TargetGuild saveGuild={saveGuild} cancelGuild={cancelGuild} targetGuild={{id:-2, title:"", leader: ""}} availableGuildLeaders={availableGuildLeaders} />  
+                <tbody>
+                  <TargetGuild saveGuild={saveGuild} cancelGuild={cancelGuild} targetGuild={{id:-2, title:"", leader: ""}} availableGuildLeaders={availableGuildLeaders} />  
+                </tbody>
               </table>
           </div>
           <br/>
@@ -189,12 +197,14 @@ const GuildManagement = () => {
               </div>
               <div className="action-table-container">
                   <table className="action-table quest-examples">
+                    <tbody>
                     {guilds.map((guild,index)=>{
                       if (guild.id === targetGuild.id){
                         return <TargetGuild key={index} saveGuild={saveGuild} cancelGuild={cancelGuild} targetGuild={targetGuild} availableGuildLeaders={availableGuildLeaders} />  
                       }
                       return <Guild key={index} guild={guild} setTargetGuild={setTargetGuild} availableGuildLeaders={availableGuildLeaders} />
                     })}
+                    </tbody>
                   </table>
               </div>
             </div>
@@ -203,11 +213,11 @@ const GuildManagement = () => {
             <div className="section quests">
               <h2>Current Adventurers</h2>
               <div className="action-table-container">
-                  <table className="action-table quest-examples">
+                  <table className="action-table quest-examples"><tbody>
                     {adventurers.filter((v)=>{return v.participation.length > 0}).map((adventurer,index)=>{
                         return <Adventurer key={adventurer.id} adventurer={adventurer} />
                     })}
-                  </table>
+                  </tbody></table>
               </div>
             </div>
 
@@ -215,11 +225,11 @@ const GuildManagement = () => {
               <h2>Prospective Adventurers</h2>
               <p>These are adventurers that have asked to join your game.</p>
               <div className="action-table-container">
-                  <table className="action-table quest-examples">
+                  <table className="action-table quest-examples"><tbody>
                     {adventurers.filter((v)=>{return v.participation.length === 0}).map((adventurer,index)=>{
                         return <Adventurer key={adventurer.id} adventurer={adventurer} />
                     })}
-                  </table>
+                  </tbody></table>
               </div>
             </div>
           </div>
