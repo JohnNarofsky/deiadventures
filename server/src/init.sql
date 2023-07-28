@@ -8,10 +8,14 @@
 
 -- Note: We use "PascalCase" for table names, and "snake_case" for column names.
 
+-- A randomly generated number. This is hardcoded elsewhere,
+-- so grep for everywhere it's used in the server before changing it.
+PRAGMA application_id = 249251854;
+PRAGMA user_version = 0;
+
 -- Unlike other journaling modes, WAL mode needs only to be set once,
 -- instead of upon each connection to the database.
 PRAGMA journal_mode = WAL;
-
 
 -- Honestly, calling these character classes would still be more intuitive to me,
 -- since "guild" sounds like "organization" or "company" to me.
@@ -67,8 +71,9 @@ CREATE TABLE Adventurer (
 
 -- Note: This table reflects permissions which the backend code knows about,
 -- with the currently approved values of permission_type being:
---  - Super User (0)
---  - Approved   (1)
+--  - Super User                  (0)
+--  - Approved                    (1)
+--  - Eligible To Be Guild Leader (2)
 CREATE TABLE Permission (
     id INTEGER PRIMARY KEY,
     adventurer_id INTEGER NOT NULL REFERENCES Adventurer (id),

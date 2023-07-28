@@ -64,7 +64,29 @@ VALUES
 
 -- Make copies of quests when people start them.
 -- (It'd also make sense to, instead, make copies of quests when they're updated,
--- and never delete them when anyone is associated with them.)
+-- and never delete them when anyone is associated with them.
+-- Basically garbage collected Copy-on-Write semantics.
+-- I suspect such an optimization could be added backwards compatibly
+-- with our current scheme, and it's not at all high priority for now.)
 
--- TODO: PartyMember
 -- TODO: QuestDetail
+
+-- Steps to begin a quest:
+--  1. Make copy row in Quest, with a flipped quest_type field
+--  2. Copy associated rows in QuestTask
+--  3. Copy associated rows in QuestDetail
+--  4. Insert row(s) into PartyMember which associates the row(s) in Adventurer
+--     with the new row in Quest.
+
+-- Step 1
+INSERT INTO Quest (id, guild_id, name, quest_type)
+SELECT 20, guild_id, name, 1 FROM Quest WHERE id = 4;
+-- Step 2
+INSERT INTO QuestTask (quest_id, name, description, xp)
+SELECT 20, name, description, xp FROM QuestTask WHERE quest_id = 4;
+-- Step 3
+INSERT INTO QuestDetail (quest_id, description)
+SELECT 20, description FROM QuestDetail WHERE quest_id = 4;
+-- Step 4
+INSERT INTO PartyMember (adventurer_id, quest_id)
+VALUES (1, 20);
