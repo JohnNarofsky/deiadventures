@@ -49,9 +49,12 @@ CREATE TABLE QuestDetail (
     description TEXT NOT NULL
 ) STRICT;
 
+-- TODO: you know, we probably want to be able to complete individual
+--       tasks at some point. not important for the MVP though.
 CREATE TABLE QuestTask (
     id INTEGER PRIMARY KEY,
     quest_id INTEGER NOT NULL REFERENCES Quest (id),
+    order_index INTEGER NOT NULL DEFAULT 0,
     name TEXT NOT NULL,
     description TEXT,
     xp INTEGER NOT NULL

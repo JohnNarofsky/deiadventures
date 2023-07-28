@@ -59,7 +59,10 @@ async fn main() {
         .route("/guild/:guild_id/leader", put(set_guild_leader))
         .route("/perm/allowed-leaders", get(get_allowed_guild_leaders))
         // .route("/guild/:guild_id/leader", get(get_guild_leader))
-        // .route("/guild/:guild_id/quests", get(get_guild_quests))
+        .route(
+            "/guild/:guild_id/quest-actions",
+            get(get_guild_quest_actions),
+        )
         .fallback(fallback)
         .with_state(state.clone());
 
@@ -309,8 +312,58 @@ async fn get_users(
 //     }
 // }
 
-async fn get_guild_quests(State(_state): State<ArcState>, Path(guild_id): Path<GuildId>) {
-    dbg!(guild_id);
+/// An "Action" is stored as a nameless quest with one QuestTask associated with it.
+#[derive(Serialize, Debug)]
+struct GuildQuestAction {
+    id: QuestId,
+    // "name" is the column name, but we're putting it in a "description" field
+    #[serde(rename = "description")]
+    name: String,
+    xp: u32,
+}
+async fn get_guild_quest_actions(
+    State(state): State<ArcState>,
+    Path(guild_id): Path<GuildId>,
+) -> Result<Json<Vec<GuildQuestAction>>, (StatusCode, String)> {
+    let data = state.read_transaction(|db| {
+        if !db::guild_exists(&db, guild_id)? {
+            return Ok(Err((
+                StatusCode::NOT_FOUND,
+                format!("no guild with id = {guild_id} exists"),
+            )));
+        }
+
+        let mut query = db.prepare_cached(
+            "SELECT id, * FROM Quest WHERE guild_id = :guild_id;"
+        )?;
+        let quests = query
+            .query_map(named_params! { ":guild_id": guild_id }, |row| {
+                let mut query = db.prepare_cached(
+                    "SELECT name, xp FROM QuestTask WHERE quest_id = :quest_id;"
+                )?;
+                let id = row.get(0)?;
+                let (name, xp) = query.query_row(named_params! { ":quest_id": id }, |row| {
+                    Ok((row.get(0)?, row.get(1)?))
+                })?;
+                Ok(GuildQuestAction {
+                    id, name, xp
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Ok(quests))
+    });
+
+    match data {
+        Ok(Ok(quests)) => Ok(Json(quests)),
+        Ok(Err(e)) => Err(e),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -371,20 +424,22 @@ struct AllowedGuildLeader {
 }
 
 /// Get the list of people who are allowed to be guild leaders.
-async fn get_allowed_guild_leaders(State(state): State<ArcState>) -> Result<Json<Vec<AllowedGuildLeader>>, (StatusCode, String)> {
+async fn get_allowed_guild_leaders(
+    State(state): State<ArcState>,
+) -> Result<Json<Vec<AllowedGuildLeader>>, (StatusCode, String)> {
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached(
             "SELECT adventurer_id FROM Permission
-                 WHERE permission_type = 2 OR permission_type = 0;"
+                 WHERE permission_type = 2 OR permission_type = 0;",
         )?;
-        let leaders = query.query_map([], |row| {
-            let mut query = db.prepare_cached(
-                "SELECT name FROM Adventurer WHERE id = :id;"
-            )?;
-            let id = row.get(0)?;
-            let name = query.query_row(named_params! { ":id": id }, |row| row.get(0))?;
-            Ok(AllowedGuildLeader { id, name })
-        })?.collect::<Result<Vec<_>, _>>()?;
+        let leaders = query
+            .query_map([], |row| {
+                let mut query = db.prepare_cached("SELECT name FROM Adventurer WHERE id = :id;")?;
+                let id = row.get(0)?;
+                let name = query.query_row(named_params! { ":id": id }, |row| row.get(0))?;
+                Ok(AllowedGuildLeader { id, name })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(leaders)
     });
 
@@ -392,7 +447,10 @@ async fn get_allowed_guild_leaders(State(state): State<ArcState>) -> Result<Json
         Ok(leaders) => Ok(Json(leaders)),
         Err(e) => {
             tracing::error!("rusqlite error: {e:?}");
-            Err((StatusCode::INTERNAL_SERVER_ERROR, "database access failed".to_string()))
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
         }
     }
 }
