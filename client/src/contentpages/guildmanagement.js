@@ -10,6 +10,7 @@ const GuildManagement = () => {
   const [adventurers, setAdventures] = useState([{id:-1, participation: []}]);
   const [availableGuildLeaders, setAvailableGuildLeaders] = useState([]);
   const [targetGuild, setTargetGuild] = useState({id:-1, title:"", leaderId:-1, leader: ""});
+  const [newGuildCreation, setNewGuildCreation] = useState(false);
 
   useEffect(()=>{
     let currentGuilds = [
@@ -59,7 +60,60 @@ const GuildManagement = () => {
     setGuilds(newGuilds);
   }
 
-  const TargetGuild = ({saveGuild, targetGuild, availableGuildLeaders}) => {
+  const cancelGuild = () => {
+    setTargetGuild({id:-1, title:"", leaderId: -1, leader: ""});
+  };
+
+  const cancelNewGuild = () => {
+    setNewGuildCreation(false);
+    setTargetGuild({id:-1, title:"", leaderId: -1, leader: ""});
+  }
+
+  const saveNewGuild = (targetGuild) => {
+    let leaderName = availableGuildLeaders.filter(v=>v.id === targetGuild.leaderId)[0]?.name;
+    if (leaderName === undefined){
+      leaderName = null;
+    }
+
+    //TODO: Add a call the server to save this new guild...
+    let newGuild = {
+      id: guilds.length + 1, //TODO: this should be the result of the call
+      title: targetGuild.title, 
+      leaderId: targetGuild.leaderId,
+      leader: leaderName
+    };
+
+    let newGuilds = [...guilds];
+    newGuilds.push(newGuild);
+    setNewGuildCreation(false);
+    setGuilds(newGuilds);
+
+  }
+
+
+  const NewGuild = ({saveGuild, cancelGuild, availableGuildLeaders, setNewGuildCreation}) => {
+    if (newGuildCreation){
+      return (
+        <>
+          <div className="action-table-container">
+              <table className="action-table quest-examples">
+                <TargetGuild saveGuild={saveGuild} cancelGuild={cancelGuild} targetGuild={{id:-2, title:"", leader: ""}} availableGuildLeaders={availableGuildLeaders} />  
+              </table>
+          </div>
+          <br/>
+        </>
+      );
+    }
+    return (
+      <>
+        <Button variant="dark" onClick={() => {setNewGuildCreation(true);setTargetGuild({id:-2, title:"", leader: ""});}}>Add a Guild</Button> 
+        <br/>
+      </>
+    );
+    
+  };
+
+  const TargetGuild = ({saveGuild, cancelGuild, targetGuild, availableGuildLeaders}) => {
     const [currentTitle, setCurrentTitle] = useState(targetGuild.title);
     const [currentLeaderId, setCurrentLeaderId] = useState(targetGuild.leaderId)
     const handleChangeTitle = (event) => {
@@ -82,12 +136,12 @@ const GuildManagement = () => {
           </select>
         </td>
         <td className="action-table-td right-col"><Button variant="dark" onClick={() => {
-          //console.log({...targetGuild, leaderId: parseInt(currentLeaderId), title: currentTitle});
           saveGuild({...targetGuild, leaderId: parseInt(currentLeaderId), title: currentTitle});
           }}>Done</Button></td>
+        <td className="action-table-td right-col"><Button variant="dark" onClick={cancelGuild}>Cancel</Button></td>
       </tr>
     );
-  }
+  };
 
   const Guild = ({guild, setTargetGuild}) => {
       let leaderText = guild.leader !== null ? "Guild Leader: " + guild.leader : "No Current Guild Leader";
@@ -95,6 +149,7 @@ const GuildManagement = () => {
         <tr>
           <td className="action-table-td left-col">{guild.title}</td>
           <td className="action-table-td left-col">{leaderText}</td>
+          <td className="action-table-td right-col"></td>
           <td className="action-table-td right-col"><Button variant="dark" onClick={() => setTargetGuild({...guild})}>Edit</Button></td>
         </tr>
     );
@@ -129,11 +184,14 @@ const GuildManagement = () => {
 
             <div className="section quests">
               <h2>Current Guilds</h2>
+              <div className="section quests">
+              <NewGuild setNewGuildCreation={setNewGuildCreation} saveGuild={saveNewGuild} cancelGuild={cancelNewGuild} availableGuildLeaders={availableGuildLeaders} />
+              </div>
               <div className="action-table-container">
                   <table className="action-table quest-examples">
                     {guilds.map((guild,index)=>{
                       if (guild.id === targetGuild.id){
-                        return <TargetGuild key={index} saveGuild={saveGuild} targetGuild={targetGuild} availableGuildLeaders={availableGuildLeaders} />  
+                        return <TargetGuild key={index} saveGuild={saveGuild} cancelGuild={cancelGuild} targetGuild={targetGuild} availableGuildLeaders={availableGuildLeaders} />  
                       }
                       return <Guild key={index} guild={guild} setTargetGuild={setTargetGuild} availableGuildLeaders={availableGuildLeaders} />
                     })}
@@ -164,13 +222,6 @@ const GuildManagement = () => {
                   </table>
               </div>
             </div>
-
-            <div className="section quests">
-              <h2>Is there a Guild Missing?</h2>
-              <Button variant="dark" onClick={() => this.setTargetGuild()}>Add a Guild</Button> 
-              </div>
-
-
           </div>
         </div>
       </div>
