@@ -74,6 +74,7 @@ CREATE TABLE Adventurer (
 --  - Super User                  (0)
 --  - Approved                    (1)
 --  - Eligible To Be Guild Leader (2)
+--  - Rejected                    (3)
 CREATE TABLE Permission (
     id INTEGER PRIMARY KEY,
     adventurer_id INTEGER NOT NULL REFERENCES Adventurer (id),
