@@ -143,10 +143,14 @@ const GuildManagement = () => {
             ))}
           </select>
         </td>
-        <td className="action-table-td right-col"><Button variant="dark" onClick={() => {
-          saveGuild({...targetGuild, leaderId: parseInt(currentLeaderId), title: currentTitle});
-          }}>Done</Button></td>
-        <td className="action-table-td right-col"><Button variant="dark" onClick={cancelGuild}>Cancel</Button></td>
+        <td className="action-table-td right-col">
+          </td>
+        <td className="action-table-td right-col">
+          <Button variant="dark" onClick={() => {
+            saveGuild({...targetGuild, leaderId: parseInt(currentLeaderId), title: currentTitle});
+            }}>Done</Button>
+          &nbsp;<Button variant="dark" onClick={cancelGuild}>Cancel</Button>
+        </td>
       </tr>
     );
   };
@@ -163,17 +167,44 @@ const GuildManagement = () => {
     );
   };
 
-  const clearParticipation = ({id}) => {
+  const acceptAdventurer = (adventurer) => {
 
-  };
+  }
 
-  const Adventurer = ({adventurer}) => {
+  const rejectAdventurer = (adventurer) => {
+
+  }
+
+  const editAdventurer = (adventurer) => {
+
+  }
+
+  const Adventurer = ({adventurer, editAdventurer, rejectAdventurer}) => {
     let participationText = adventurer.participation?.join(", ");
     return (
         <tr>
           <td className="action-table-td left-col">{adventurer.name}</td>
           <td className="action-table-td left-col">{participationText}</td>
-          <td className="action-table-td right-col"><Button variant="dark" onClick={() => this.clearParticipation(adventurer.id)}>Edit</Button></td>
+          <td className="action-table-td right-col"></td>
+          <td className="action-table-td right-col">
+            <Button variant="dark" onClick={() => rejectAdventurer(adventurer.id)}>Edit</Button>&nbsp;
+            <Button variant="dark" onClick={() => rejectAdventurer(adventurer.id)}>Reject</Button>
+          </td>
+        </tr>
+    );
+  };
+
+  const ProspectiveAdventurer = ({adventurer, acceptAdventurer, rejectAdventurer}) => {
+    let participationText = adventurer.participation?.join(", ");
+    return (
+        <tr>
+          <td className="action-table-td left-col">{adventurer.name}</td>
+          <td className="action-table-td left-col">{participationText}</td>
+          <td className="action-table-td right-col"></td>
+          <td className="action-table-td right-col">
+            <Button variant="dark" onClick={() => acceptAdventurer(adventurer.id)}>Accept</Button>&nbsp;
+            <Button variant="dark" onClick={() => rejectAdventurer(adventurer.id)}>Reject</Button>
+            </td>
         </tr>
     );
   };
@@ -215,7 +246,7 @@ const GuildManagement = () => {
               <div className="action-table-container">
                   <table className="action-table quest-examples"><tbody>
                     {adventurers.filter((v)=>{return v.participation.length > 0}).map((adventurer,index)=>{
-                        return <Adventurer key={adventurer.id} adventurer={adventurer} />
+                        return <Adventurer key={adventurer.id} rejectAdventurer={rejectAdventurer} editAdventurer={editAdventurer} adventurer={adventurer} />
                     })}
                   </tbody></table>
               </div>
@@ -227,7 +258,7 @@ const GuildManagement = () => {
               <div className="action-table-container">
                   <table className="action-table quest-examples"><tbody>
                     {adventurers.filter((v)=>{return v.participation.length === 0}).map((adventurer,index)=>{
-                        return <Adventurer key={adventurer.id} adventurer={adventurer} />
+                        return <ProspectiveAdventurer key={adventurer.id} adventurer={adventurer} acceptAdventurer={acceptAdventurer} rejectAdventurer={rejectAdventurer} />
                     })}
                   </tbody></table>
               </div>
