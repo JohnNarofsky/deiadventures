@@ -36,10 +36,15 @@ CREATE TABLE Guild (
 CREATE TABLE Quest (
     id INTEGER PRIMARY KEY,
     guild_id INTEGER NOT NULL REFERENCES Guild (id),
+    -- If a Quest was copied from another Quest,
+    -- this column should be set to the ID of the Quest it was copied from.
+    parent_quest_id INTEGER,
     name TEXT,
     quest_type INTEGER NOT NULL,
     open_date INTEGER,
-    close_date INTEGER
+    close_date INTEGER,
+    -- TODO: schedule cleanups of deleted quests which are old enough?
+    deleted_date INTEGER
 ) STRICT;
 
 CREATE TABLE QuestDetail (
@@ -49,9 +54,12 @@ CREATE TABLE QuestDetail (
     description TEXT NOT NULL
 ) STRICT;
 
+-- TODO: you know, we probably want to be able to complete individual
+--       tasks at some point. not important for the MVP though.
 CREATE TABLE QuestTask (
     id INTEGER PRIMARY KEY,
     quest_id INTEGER NOT NULL REFERENCES Quest (id),
+    order_index INTEGER NOT NULL DEFAULT 0,
     name TEXT NOT NULL,
     description TEXT,
     xp INTEGER NOT NULL
@@ -78,7 +86,8 @@ CREATE TABLE Adventurer (
 CREATE TABLE Permission (
     id INTEGER PRIMARY KEY,
     adventurer_id INTEGER NOT NULL REFERENCES Adventurer (id),
-    permission_type INTEGER NOT NULL
+    permission_type INTEGER NOT NULL,
+    UNIQUE(adventurer_id, permission_type)
 ) STRICT;
 
 -- Alternatively, this could be called "QuestMember".
