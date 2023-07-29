@@ -3,10 +3,12 @@ import { useEffect, useCallback, useState } from 'react';
 import Decorations from "../common/decorations";
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
+import _ from 'lodash';
 
 const GuildLeadership = () => {
   //state
   const [guildQuestActions, setGuildQuestActions] = useState([]);
+  const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: null, xp: null});
 
   const baseURL="https://testdei.narofsky.org/api";
 
@@ -34,8 +36,8 @@ const GuildLeadership = () => {
         ],
       },
       {
-        guildId: 1,
-        guildTitle: "Scribe",
+        guildId: 2,
+        guildTitle: "Warrior",
         guildQuestActions:[
           {id:1, description:"Schedule a DEI meeting", xp: "10"},
           {id:2, description:"Update Zoom name with pronouns", xp: "15"},
@@ -55,7 +57,24 @@ const GuildLeadership = () => {
   }, []);
 
   //function components
-  const editGuildQuestAction = (guildQuestAction) => {
+  const editGuildQuestAction = (guildId, guildQuestAction) => {
+    let currentGuildQuestActions = 
+      guildQuestActions.map((e) => {
+        if (e.guildId === guildId){
+          return {...e, 
+            guildQuestActions: 
+              e.guildQuestActions.map((f) => {
+                if (f.id === guildQuestAction.id){
+                  return {...f, description: guildQuestAction.description, xp: guildQuestAction.xp};
+                }
+                return {...f};
+              })
+          }
+        }
+        return _.cloneDeep(e);
+      });
+    setGuildQuestActions(currentGuildQuestActions);
+    setTargetGuildQuestAction({id:-1, description: null, xp: null});
 
   };
 
@@ -63,16 +82,64 @@ const GuildLeadership = () => {
 
   };
 
-  const GuildActionSet = ({questActionSet, editGuildQuestAction, retireGuildQuestAction}) => {
+  const cancelEditGuildQuestAction = () => {
+
+  }  
+
+  const TargetQuestAction = ({guildId, guildQuestAction, editGuildQuestAction, cancelEditGuildQuestAction}) => {
+    const [description, setDescription] = useState(guildQuestAction.description);
+    const [xp, setXp] = useState(guildQuestAction.xp);
+
+    return (
+      <tr>
+          <td className="action-table-td left-col"><input className="wide-input" onChange={(event) => setDescription(event.target.value)} value={description} /></td>
+          <td className="action-table-td right-col"><input onChange={(event) => setXp(event.target.value)} value={xp} /> xp</td>
+          <td className="action-table-td right-col">
+            <Button variant="dark" onClick={() => editGuildQuestAction(guildId, {...guildQuestAction, xp: Number.isSafeInteger(Number.parseInt(xp)) ? xp : -1, description: description})}>Done</Button>&nbsp;
+            <Button variant="dark" onClick={() => cancelEditGuildQuestAction()}>Cancel</Button>
+          </td>
+      </tr>
+  );
+  };
+
+  const QuestAction = ({guildQuestAction, setTargetGuildQuestAction, retireGuildQuestAction}) => {
+    return (
+        <tr>
+            <td className="action-table-td left-col">{guildQuestAction.description}</td>
+            <td className="action-table-td right-col">{guildQuestAction.xp} xp</td>
+            <td className="action-table-td right-col">
+              <Button variant="dark" onClick={() => setTargetGuildQuestAction(guildQuestAction)}>Edit</Button>&nbsp;
+              <Button variant="dark" onClick={() => retireGuildQuestAction(guildQuestAction.id)}>Retire</Button>
+            </td>
+        </tr>
+    );
+  };
+
+
+  const GuildActionSet = ({questActionSet, editGuildQuestAction, retireGuildQuestAction, setTargetGuildQuestAction, cancelEditGuildQuestAction}) => {
 
     return (
       <>
         <div className="action-table-header"><h2>{questActionSet.guildTitle}</h2></div>
         <div className="action-table-container quest-examples">
               <table className="action-table"><tbody>
-              {questActionSet.guildQuestActions.map((guildQuestAction,index)=>{
-                  return <QuestAction key={guildQuestAction.id} guildQuestAction={guildQuestAction} editGuildQuestAction={editGuildQuestAction} retireGuildQuestAction={retireGuildQuestAction} />
-              })}
+                {questActionSet.guildQuestActions.map((guildQuestAction,index)=>{
+                  if (guildQuestAction.id === targetGuildQuestAction.id){
+                    return <TargetQuestAction 
+                      guildId = {questActionSet.guildId}
+                      key={guildQuestAction.id}
+                      guildQuestAction={guildQuestAction}
+                      editGuildQuestAction={editGuildQuestAction}
+                      cancelEditGuildQuestAction={cancelEditGuildQuestAction}
+                    />
+                  }
+                  return <QuestAction 
+                    key={guildQuestAction.id} 
+                    guildQuestAction={guildQuestAction} 
+                    setTargetGuildQuestAction={setTargetGuildQuestAction} 
+                    retireGuildQuestAction={retireGuildQuestAction} 
+                    />
+                })}
               </tbody></table>
           </div>
 
@@ -80,19 +147,6 @@ const GuildLeadership = () => {
     );
   }
 
-  const QuestAction = ({guildQuestAction, editGuildQuestAction, retireGuildQuestAction}) => {
-    return (
-        <tr>
-            <td className="action-table-td left-col">{guildQuestAction.description}</td>
-            <td className="action-table-td right-col">{guildQuestAction.xp} xp</td>
-            <td className="action-table-td right-col">{guildQuestAction.guild}</td>
-            <td className="action-table-td right-col">
-              <Button variant="dark" onClick={() => editGuildQuestAction(guildQuestAction.id)}>Edit</Button>&nbsp;
-              <Button variant="dark" onClick={() => retireGuildQuestAction(guildQuestAction.id)}>Reject</Button>
-            </td>
-        </tr>
-    );
-  };
 
   return (
     <div className="container">
@@ -107,7 +161,14 @@ const GuildLeadership = () => {
             </div>
             <div className="section quests">
               {guildQuestActions.map((questActionSet) => {
-                  return <GuildActionSet key={questActionSet.guildId} questActionSet={questActionSet} retireGuildQuestAction={retireGuildQuestAction} editGuildQuestAction={editGuildQuestAction} />
+                  return <GuildActionSet 
+                    key={questActionSet.guildId} 
+                    questActionSet={questActionSet} 
+                    retireGuildQuestAction={retireGuildQuestAction} 
+                    editGuildQuestAction={editGuildQuestAction} 
+                    setTargetGuildQuestAction={setTargetGuildQuestAction}
+                    cancelEditGuildQuestAction={cancelEditGuildQuestAction}
+                    />
               })}
             </div>
           </div>

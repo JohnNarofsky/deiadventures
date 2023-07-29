@@ -28,9 +28,6 @@ const GuildManagement = () => {
       console.log(response);
     });
 
-    
-    
-
     let currentGuilds = [
       {id:1, title:"Warrior", leaderId: 1, leader: "Abby Dryer"},
       {id:2, title:"Scribe", leaderId: -1, leader: null},
