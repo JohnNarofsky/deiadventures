@@ -54,8 +54,8 @@ pub(crate) fn accept_quest(
 
     // Step 1
     let mut query = db.prepare_cached(
-        "INSERT INTO Quest (guild_id, name, quest_type)
-             SELECT guild_id, name, 1 FROM Quest WHERE id = :quest_id;",
+        "INSERT INTO Quest (guild_id, parent_quest_id, name, quest_type)
+             SELECT guild_id, :quest_id, name, 1 FROM Quest WHERE id = :quest_id;",
     )?;
     query.execute(named_params! { ":quest_id": quest })?;
     let new_id = db.last_insert_rowid();
@@ -96,7 +96,7 @@ pub(crate) fn lookup_guild_quest_actions(
     }
 
     let mut query = db.prepare_cached(
-        "SELECT id, * FROM Quest WHERE guild_id = :guild_id AND deleted_date IS NULL;",
+        "SELECT id FROM Quest WHERE guild_id = :guild_id AND deleted_date IS NULL AND quest_type = 0;",
     )?;
     let quests = query
         .query_map(named_params! { ":guild_id": guild }, |row| {

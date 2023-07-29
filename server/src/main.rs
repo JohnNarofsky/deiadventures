@@ -45,6 +45,7 @@ async fn main() {
     let app = Router::new()
         // TODO: verify that all information required to know the authorization requirements
         //  of a request is in the URI
+        // TODO: replace PUT with PATCH in the request method conventions?
         // Conventions:
         // - GET for pure information retrieval (obviously)
         // - POST for uploading a new object (things which feel like an INSERT)
@@ -53,6 +54,15 @@ async fn main() {
         // .route("/user/:user_id", get(get_user))
         .route("/user", get(get_users))
         .route("/user/:user_id/accept-quest", put(accept_quest))
+        .route("/user/:user_id/complete-quest", put(complete_quest))
+        .route(
+            "/user/:user_id/accepted-quest-actions",
+            get(get_user_accepted_quest_actions),
+        )
+        .route(
+            "/user/:user_id/available-quest-actions",
+            get(get_user_available_quest_actions),
+        )
         .route("/guild", get(get_guilds))
         .route("/guild", post(create_guild))
         .route("/guild/:guild_id/name", put(set_guild_name))
@@ -337,6 +347,129 @@ async fn get_users(
 //     }
 // }
 
+#[derive(Serialize, Debug)]
+struct AcceptedQuestAction {
+    guild_id: GuildId,
+    quest_id: QuestId,
+    // "name" is the column name, but we're putting it in a "description" field
+    #[serde(rename = "description")]
+    name: String,
+    xp: u32,
+}
+async fn get_user_accepted_quest_actions(
+    State(state): State<ArcState>,
+    Path(user_id): Path<UserId>,
+) -> Result<Json<Vec<AcceptedQuestAction>>, (StatusCode, String)> {
+    let data = state.read_transaction(|db| {
+        if !db::adventurer_exists(&db, user_id)? {
+            return Ok(None);
+        }
+        let mut query = db.prepare_cached(
+            "SELECT quest_id FROM PartyMember
+                 WHERE adventurer_id = :adventurer_id;",
+        )?;
+        let quests = query
+            .query_map(named_params! { ":adventurer_id": user_id }, |row| {
+                let quest_id = row.get(0)?;
+                let mut query =
+                    db.prepare_cached("SELECT guild_id FROM Quest WHERE id = :quest_id;")?;
+                let guild_id =
+                    query.query_row(named_params! { ":quest_id": quest_id }, |row| row.get(0))?;
+                let mut query = db
+                    .prepare_cached("SELECT name, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
+                query.query_row(named_params! { ":quest_id": quest_id }, |row| {
+                    Ok(AcceptedQuestAction {
+                        guild_id,
+                        quest_id,
+                        name: row.get(0)?,
+                        xp: row.get(1)?,
+                    })
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(Some(quests))
+    });
+
+    match data {
+        Ok(Some(x)) => Ok(Json(x)),
+        Ok(None) => Err((
+            StatusCode::NOT_FOUND,
+            format!("no user with id = {user_id} exists"),
+        )),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}
+
+#[derive(Serialize, Debug)]
+struct AvailableQuestAction {
+    guild_id: GuildId,
+    quest_id: QuestId,
+    // "name" is the column name, but we're putting it in a "description" field
+    #[serde(rename = "description")]
+    name: String,
+    xp: u32,
+}
+async fn get_user_available_quest_actions(
+    State(state): State<ArcState>,
+    Path(user_id): Path<UserId>,
+) -> Result<Json<Vec<AvailableQuestAction>>, (StatusCode, String)> {
+    let data = state.read_transaction(|db| {
+        if !db::adventurer_exists(&db, user_id)? {
+            return Ok(None);
+        }
+
+        let mut query = db.prepare_cached(
+            "WITH
+                    wa AS (SELECT parent_quest_id FROM Quest
+                           JOIN PartyMember ON Quest.id = quest_id
+                           WHERE adventurer_id = :adventurer_id)
+                 SELECT id, guild_id FROM Quest
+                 LEFT OUTER JOIN wa ON Quest.id = wa.parent_quest_id
+                 WHERE wa.parent_quest_id IS NULL AND quest_type = 0;",
+        )?;
+        let quests = query
+            .query_map(named_params! { ":adventurer_id": user_id }, |row| {
+                let quest_id: QuestId = row.get(0)?;
+                let guild_id: GuildId = row.get(1)?;
+                let mut query = db
+                    .prepare_cached("SELECT name, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
+                query.query_row(named_params! { ":quest_id": quest_id }, |row| {
+                    Ok(AvailableQuestAction {
+                        guild_id,
+                        quest_id,
+                        name: row.get(0)?,
+                        xp: row.get(1)?,
+                    })
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(Some(quests))
+    });
+
+    match data {
+        Ok(Some(x)) => Ok(Json(x)),
+        Ok(None) => Err((
+            StatusCode::NOT_FOUND,
+            format!("no user with id = {user_id} exists"),
+        )),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}
+
 /// An "Action" is stored as a nameless quest with one QuestTask associated with it.
 #[derive(Serialize, Debug)]
 struct GuildQuestAction {
@@ -418,12 +551,17 @@ struct AcceptQuest {
     // TODO: idempotency key?
 }
 
+#[derive(Serialize, Debug)]
+struct AcceptedQuest {
+    quest_id: QuestId,
+}
+
 /// As an Adventurer, accept a quest with the specified ID.
 async fn accept_quest(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
     Json(quest): Json<AcceptQuest>,
-) -> Result<Json<QuestId>, (StatusCode, String)> {
+) -> Result<Json<AcceptedQuest>, (StatusCode, String)> {
     let data = state.write_transaction(|db| {
         let AcceptQuest { quest_id } = quest;
         // Steps:
@@ -451,7 +589,54 @@ async fn accept_quest(
     });
 
     match data {
-        Ok(Ok(x)) => Ok(Json(x)),
+        Ok(Ok(quest_id)) => Ok(Json(AcceptedQuest { quest_id })),
+        Ok(Err(e)) => Err(e),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+struct CompleteQuest {
+    quest_id: QuestId,
+}
+async fn complete_quest(
+    State(state): State<ArcState>,
+    Path(user_id): Path<UserId>,
+    Json(quest): Json<CompleteQuest>,
+) -> Result<(), (StatusCode, String)> {
+    let res = state.write_transaction(|db| {
+        let CompleteQuest { quest_id } = quest;
+        if !db::adventurer_exists(&db, user_id)? {
+            return Ok(Err((StatusCode::NOT_FOUND, format!("no user with id = {user_id} exists"))))
+        }
+        if !db::quest_exists(&db, quest_id)? {
+            return Ok(Err((StatusCode::NOT_FOUND, format!("no quest with id = {quest_id} exists"))))
+        }
+        let mut query = db.prepare_cached(
+            "SELECT 0 FROM PartyMember WHERE adventurer_id = :adventurer_id AND quest_id = :quest_id;"
+        )?;
+        let has_accepted = query.exists(named_params! { ":adventurer_id": user_id, ":quest_id": quest_id })?;
+        if !has_accepted {
+            return Ok(Err((StatusCode::BAD_REQUEST, format!("adventurer {user_id} is not a member of party for quest {quest_id}"))))
+        }
+
+        let mut query = db.prepare_cached(
+            "UPDATE Quest SET close_date = unixepoch() WHERE id = :quest_id;"
+        )?;
+        let n = query.execute(named_params! { ":quest_id": quest_id })?;
+        assert_eq!(n, 1);
+
+        Ok(Ok(()))
+    });
+
+    match res {
+        Ok(Ok(())) => Ok(()),
         Ok(Err(e)) => Err(e),
         Err(e) => {
             tracing::error!("rusqlite error: {e:?}");

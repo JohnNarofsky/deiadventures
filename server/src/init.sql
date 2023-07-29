@@ -36,6 +36,9 @@ CREATE TABLE Guild (
 CREATE TABLE Quest (
     id INTEGER PRIMARY KEY,
     guild_id INTEGER NOT NULL REFERENCES Guild (id),
+    -- If a Quest was copied from another Quest,
+    -- this column should be set to the ID of the Quest it was copied from.
+    parent_quest_id INTEGER,
     name TEXT,
     quest_type INTEGER NOT NULL,
     open_date INTEGER,
