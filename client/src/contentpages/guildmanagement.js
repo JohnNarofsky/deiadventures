@@ -6,10 +6,10 @@ import axios from 'axios';
 
 const GuildManagement = () => {
 
-  const [guilds, setGuilds] = useState([{id:-1, title:"", leader: ""}]);
-  const [adventurers, setAdventures] = useState([{id:-1, participation: []}]);
+  const [guilds, setGuilds] = useState([{id:-1, name:"", leader_id: ""}]);
+  const [adventurers, setAdventurers] = useState([{id:-1, permissions: []}]);
   const [availableGuildLeaders, setAvailableGuildLeaders] = useState([]);
-  const [targetGuild, setTargetGuild] = useState({id:-1, title:"", leader_id:-1, leader: ""});
+  const [targetGuild, setTargetGuild] = useState({id:-1, name:"", leader_id:-1, leader_name: ""});
   const [newGuildCreation, setNewGuildCreation] = useState(false);
 
   const baseURL="https://testdei.narofsky.org/api";
@@ -18,7 +18,6 @@ const GuildManagement = () => {
 
     axios.get(baseURL + "/guild").then((response) => {
       setGuilds(response.data);
-      //{id: 1, name: 'Warrior', leader_id: 1, leader_name: 'Abby Dryer'}
     });
 
     axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
@@ -26,22 +25,9 @@ const GuildManagement = () => {
     });
 
     axios.get(baseURL + "/user").then((response) => {
+      console.log(response.data);
+      setAdventurers(response.data);
     });
-
-    let currentAdventurers = [
-      {id:1, name:"Abby Dryer", participation: ["adventurer", "leader", "management"]},
-      {id:2, name:"John Narofsky", participation: ["adventurer", "leader", "management"]},
-      {id:3, name:"Amelia Dryer", participation: []},
-      {id:4, name:"Matthew Narofsky", participation: []},
-
-    ];
-    setAdventures(currentAdventurers);
-
-    let currentAvailableGuildLeaders = [
-        {id:1, name:"Abby Dryer", participation: ["adventurer", "leader", "management"]},
-        {id:2, name:"John Narofsky", participation: ["adventurer", "leader", "management"]},
-    ];
-    setAvailableGuildLeaders(currentAvailableGuildLeaders);
 
   }, []);
 
@@ -174,19 +160,25 @@ const GuildManagement = () => {
 
   }
 
-  const editAdventurer = (adventurer) => {
+  const makeSuperUser = (adventurer) => {
 
   }
 
-  const Adventurer = ({adventurer, editAdventurer, rejectAdventurer}) => {
-    let participationText = adventurer.participation?.join(", ");
+  const makeAvailableGuildLeader = (adventurer) => {
+
+  }
+
+  const Adventurer = ({adventurer, makeSuperUser, makeAvailableGuildLeader, rejectAdventurer}) => {
+    console.log(adventurer);
+    let permissionText = adventurer.permissions.map((v)=>{return v.type;}).join(", ");
     return (
         <tr>
           <td className="action-table-td left-col">{adventurer.name}</td>
-          <td className="action-table-td left-col">{participationText}</td>
+          <td className="action-table-td left-col">{permissionText}</td>
           <td className="action-table-td right-col"></td>
           <td className="action-table-td right-col">
-            <Button variant="dark" onClick={() => rejectAdventurer(adventurer.id)}>Edit</Button>&nbsp;
+            <Button variant="dark" onClick={() => makeSuperUser(adventurer.id)}>Toggle Admin</Button>&nbsp;
+            <Button variant="dark" onClick={() => makeAvailableGuildLeader(adventurer.id)}>Toggle Leader</Button>&nbsp;
             <Button variant="dark" onClick={() => rejectAdventurer(adventurer.id)}>Reject</Button>
           </td>
         </tr>
@@ -194,11 +186,10 @@ const GuildManagement = () => {
   };
 
   const ProspectiveAdventurer = ({adventurer, acceptAdventurer, rejectAdventurer}) => {
-    let participationText = adventurer.participation?.join(", ");
     return (
         <tr>
           <td className="action-table-td left-col">{adventurer.name}</td>
-          <td className="action-table-td left-col">{participationText}</td>
+          <td className="action-table-td left-col"></td>
           <td className="action-table-td right-col"></td>
           <td className="action-table-td right-col">
             <Button variant="dark" onClick={() => acceptAdventurer(adventurer.id)}>Accept</Button>&nbsp;
@@ -244,8 +235,8 @@ const GuildManagement = () => {
               <h2>Current Adventurers</h2>
               <div className="action-table-container">
                   <table className="action-table quest-examples"><tbody>
-                    {adventurers.filter((v)=>{return v.participation.length > 0}).map((adventurer,index)=>{
-                        return <Adventurer key={adventurer.id} rejectAdventurer={rejectAdventurer} editAdventurer={editAdventurer} adventurer={adventurer} />
+                    {adventurers.filter((v)=>{return v.permissions?.length !== 0}).map((adventurer,index)=>{
+                        return <Adventurer key={adventurer.id} rejectAdventurer={rejectAdventurer} makeSuperUser={makeSuperUser} makeAvailableGuildLeader={makeAvailableGuildLeader} adventurer={adventurer} />
                     })}
                   </tbody></table>
               </div>
@@ -256,7 +247,7 @@ const GuildManagement = () => {
               <p>These are adventurers that have asked to join your game.</p>
               <div className="action-table-container">
                   <table className="action-table quest-examples"><tbody>
-                    {adventurers.filter((v)=>{return v.participation.length === 0}).map((adventurer,index)=>{
+                    {adventurers.filter((v)=>{return v.permissions?.length === 0}).map((adventurer,index)=>{
                         return <ProspectiveAdventurer key={adventurer.id} adventurer={adventurer} acceptAdventurer={acceptAdventurer} rejectAdventurer={rejectAdventurer} />
                     })}
                   </tbody></table>
