@@ -63,6 +63,7 @@ async fn main() {
             "/guild/:guild_id/quest-actions",
             get(get_guild_quest_actions),
         )
+        .route("/guild/quest-actions", get(get_all_guilds_quest_actions))
         .fallback(fallback)
         .with_state(state.clone());
 
@@ -326,36 +327,57 @@ async fn get_guild_quest_actions(
     Path(guild_id): Path<GuildId>,
 ) -> Result<Json<Vec<GuildQuestAction>>, (StatusCode, String)> {
     let data = state.read_transaction(|db| {
-        if !db::guild_exists(&db, guild_id)? {
-            return Ok(Err((
-                StatusCode::NOT_FOUND,
-                format!("no guild with id = {guild_id} exists"),
-            )));
-        }
-
-        let mut query = db.prepare_cached(
-            "SELECT id, * FROM Quest WHERE guild_id = :guild_id;"
-        )?;
-        let quests = query
-            .query_map(named_params! { ":guild_id": guild_id }, |row| {
-                let mut query = db.prepare_cached(
-                    "SELECT name, xp FROM QuestTask WHERE quest_id = :quest_id;"
-                )?;
-                let id = row.get(0)?;
-                let (name, xp) = query.query_row(named_params! { ":quest_id": id }, |row| {
-                    Ok((row.get(0)?, row.get(1)?))
-                })?;
-                Ok(GuildQuestAction {
-                    id, name, xp
-                })
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(Ok(quests))
+        Ok(db::lookup_guild_quest_actions(&db, guild_id)?.ok_or((
+            StatusCode::NOT_FOUND,
+            format!("no guild with id = {guild_id} exists"),
+        )))
     });
 
     match data {
         Ok(Ok(quests)) => Ok(Json(quests)),
         Ok(Err(e)) => Err(e),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}
+
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct GuildQuestActionsBundle {
+    guild_id: GuildId,
+    guild_title: String,
+    guild_quest_actions: Vec<GuildQuestAction>,
+}
+
+async fn get_all_guilds_quest_actions(
+    State(state): State<ArcState>,
+) -> Result<Json<Vec<GuildQuestActionsBundle>>, (StatusCode, String)> {
+    let data = state.read_transaction(|db| {
+        let mut query = db.prepare_cached("SELECT id, name FROM Guild;")?;
+        let bundles = query
+            .query_map([], |row| {
+                let guild_id = row.get(0)?;
+                let guild_title = row.get(1)?;
+                let guild_quest_actions = db::lookup_guild_quest_actions(&db, guild_id)?.unwrap();
+
+                Ok(GuildQuestActionsBundle {
+                    guild_id,
+                    guild_title,
+                    guild_quest_actions,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(bundles)
+    });
+
+    match data {
+        Ok(x) => Ok(Json(x)),
         Err(e) => {
             tracing::error!("rusqlite error: {e:?}");
             Err((

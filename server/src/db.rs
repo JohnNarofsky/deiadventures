@@ -1,4 +1,4 @@
-use crate::{GuildId, QuestId, UserId};
+use crate::{GuildId, GuildQuestAction, QuestId, UserId};
 use rusqlite::{named_params, Transaction};
 
 // A randomly generated number. This is hardcoded elsewhere,
@@ -82,6 +82,29 @@ pub(crate) fn accept_quest(
     Ok(QuestId(new_id.try_into().expect(
         "you know, I didn't expect us to have more than 4 billion quests",
     )))
+}
+
+pub(crate) fn lookup_guild_quest_actions(
+    db: &Transaction,
+    guild: GuildId,
+) -> Result<Option<Vec<GuildQuestAction>>, rusqlite::Error> {
+    if !guild_exists(&db, guild)? {
+        return Ok(None);
+    }
+
+    let mut query = db.prepare_cached("SELECT id, * FROM Quest WHERE guild_id = :guild_id;")?;
+    let quests = query
+        .query_map(named_params! { ":guild_id": guild }, |row| {
+            let mut query =
+                db.prepare_cached("SELECT name, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
+            let id = row.get(0)?;
+            let (name, xp) = query.query_row(named_params! { ":quest_id": id }, |row| {
+                Ok((row.get(0)?, row.get(1)?))
+            })?;
+            Ok(GuildQuestAction { id, name, xp })
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(Some(quests))
 }
 
 /// Generate what would be the next to be inserted ID.
