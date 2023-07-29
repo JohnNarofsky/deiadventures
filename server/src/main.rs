@@ -51,7 +51,7 @@ async fn main() {
         // - PUT for setting a property of an existing object (things which feel like an UPDATE)
         // .route("/user/:user_id", get(get_user))
         .route("/user", get(get_users))
-        .route("/user/:user_id/accept-quest", post(accept_quest))
+        .route("/user/:user_id/accept-quest", put(accept_quest))
         .route("/guild", get(get_guilds))
         .route("/guild", post(create_guild))
         .route("/guild/:guild_id/name", put(set_guild_name))
@@ -619,6 +619,8 @@ async fn set_guild_name(
 struct SetGuildLeader {
     id: UserId,
 }
+// TODO: make refuse to set a guild leader when the person given
+//  isn't allowed to be a guild leader
 async fn set_guild_leader(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
