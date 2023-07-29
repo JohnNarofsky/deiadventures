@@ -691,6 +691,7 @@ struct Guild {
     id: GuildId,
     name: String,
     leader_id: Option<UserId>,
+    leader_name: Option<String>,
 }
 async fn get_guilds(
     State(state): State<ArcState>,
@@ -707,10 +708,22 @@ async fn get_guilds(
                 let leader_id = query
                     .query_row(named_params! { ":guild_id": guild_id }, |row| row.get(0))
                     .optional()?;
+                let leader_name = if let Some(leader_id) = leader_id {
+                    let mut query = db
+                        .prepare_cached("SELECT name FROM Adventurer WHERE id = :adventurer_id;")?;
+                    query
+                        .query_row(named_params! { ":adventurer_id": leader_id }, |row| {
+                            row.get(0)
+                        })
+                        .optional()?
+                } else {
+                    None
+                };
                 Ok(Guild {
                     id: guild_id,
                     name: row.get(1)?,
                     leader_id,
+                    leader_name,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -732,6 +745,7 @@ async fn get_guilds(
 #[derive(Deserialize, Debug)]
 struct CreateGuild {
     name: String,
+    leader_id: Option<UserId>,
 }
 async fn create_guild(
     State(state): State<ArcState>,
@@ -742,6 +756,16 @@ async fn create_guild(
         let n = query.execute(named_params! { ":name": guild.name })?;
         assert_eq!(n, 1);
         let id = db.last_insert_rowid();
+
+        if let Some(leader_id) = guild.leader_id {
+            let mut query = db.prepare_cached(
+                "INSERT INTO AdventurerRole (adventurer_id, guild_id, assigned_role)
+                 VALUES (:adventurer_id, :guild_id, 'leader');",
+            )?;
+            let n =
+                query.execute(named_params! { ":adventurer_id": leader_id, ":guild_id": id })?;
+            assert_eq!(n, 1);
+        }
 
         Ok(GuildId(
             id.try_into().expect("exceeded max ID value, > 4 billion"),
@@ -867,7 +891,7 @@ async fn set_guild_name(
 
 #[derive(Deserialize, Debug)]
 struct SetGuildLeader {
-    id: UserId,
+    id: Option<UserId>,
 }
 // TODO: make refuse to set a guild leader when the person given
 //  isn't allowed to be a guild leader
@@ -885,21 +909,24 @@ async fn set_guild_leader(
         if !db::guild_exists(&db, guild_id)? {
             return Ok(Err(format!("no guild with id = {guild_id} exists")));
         }
-        if !db::adventurer_exists(&db, leader.id)? {
-            return Ok(Err(format!("no adventurer with id = {} exists", leader.id)));
-        }
 
         let mut query = db.prepare_cached(
             "DELETE FROM AdventurerRole WHERE guild_id = :guild_id AND assigned_role = 'leader';",
         )?;
-        query.execute(named_params! { ":guild_id": guild_id })?;
-        let mut query = db.prepare_cached(
-            "INSERT INTO AdventurerRole (adventurer_id, guild_id, assigned_role)
+
+        if let Some(leader_id) = leader.id {
+            if !db::adventurer_exists(&db, leader_id)? {
+                return Ok(Err(format!("no adventurer with id = {} exists", leader_id)));
+            }
+            query.execute(named_params! { ":guild_id": guild_id })?;
+            let mut query = db.prepare_cached(
+                "INSERT INTO AdventurerRole (adventurer_id, guild_id, assigned_role)
                  VALUES (:adventurer_id, :guild_id, 'leader');",
-        )?;
-        let n =
-            query.execute(named_params! { ":adventurer_id": leader.id, ":guild_id": guild_id })?;
-        assert_eq!(n, 1);
+            )?;
+            let n = query
+                .execute(named_params! { ":adventurer_id": leader_id, ":guild_id": guild_id })?;
+            assert_eq!(n, 1);
+        }
 
         Ok(Ok(()))
     });
