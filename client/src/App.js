@@ -23,7 +23,7 @@ function App() {
                 <Nav className="me-auto">
                 <Nav.Link as={Link} to="/myadventures">My Adventure</Nav.Link>
                 <Nav.Link as={Link} to="/myhistory">My History</Nav.Link>
-                <Nav.Link as={Link} to="/guildleadership">Guild Management</Nav.Link>
+                <Nav.Link as={Link} to="/guildleadership">Guild Leadership</Nav.Link>
                 <Nav.Link as={Link} to="/guildmanagement">Administration</Nav.Link>
                 </Nav>
             </Navbar.Collapse>
