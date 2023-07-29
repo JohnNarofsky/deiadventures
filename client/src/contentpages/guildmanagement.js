@@ -57,7 +57,7 @@ const GuildManagement = () => {
 
     let newGuilds = guilds.map((e) => {
       if (e.id === targetGuild.id){
-        return {...e, title:targetGuild.title, leader_id: targetGuild.leader_id, leader: leaderName}
+        return {...e, name:targetGuild.name, leader_id: targetGuild.leader_id, leader_name: leaderName}
       }
       return {...e};
     });
@@ -83,9 +83,9 @@ const GuildManagement = () => {
     //TODO: Add a call the server to save this new guild...
     let newGuild = {
       id: guilds.length + 1, //TODO: this should be the result of the call
-      title: targetGuild.name, 
+      name: targetGuild.name, 
       leader_id: targetGuild.leader_id,
-      leader: leaderName
+      leader_name: leaderName
     };
 
     let newGuilds = [...guilds];
@@ -102,7 +102,7 @@ const GuildManagement = () => {
           <div className="action-table-container">
               <table className="action-table quest-examples">
                 <tbody>
-                  <TargetGuild saveGuild={saveGuild} cancelGuild={cancelGuild} targetGuild={{id:-2, title:"", leader: ""}} availableGuildLeaders={availableGuildLeaders} />  
+                  <TargetGuild saveGuild={saveGuild} cancelGuild={cancelGuild} targetGuild={{id:-2, name:"", leader_id: -1, leader_name: null}} availableGuildLeaders={availableGuildLeaders} />  
                 </tbody>
               </table>
           </div>
@@ -112,7 +112,7 @@ const GuildManagement = () => {
     }
     return (
       <>
-        <Button variant="dark" onClick={() => {setNewGuildCreation(true);setTargetGuild({id:-2, title:"", leader: ""});}}>Add a Guild</Button> 
+        <Button variant="dark" onClick={() => {setNewGuildCreation(true);setTargetGuild({id:-2, name:"", leader_id: -1, leader_name: null});}}>Add a Guild</Button> 
         <br/>
       </>
     );
@@ -120,10 +120,10 @@ const GuildManagement = () => {
   };
 
   const TargetGuild = ({saveGuild, cancelGuild, targetGuild, availableGuildLeaders}) => {
-    const [currentTitle, setCurrentTitle] = useState(targetGuild.title);
-    const [currentleader_id, setCurrentleader_id] = useState(targetGuild.leader_id === null ? -1 : targetGuild.leader_id);
-    const handleChangeTitle = (event) => {
-      setCurrentTitle(event.target.value);
+    const [currentName, setCurrentName] = useState(targetGuild.name);
+    const [currentleader_id, setCurrentleader_id] = useState(targetGuild.leader_id);
+    const handleChangeName = (event) => {
+      setCurrentName(event.target.value);
     }
 
     const handleChangeLeader = (event) => {
@@ -132,9 +132,9 @@ const GuildManagement = () => {
 
     return (
       <tr>
-        <td className="action-table-td left-col"><input onChange={handleChangeTitle} value={currentTitle} /></td>
+        <td className="action-table-td left-col"><input onChange={handleChangeName} value={currentName} /></td>
         <td className="action-table-td left-col">
-          <select value={currentleader_id} onChange={handleChangeLeader}>
+          <select value={currentleader_id?currentleader_id:-1} onChange={handleChangeLeader}>
             <option value="-1">No Guild Leader</option>
             {availableGuildLeaders.map((option) => (
               <option key={option.id} value={option.id}>{option.name}</option>
@@ -145,7 +145,8 @@ const GuildManagement = () => {
           </td>
         <td className="action-table-td right-col">
           <Button variant="dark" onClick={() => {
-            saveGuild({...targetGuild, leader_id: parseInt(currentleader_id), title: currentTitle});
+            console.log({...targetGuild, leader_id: parseInt(currentleader_id), name: currentName});
+            saveGuild({...targetGuild, leader_id: parseInt(currentleader_id), name: currentName});
             }}>Done</Button>
           &nbsp;<Button variant="dark" onClick={cancelGuild}>Cancel</Button>
         </td>
@@ -154,7 +155,7 @@ const GuildManagement = () => {
   };
 
   const Guild = ({guild, setTargetGuild}) => {
-      let leaderText = guild.leader_name !== null ? "Guild Leader: " + guild.leader_name : "No Current Guild Leader";
+    let leaderText = guild.leader_name !== null ? "Guild Leader: " + guild.leader_name : "No Current Guild Leader";
     return (
         <tr>
           <td className="action-table-td left-col">{guild.name}</td>
