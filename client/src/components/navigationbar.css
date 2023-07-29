@@ -6,3 +6,8 @@
 #responsive-navbar-nav{
     background-color: #f9c338;
 }
+
+.rounded-circle{
+  height: 50px;
+  width: 50px
+}
