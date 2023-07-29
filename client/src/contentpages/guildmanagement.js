@@ -20,6 +20,17 @@ const GuildManagement = () => {
       console.log(response);
     });
 
+    axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
+      console.log(response);
+    });
+
+    axios.get(baseURL + "/user").then((response) => {
+      console.log(response);
+    });
+
+    
+    
+
     let currentGuilds = [
       {id:1, title:"Warrior", leaderId: 1, leader: "Abby Dryer"},
       {id:2, title:"Scribe", leaderId: -1, leader: null},
