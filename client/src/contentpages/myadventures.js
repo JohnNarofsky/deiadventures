@@ -8,83 +8,112 @@ import Quest, {QuestActions} from '../common/quest';
 
 const MyAdventures = () => {
 
-    const [guildQuestActions, setGuildQuestActions] = useState([]);
-    const [acceptedGuildQuestActions, setAcceptedGuildQuestActions] = useState([]);
+    const [acceptedQuestActions, setAcceptedQuestActions] = useState([]);
+    const [availableQuestActions, setAvailableGuildQuestActions] = useState([]);
     const [guilds, setGuilds] = useState([]);
   
     const baseURL="https://testdei.narofsky.org/api";
   
     //initializing UseEffect
     useEffect(()=>{
-        const fetchData = async () => {
-            const response = await axios(baseURL + "/guild");
+        axios.get(baseURL + "/guild").then((response) => {
+            setGuilds(response.data);
+          });
+
+        //TODO: GET USER_ID FROM CONTEXT THAT IS UPDATED UPON LOGIN
+          let user_id = 1;
+
+          axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
+            setAcceptedQuestActions(response.data);
             console.log(response.data);
-            const guilds = response.data;
-            setGuilds(guilds);
-        };
+          });
+      
+          axios.get(baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
+            setAvailableGuildQuestActions(response.data);
+            console.log(response.data);
+          });
 
-        fetchData();
-  
-        let availableGuildQuestActions = [
-        {
-            guildId: 1,
-            guildTitle: "Scribe",
-            guildQuestActions:[
-            {id:4, description:"Track a set of DEI metrics", xp: "50"},
-            {id:5, description:"Draft a DEI or ERG-related survey", xp: "50"},
-            {id:6, description:"Review Job Descriptions to help remove bias", xp: "75"},
-            {id:7, description:"Review a presentation draft for Accessibility needs", xp: "75"},
-            {id:9, description:"Create a Fundraising Campaign", xp: "200"},
-            {id:10, description:"Submit a DEI presentation for an external conference", xp: "250"},
-            ],
-        },
-        {
-            guildId: 2,
-            guildTitle: "Warrior",
-            guildQuestActions:[
-            {id:11, description:"Schedule a DEI meeting", xp: "10"},
-            {id:12, description:"Update Zoom name with pronouns", xp: "15"},
-            {id:13, description:"Update email signature with pronouns", xp: "15"},
-            {id:16, description:"Review Job Descriptions to help remove bias", xp: "75"},
-            {id:17, description:"Review a presentation draft for Accessibility needs", xp: "75"},
-            ],
-        },
-        ];
-        setGuildQuestActions(availableGuildQuestActions);
-
-        let currentAcceptedGuildQuestActions = [
-        {
-            guildId: 1,
-            guildTitle: "Scribe",
-            guildQuestActions:[
-            {id:1, description:"Schedule a DEI meeting", xp: "10"},
-            {id:2, description:"Update Zoom name with pronouns", xp: "15"},
-            {id:3, description:"Update email signature with pronouns", xp: "15"},
-            {id:8, description:"Help plan a DEI-related event", xp: "100"},
-            ],
-        },
-        {
-            guildId: 2,
-            guildTitle: "Warrior",
-            guildQuestActions:[
-            {id:14, description:"Track a set of DEI metrics", xp: "50"},
-            {id:15, description:"Draft a DEI or ERG-related survey", xp: "50"},
-            {id:18, description:"Help plan a DEI-related event", xp: "100"},
-            {id:19, description:"Create a Fundraising Campaign", xp: "200"},
-            {id:20, description:"Submit a DEI presentation for an external conference", xp: "250"},
-            ],
-        },
-        ];
-        setAcceptedGuildQuestActions(currentAcceptedGuildQuestActions);
     }, []);
 
-    const Guild = ({guild}) => {
+    const finishQuestAction = (questAction) => {
 
+    };
+
+    const cancelQuestAction = (questAction) => {
+
+    };
+
+    const acceptQuestAction = (questAction) => {
+
+    };
+
+    //{guild_id: 2, quest_id: 0, description: 'Schedule a DEI meeting', xp: 15}
+    const AcceptedQuestAction = ({questAction}) => {
+        return (
+            <tr>
+                <td className="action-table-td left-col">{questAction.description}</td>
+                <td className="action-table-td right-col">{questAction.xp} xp</td>
+                <td className="action-table-td right-col">
+                  <Button variant="dark" onClick={() => finishQuestAction(questAction)}>Finish</Button>&nbsp;
+                  <Button variant="dark" onClick={() => cancelQuestAction(questAction)}>Cancel</Button>
+                </td>
+            </tr>
+        );
+      };
+
+      
+    //{guild_id: 2, quest_id: 20, description: 'Track a set of DEI metrics', xp: 50}
+      const AvailableQuestAction = ({questAction}) => {
+        return (
+            <tr>
+                <td className="action-table-td left-col">{questAction.description}</td>
+                <td className="action-table-td right-col">{questAction.xp} xp</td>
+                <td className="action-table-td right-col">
+                  <Button variant="dark" onClick={() => acceptQuestAction(questAction)}>Accept</Button>
+                </td>
+            </tr>
+        );
+      };
+
+
+
+
+    const Guild = ({guild}) => {
         return (
             <div>
                 <div className="action-table-header">
                     <h2>{guild.name} Actions</h2>
                 </div>
+                <div className="action-table-container quest-examples">
+                    <table className="action-table"><tbody>
+                        <tr>
+                            <td>
+                                <div className="action-table-container quest-examples">
+                                    <h3>Your Accepted Guild Actions</h3>
+                                    <table className="action-table"><tbody>
+                                        {acceptedQuestActions.filter((v)=>v.guild_id===guild.id).map((questAction)=>{
+                                            return <AcceptedQuestAction key={questAction.quest_id} questAction={questAction} />
+                                            })
+                                        }
+                                    </tbody></table>
+                                </div>
+                            </td>
+                        </tr>                        
+                        <tr>
+                            <td>
+                                <div className="action-table-container quest-examples">
+                                    <h3>Available Guild Actions</h3>
+                                    <table className="action-table"><tbody>
+                                        {availableQuestActions.filter((v)=>v.guild_id===guild.id).map((questAction)=>{
+                                            return <AvailableQuestAction key={questAction.quest_id} questAction={questAction} />
+                                            })
+                                        }
+                                    </tbody></table>
+                                </div>
+                            </td>
+                        </tr>                        
+                    </tbody></table>
+                </div>                
             </div>
         );
     };
@@ -102,11 +131,9 @@ const MyAdventures = () => {
                         <h1 className="section-top">Welcome to Your Adventures!</h1>
                         <p className="section-top"><strong>These are the adventure actions you've signed up for along with the ones available!</strong></p>
                     </div>
-                    <div className="action-table-grid">
                         {guilds.map((thisGuild) => {
                             return <Guild key={thisGuild.id} guild={thisGuild}/>
                     })}
-                    </div>
                 </div>  
             </div>
         </div>
