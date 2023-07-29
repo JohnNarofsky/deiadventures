@@ -160,11 +160,15 @@ const GuildManagement = () => {
 
   }
 
-  const editAdventurer = (adventurer) => {
+  const makeSuperUser = (adventurer) => {
 
   }
 
-  const Adventurer = ({adventurer, editAdventurer, rejectAdventurer}) => {
+  const makeAvailableGuildLeader = (adventurer) => {
+
+  }
+
+  const Adventurer = ({adventurer, makeSuperUser, makeAvailableGuildLeader, rejectAdventurer}) => {
     console.log(adventurer);
     let permissionText = adventurer.permissions.map((v)=>{return v.type;}).join(", ");
     return (
@@ -173,7 +177,8 @@ const GuildManagement = () => {
           <td className="action-table-td left-col">{permissionText}</td>
           <td className="action-table-td right-col"></td>
           <td className="action-table-td right-col">
-            <Button variant="dark" onClick={() => rejectAdventurer(adventurer.id)}>Edit</Button>&nbsp;
+            <Button variant="dark" onClick={() => makeSuperUser(adventurer.id)}>Toggle Admin</Button>&nbsp;
+            <Button variant="dark" onClick={() => makeAvailableGuildLeader(adventurer.id)}>Toggle Leader</Button>&nbsp;
             <Button variant="dark" onClick={() => rejectAdventurer(adventurer.id)}>Reject</Button>
           </td>
         </tr>
@@ -231,7 +236,7 @@ const GuildManagement = () => {
               <div className="action-table-container">
                   <table className="action-table quest-examples"><tbody>
                     {adventurers.filter((v)=>{return v.permissions?.length !== 0}).map((adventurer,index)=>{
-                        return <Adventurer key={adventurer.id} rejectAdventurer={rejectAdventurer} editAdventurer={editAdventurer} adventurer={adventurer} />
+                        return <Adventurer key={adventurer.id} rejectAdventurer={rejectAdventurer} makeSuperUser={makeSuperUser} makeAvailableGuildLeader={makeAvailableGuildLeader} adventurer={adventurer} />
                     })}
                   </tbody></table>
               </div>
