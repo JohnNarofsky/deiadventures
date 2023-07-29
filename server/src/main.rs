@@ -2,7 +2,7 @@ mod db;
 
 use axum::extract::{Path, State};
 use axum::http::{StatusCode, Uri};
-use axum::routing::{get, post, put};
+use axum::routing::{delete, get, post, put};
 use axum::{Json, Router};
 use rusqlite::types::{FromSqlResult, ToSqlOutput, ValueRef};
 use rusqlite::{named_params, OptionalExtension};
@@ -49,6 +49,7 @@ async fn main() {
         // - GET for pure information retrieval (obviously)
         // - POST for uploading a new object (things which feel like an INSERT)
         // - PUT for setting a property of an existing object (things which feel like an UPDATE)
+        // - DELETE for deleting objects (obviously)
         // .route("/user/:user_id", get(get_user))
         .route("/user", get(get_users))
         .route("/user/:user_id/accept-quest", put(accept_quest))
@@ -57,8 +58,26 @@ async fn main() {
         .route("/guild/:guild_id/name", put(set_guild_name))
         .route("/guild/:guild_id/name", get(get_guild_name))
         .route("/guild/:guild_id/leader", put(set_guild_leader))
+        .route(
+            "/guild/:guild_id/quest-action",
+            post(create_guild_quest_action),
+        )
         .route("/perm/allowed-leaders", get(get_allowed_guild_leaders))
-        // .route("/guild/:guild_id/leader", get(get_guild_leader))
+        .route("/perm/:user_id/accepted", put(set_user_accepted))
+        .route("/perm/:user_id/rejected", put(set_user_rejected))
+        .route(
+            "/perm/:user_id/eligible-guild-leader",
+            put(set_user_eligible_guild_leader),
+        )
+        .route(
+            // TODO: determine whether this should be under /guild or /quest
+            "/guild/:guild_id/quest-action",
+            delete(retire_guild_quest_action),
+        )
+        // - create adventurer
+        // - set adventurer super user?
+        // - complete quest action
+        .route("/guild/:guild_id/leader", get(get_guild_leader))
         .route(
             "/guild/:guild_id/quest-actions",
             get(get_guild_quest_actions),
@@ -181,7 +200,7 @@ struct Permission {
     r#type: PermissionType,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Copy, Clone, PartialEq, Eq)]
 enum PermissionType {
     SuperUser = 0,
     Approved = 1,
@@ -202,6 +221,11 @@ impl PermissionType {
         } else {
             None
         }
+    }
+}
+impl rusqlite::ToSql for PermissionType {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        Ok(ToSqlOutput::from(*self as i64))
     }
 }
 
@@ -551,6 +575,47 @@ async fn create_guild(
     }
 }
 
+#[derive(Deserialize, Debug)]
+struct CreateGuildQuestAction {
+    // "name" is the column name, but we're putting it in a "description" field
+    #[serde(rename = "description")]
+    name: String,
+    xp: u32,
+}
+async fn create_guild_quest_action(
+    State(state): State<ArcState>,
+    Path(guild_id): Path<GuildId>,
+    Json(action): Json<CreateGuildQuestAction>,
+) -> Result<(), (StatusCode, String)> {
+    let res = state.write_transaction(|db| {
+        let CreateGuildQuestAction { name, xp } = action;
+        let mut query =
+            db.prepare_cached("INSERT INTO Quest (guild_id, quest_type) VALUES (:guild_id, 0);")?;
+        let n = query.execute(named_params! { ":guild_id": guild_id })?;
+        assert_eq!(n, 1);
+        let quest_id = db.last_insert_rowid();
+
+        let mut query = db.prepare_cached(
+            "INSERT INTO QuestTask (quest_id, order_index, name, xp)
+                 VALUES (:quest_id, 0, :name, :xp);",
+        )?;
+        let n = query.execute(named_params! { ":quest_id": quest_id, ":name": name, ":xp": xp })?;
+        assert_eq!(n, 1);
+        Ok(())
+    });
+
+    match res {
+        Ok(()) => Ok(()),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}
+
 async fn get_guild_name(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
@@ -666,9 +731,132 @@ async fn set_guild_leader(
         }
     }
 }
-// async fn get_guild_leader(
-//     State(state): State<ArcState>,
-//     Path(guild_id): Path<GuildId>,
-// ) -> Result<Json<User>, (StatusCode, String)> {
-//     todo!()
-// }
+
+#[derive(Serialize, Debug)]
+struct GetGuildLeader {
+    id: UserId,
+}
+async fn get_guild_leader(
+    State(state): State<ArcState>,
+    Path(guild_id): Path<GuildId>,
+) -> Result<Json<Option<GetGuildLeader>>, (StatusCode, String)> {
+    let data = state.read_transaction(|db| {
+        let mut query = db.prepare_cached(
+            "SELECT adventurer_id FROM AdventurerRole
+                 WHERE guild_id = :guild_id AND assigned_role = 'leader';",
+        )?;
+        let id = query
+            .query_row(named_params! { ":guild_id": guild_id }, |row| row.get(0))
+            .optional()?;
+        Ok(id.map(|id| GetGuildLeader { id }))
+    });
+
+    match data {
+        Ok(leader) => Ok(Json(leader)),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}
+
+fn set_perm_endpoint(
+    state: ArcState,
+    user: UserId,
+    perm: PermissionType,
+    truth: bool,
+) -> Result<(), (StatusCode, String)> {
+    let res = state.write_transaction(|db| db::set_user_permission(&db, user, perm, truth));
+
+    match res {
+        Ok(()) => Ok(()),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}
+
+async fn set_user_accepted(
+    State(state): State<ArcState>,
+    Path(user_id): Path<UserId>,
+    Json(accepted): Json<bool>,
+) -> Result<(), (StatusCode, String)> {
+    set_perm_endpoint(state, user_id, PermissionType::Approved, accepted)
+}
+
+async fn set_user_rejected(
+    State(state): State<ArcState>,
+    Path(user_id): Path<UserId>,
+    Json(rejected): Json<bool>,
+) -> Result<(), (StatusCode, String)> {
+    set_perm_endpoint(state, user_id, PermissionType::Rejected, rejected)
+}
+
+async fn set_user_eligible_guild_leader(
+    State(state): State<ArcState>,
+    Path(user_id): Path<UserId>,
+    Json(eligible): Json<bool>,
+) -> Result<(), (StatusCode, String)> {
+    set_perm_endpoint(
+        state,
+        user_id,
+        PermissionType::GuildLeaderEligible,
+        eligible,
+    )
+}
+
+#[derive(Deserialize, Debug)]
+struct DeleteGuildQuestAction {
+    quest_id: QuestId,
+}
+async fn retire_guild_quest_action(
+    State(state): State<ArcState>,
+    Path(guild_id): Path<GuildId>,
+    Json(delete): Json<DeleteGuildQuestAction>,
+) -> Result<(), (StatusCode, String)> {
+    let res = state.write_transaction(|db| {
+        let DeleteGuildQuestAction { quest_id } = delete;
+        if !db::quest_exists(&db, delete.quest_id)? {
+            return Ok(Err((
+                StatusCode::NOT_FOUND,
+                format!("no quest with id = {quest_id} exists"),
+            )));
+        }
+        let mut query = db.prepare_cached("SELECT guild_id FROM Quest WHERE id = :quest_id;")?;
+        if !query.exists(named_params! { ":quest_id": quest_id })? {
+            return Ok(Err((
+                StatusCode::BAD_REQUEST,
+                format!("quest {quest_id} does not belong to guild {guild_id}"),
+            )));
+        }
+        let mut query = db.prepare_cached(
+            // To make recovery from mistakes possible,
+            // we mark quests as deleted instead of actually deleting them.
+            "UPDATE Quest SET deleted_date = unixepoch()
+                 WHERE id = :quest_id;",
+        )?;
+        let n = query.execute(named_params! { ":quest_id": quest_id })?;
+        assert_eq!(n, 1);
+
+        Ok(Ok(()))
+    });
+
+    match res {
+        Ok(Ok(())) => Ok(()),
+        Ok(Err(e)) => Err(e),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}

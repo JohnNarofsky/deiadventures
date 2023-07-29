@@ -39,7 +39,9 @@ CREATE TABLE Quest (
     name TEXT,
     quest_type INTEGER NOT NULL,
     open_date INTEGER,
-    close_date INTEGER
+    close_date INTEGER,
+    -- TODO: schedule cleanups of deleted quests which are old enough?
+    deleted_date INTEGER
 ) STRICT;
 
 CREATE TABLE QuestDetail (
@@ -81,7 +83,8 @@ CREATE TABLE Adventurer (
 CREATE TABLE Permission (
     id INTEGER PRIMARY KEY,
     adventurer_id INTEGER NOT NULL REFERENCES Adventurer (id),
-    permission_type INTEGER NOT NULL
+    permission_type INTEGER NOT NULL,
+    UNIQUE(adventurer_id, permission_type)
 ) STRICT;
 
 -- Alternatively, this could be called "QuestMember".

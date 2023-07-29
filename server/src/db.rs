@@ -1,4 +1,4 @@
-use crate::{GuildId, GuildQuestAction, QuestId, UserId};
+use crate::{GuildId, GuildQuestAction, PermissionType, QuestId, UserId};
 use rusqlite::{named_params, Transaction};
 
 // A randomly generated number. This is hardcoded elsewhere,
@@ -28,15 +28,18 @@ pub(crate) fn adventurer_exists(db: &Transaction, user: UserId) -> Result<bool, 
 }
 
 pub(crate) fn quest_exists(db: &Transaction, quest: QuestId) -> Result<bool, rusqlite::Error> {
-    let mut query = db.prepare_cached("SELECT 0 FROM Quest WHERE id = :id")?;
+    let mut query =
+        db.prepare_cached("SELECT 0 FROM Quest WHERE id = :id AND deleted_date IS NULL")?;
     query.exists(named_params! { ":id": quest })
 }
+// TODO: provide deleted_quest_exists() for checking for deleted quests?
 
 pub(crate) fn guild_exists(db: &Transaction, quest: GuildId) -> Result<bool, rusqlite::Error> {
     let mut query = db.prepare_cached("SELECT 0 FROM Guild WHERE id = :id")?;
     query.exists(named_params! { ":id": quest })
 }
 
+// TODO: make accept_quest set Quest.open_date
 pub(crate) fn accept_quest(
     db: &Transaction,
     user: UserId,
@@ -92,7 +95,9 @@ pub(crate) fn lookup_guild_quest_actions(
         return Ok(None);
     }
 
-    let mut query = db.prepare_cached("SELECT id, * FROM Quest WHERE guild_id = :guild_id;")?;
+    let mut query = db.prepare_cached(
+        "SELECT id, * FROM Quest WHERE guild_id = :guild_id AND deleted_date IS NULL;",
+    )?;
     let quests = query
         .query_map(named_params! { ":guild_id": guild }, |row| {
             let mut query =
@@ -105,6 +110,56 @@ pub(crate) fn lookup_guild_quest_actions(
         })?
         .collect::<Result<Vec<_>, _>>()?;
     Ok(Some(quests))
+}
+
+pub(crate) fn set_user_permission(
+    db: &Transaction,
+    user: UserId,
+    perm: PermissionType,
+    truth: bool,
+) -> Result<(), rusqlite::Error> {
+    if truth {
+        let mut query = db.prepare_cached(
+            "INSERT INTO Permission (adventurer_id, permission_type)
+                 VALUES (:adventurer_id, :permission_type)
+                 ON CONFLICT DO NOTHING;",
+        )?;
+        let n =
+            query.execute(named_params! { ":adventurer_id": user, ":permission_type": perm })?;
+        assert!(n <= 1);
+
+        // TODO: perhaps make "Rejected" conflict with every other permission type,
+        //  or at least keep an easy to append to list of those types which conflict with it
+
+        // "Approved" conflicts with "Rejected"
+        if perm == PermissionType::Approved {
+            let mut query = db.prepare_cached(
+                "DELETE FROM Permission
+                     WHERE adventurer_id = :adventurer_id AND permission_type = 3;",
+            )?;
+            let n = query.execute(named_params! { ":adventurer_id": user })?;
+            assert!(n <= 1);
+        }
+        // ...and "Rejected" conflicts with "Approved"
+        if perm == PermissionType::Rejected {
+            let mut query = db.prepare_cached(
+                "DELETE FROM Permission
+                     WHERE adventurer_id = :adventurer_id AND permission_type = 1;",
+            )?;
+            let n = query.execute(named_params! { ":adventurer_id": user })?;
+            assert!(n <= 1);
+        }
+    } else {
+        let mut query = db.prepare_cached(
+            "DELETE FROM Permission
+                 WHERE adventurer_id = :adventurer_id AND permission_type = :permission_type;",
+        )?;
+        let n =
+            query.execute(named_params! { ":adventurer_id": user, ":permission_type": perm })?;
+        assert!(n <= 1);
+    }
+
+    Ok(())
 }
 
 /// Generate what would be the next to be inserted ID.
