@@ -225,8 +225,8 @@ const GuildManagement = () => {
         <div className="parallax__cover">
           <div className="cover-content ctop">
             <div className="section quests">
-                <h1 className="section-top">Guild Management</h1>
-                <p className="section-top-content">As a manager of guilds, it's your task to add guilds, remove guilds, accept adventurers into the game, and remove adventurers from the game.</p>
+                <h1 className="section-top">Administration</h1>
+                <p className="section-top-content">As an administrator of guilds, it's your task to add guilds, remove guilds, accept adventurers into the game, and remove adventurers from the game.</p>
             </div>
 
             <div className="section quests">
