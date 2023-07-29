@@ -82,6 +82,21 @@ position:static;
   margin-left: -1500px;
 }
 
+.parallax-thin {
+  perspective: 100px;
+  height: 100vh;
+  min-height: 100px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: fixed;
+  top: 56px;
+  left: 50%;
+  right: 0;
+  bottom: 0;
+  margin-left: -1500px;
+}
+
+
 .parallax__layer {
   position: fixed;
   top: 0;
@@ -101,7 +116,7 @@ position:static;
   display: block;
   position: fixed;
   background: #FFF;
-  height: 2000px;
+  /* height: 2000px; */
   width: 3000px;
   top: 100%;
   left: 0;
@@ -120,7 +135,7 @@ position:static;
 
 .cover-content.ctop {
   background: #276970;
-  height: 1400px;
+  height: 100%;
   color: #D6EAEA;
 }
 

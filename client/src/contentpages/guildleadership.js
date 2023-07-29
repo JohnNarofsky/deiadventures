@@ -191,7 +191,6 @@ const GuildLeadership = () => {
                 })}
               </tbody></table>
           </div>
-
       </>
     );
   }
@@ -199,7 +198,7 @@ const GuildLeadership = () => {
 
   return (
     <div className="container">
-      <div className="parallax">
+      <div className="parallax-thin">
         <Decorations/> 
         <div className="parallax__cover">
           <div className="cover-content ctop">

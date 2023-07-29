@@ -9,7 +9,7 @@ const GuildManagement = () => {
   const [guilds, setGuilds] = useState([{id:-1, title:"", leader: ""}]);
   const [adventurers, setAdventures] = useState([{id:-1, participation: []}]);
   const [availableGuildLeaders, setAvailableGuildLeaders] = useState([]);
-  const [targetGuild, setTargetGuild] = useState({id:-1, title:"", leaderId:-1, leader: ""});
+  const [targetGuild, setTargetGuild] = useState({id:-1, title:"", leader_id:-1, leader: ""});
   const [newGuildCreation, setNewGuildCreation] = useState(false);
 
   const baseURL="https://testdei.narofsky.org/api";
@@ -17,26 +17,16 @@ const GuildManagement = () => {
   useEffect(()=>{
 
     axios.get(baseURL + "/guild").then((response) => {
-      console.log(response);
+      setGuilds(response.data);
+      //{id: 1, name: 'Warrior', leader_id: 1, leader_name: 'Abby Dryer'}
     });
 
     axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
-      console.log(response);
+      setAvailableGuildLeaders(response.data);
     });
 
     axios.get(baseURL + "/user").then((response) => {
-      console.log(response);
     });
-
-    let currentGuilds = [
-      {id:1, title:"Warrior", leaderId: 1, leader: "Abby Dryer"},
-      {id:2, title:"Scribe", leaderId: -1, leader: null},
-      {id:3, title:"Cultivator", leaderId: -1, leader: null},
-      {id:4, title:"Wizard", leaderId: -1,  leader: null},
-      {id:5, title:"Artisan", leaderId: 2, leader: "John Narofsky"},
-      {id:6, title:"Storyteller", leaderId: 1, leader: "Abby Dryer"},
-    ];
-    setGuilds(currentGuilds);
 
     let currentAdventurers = [
       {id:1, name:"Abby Dryer", participation: ["adventurer", "leader", "management"]},
@@ -56,18 +46,18 @@ const GuildManagement = () => {
   }, []);
 
   useEffect(()=>{
-    setTargetGuild({id:-1, title:"", leaderId: -1, leader: ""});
+    setTargetGuild({id:-1, title:"", leader_id: -1, leader: ""});
   }, [guilds]);
 
   const saveGuild = (targetGuild) => {
-    let leaderName = availableGuildLeaders.filter(v=>v.id === targetGuild.leaderId)[0]?.name;
+    let leaderName = availableGuildLeaders.filter(v=>v.id === targetGuild.leader_id)[0]?.name;
     if (leaderName === undefined){
       leaderName = null;
     }
 
     let newGuilds = guilds.map((e) => {
       if (e.id === targetGuild.id){
-        return {...e, title:targetGuild.title, leaderId: targetGuild.leaderId, leader: leaderName}
+        return {...e, title:targetGuild.title, leader_id: targetGuild.leader_id, leader: leaderName}
       }
       return {...e};
     });
@@ -76,16 +66,16 @@ const GuildManagement = () => {
   }
 
   const cancelGuild = () => {
-    setTargetGuild({id:-1, title:"", leaderId: -1, leader: ""});
+    setTargetGuild({id:-1, title:"", leader_id: -1, leader: ""});
   };
 
   const cancelNewGuild = () => {
     setNewGuildCreation(false);
-    setTargetGuild({id:-1, title:"", leaderId: -1, leader: ""});
+    setTargetGuild({id:-1, title:"", leader_id: -1, leader: ""});
   }
 
   const saveNewGuild = (targetGuild) => {
-    let leaderName = availableGuildLeaders.filter(v=>v.id === targetGuild.leaderId)[0]?.name;
+    let leaderName = availableGuildLeaders.filter(v=>v.id === targetGuild.leader_id)[0]?.name;
     if (leaderName === undefined){
       leaderName = null;
     }
@@ -93,8 +83,8 @@ const GuildManagement = () => {
     //TODO: Add a call the server to save this new guild...
     let newGuild = {
       id: guilds.length + 1, //TODO: this should be the result of the call
-      title: targetGuild.title, 
-      leaderId: targetGuild.leaderId,
+      title: targetGuild.name, 
+      leader_id: targetGuild.leader_id,
       leader: leaderName
     };
 
@@ -131,20 +121,20 @@ const GuildManagement = () => {
 
   const TargetGuild = ({saveGuild, cancelGuild, targetGuild, availableGuildLeaders}) => {
     const [currentTitle, setCurrentTitle] = useState(targetGuild.title);
-    const [currentLeaderId, setCurrentLeaderId] = useState(targetGuild.leaderId)
+    const [currentleader_id, setCurrentleader_id] = useState(targetGuild.leader_id === null ? -1 : targetGuild.leader_id);
     const handleChangeTitle = (event) => {
       setCurrentTitle(event.target.value);
     }
 
     const handleChangeLeader = (event) => {
-      setCurrentLeaderId(event.target.value);
+      setCurrentleader_id(event.target.value);
     }
 
     return (
       <tr>
         <td className="action-table-td left-col"><input onChange={handleChangeTitle} value={currentTitle} /></td>
         <td className="action-table-td left-col">
-          <select value={currentLeaderId} onChange={handleChangeLeader}>
+          <select value={currentleader_id} onChange={handleChangeLeader}>
             <option value="-1">No Guild Leader</option>
             {availableGuildLeaders.map((option) => (
               <option key={option.id} value={option.id}>{option.name}</option>
@@ -155,7 +145,7 @@ const GuildManagement = () => {
           </td>
         <td className="action-table-td right-col">
           <Button variant="dark" onClick={() => {
-            saveGuild({...targetGuild, leaderId: parseInt(currentLeaderId), title: currentTitle});
+            saveGuild({...targetGuild, leader_id: parseInt(currentleader_id), title: currentTitle});
             }}>Done</Button>
           &nbsp;<Button variant="dark" onClick={cancelGuild}>Cancel</Button>
         </td>
@@ -164,10 +154,10 @@ const GuildManagement = () => {
   };
 
   const Guild = ({guild, setTargetGuild}) => {
-      let leaderText = guild.leader !== null ? "Guild Leader: " + guild.leader : "No Current Guild Leader";
+      let leaderText = guild.leader_name !== null ? "Guild Leader: " + guild.leader_name : "No Current Guild Leader";
     return (
         <tr>
-          <td className="action-table-td left-col">{guild.title}</td>
+          <td className="action-table-td left-col">{guild.name}</td>
           <td className="action-table-td left-col">{leaderText}</td>
           <td className="action-table-td right-col"></td>
           <td className="action-table-td right-col"><Button variant="dark" onClick={() => setTargetGuild({...guild})}>Edit</Button></td>
