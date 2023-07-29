@@ -6,10 +6,10 @@ import axios from 'axios';
 
 const GuildManagement = () => {
 
-  const [guilds, setGuilds] = useState([{id:-1, title:"", leader: ""}]);
-  const [adventurers, setAdventurers] = useState([{id:-1, participation: []}]);
+  const [guilds, setGuilds] = useState([{id:-1, name:"", leader_id: ""}]);
+  const [adventurers, setAdventurers] = useState([{id:-1, permissions: []}]);
   const [availableGuildLeaders, setAvailableGuildLeaders] = useState([]);
-  const [targetGuild, setTargetGuild] = useState({id:-1, title:"", leader_id:-1, leader: ""});
+  const [targetGuild, setTargetGuild] = useState({id:-1, name:"", leader_id:-1, leader_name: ""});
   const [newGuildCreation, setNewGuildCreation] = useState(false);
 
   const baseURL="https://testdei.narofsky.org/api";
@@ -25,6 +25,7 @@ const GuildManagement = () => {
     });
 
     axios.get(baseURL + "/user").then((response) => {
+      console.log(response.data);
       setAdventurers(response.data);
     });
 
@@ -164,6 +165,7 @@ const GuildManagement = () => {
   }
 
   const Adventurer = ({adventurer, editAdventurer, rejectAdventurer}) => {
+    console.log(adventurer);
     let permissionText = adventurer.permissions.map((v)=>{return v.type;}).join(", ");
     return (
         <tr>
