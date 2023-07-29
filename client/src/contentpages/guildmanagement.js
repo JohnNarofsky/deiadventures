@@ -25,7 +25,6 @@ const GuildManagement = () => {
     });
 
     axios.get(baseURL + "/user").then((response) => {
-      console.log(response.data);
       setAdventurers(response.data);
     });
 
