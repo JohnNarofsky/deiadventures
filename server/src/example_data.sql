@@ -38,7 +38,7 @@ VALUES
 (0, 2, 0),
 (1, 2, 0),
 (2, 2, 0),
-(3, 2, 0),
+--(3, 2, 0),
 (4, 2, 0),
 (5, 2, 0),
 (6, 2, 0),
@@ -52,7 +52,7 @@ VALUES
 (0, 0, 'Schedule a DEI meeting', 15),
 (1, 1, 'Update Zoom name with pronouns', 15),
 (2, 2, 'Update email signature with pronouns', 15),
-(3, 3, 'Update email signature with pronouns', 15),
+--(3, 3, 'Update email signature with pronouns', 15),
 (4, 4, 'Track a set of DEI metrics', 50),
 (5, 5, 'Draft a DEI or ERG-related survey', 50),
 (6, 6, 'Review Job Descriptions to help remove bias', 75),
@@ -79,8 +79,8 @@ VALUES
 --     with the new row in Quest.
 
 -- Step 1
-INSERT INTO Quest (id, guild_id, name, quest_type)
-SELECT 20, guild_id, name, 1 FROM Quest WHERE id = 4;
+INSERT INTO Quest (id, guild_id, parent_quest_id, name, quest_type)
+SELECT 20, guild_id, 4, name, 1 FROM Quest WHERE id = 4;
 -- Step 2
 INSERT INTO QuestTask (quest_id, name, description, xp)
 SELECT 20, name, description, xp FROM QuestTask WHERE quest_id = 4;
