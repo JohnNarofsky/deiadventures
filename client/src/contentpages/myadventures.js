@@ -11,6 +11,8 @@ const MyAdventures = () => {
     const [acceptedQuestActions, setAcceptedQuestActions] = useState([]);
     const [availableQuestActions, setAvailableGuildQuestActions] = useState([]);
     const [guilds, setGuilds] = useState([]);
+    const user_id = 1;
+
   
     const baseURL="https://testdei.narofsky.org/api";
   
@@ -21,30 +23,62 @@ const MyAdventures = () => {
           });
 
         //TODO: GET USER_ID FROM CONTEXT THAT IS UPDATED UPON LOGIN
-          let user_id = 1;
-
           axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
             setAcceptedQuestActions(response.data);
-            console.log(response.data);
           });
       
           axios.get(baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
-            console.log(response.data);
           });
 
     }, []);
 
     const finishQuestAction = (questAction) => {
-
+        const data = {quest_id: questAction.quest_id};
+        //TODO: Give them a little modal happiness telling them where this went
+        
+        axios.put(baseURL + "/user/" + user_id + "/complete-quest", data).then((response) => {
+            axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
+                setAcceptedQuestActions(response.data);
+            });
+          
+            axios.get(baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
+            setAvailableGuildQuestActions(response.data);
+            });
+    
+        });
     };
 
     const cancelQuestAction = (questAction) => {
+        const data = {quest_id: questAction.quest_id};
+        //TODO: Give them a little modal happiness telling them where this went
+        
+        axios.delete(baseURL + "/user/" + user_id + "/cancel-quest", { headers: { 'Content-Type': 'application/json' }, data }).then((response) => {
+            axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
+                setAcceptedQuestActions(response.data);
+            });
+          
+            axios.get(baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
+            setAvailableGuildQuestActions(response.data);
+            });
+    
+        });
 
     };
 
     const acceptQuestAction = (questAction) => {
+        const data = {quest_id: questAction.quest_id};
 
+        axios.put(baseURL + "/user/" + user_id + "/accept-quest", data).then((response) => {
+            axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
+                setAcceptedQuestActions(response.data);
+            });
+          
+            axios.get(baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
+            setAvailableGuildQuestActions(response.data);
+            });
+    
+        });
     };
 
     //{guild_id: 2, quest_id: 0, description: 'Schedule a DEI meeting', xp: 15}
@@ -62,7 +96,6 @@ const MyAdventures = () => {
       };
 
       
-    //{guild_id: 2, quest_id: 20, description: 'Track a set of DEI metrics', xp: 50}
       const AvailableQuestAction = ({questAction}) => {
         return (
             <tr>
@@ -101,6 +134,7 @@ const MyAdventures = () => {
                         </tr>                        
                         <tr>
                             <td>
+                                <br/>
                                 <div className="action-table-container quest-examples">
                                     <h3>Available Guild Actions</h3>
                                     <table className="action-table"><tbody>
