@@ -53,7 +53,7 @@ const MyAdventures = () => {
         const data = {quest_id: questAction.quest_id};
         //TODO: Give them a little modal happiness telling them where this went
         
-        axios.delete(baseURL + "/user/" + user_id + "/cancel-quest", data).then((response) => {
+        axios.delete(baseURL + "/user/" + user_id + "/cancel-quest", { headers: { 'Content-Type': 'application/json' }, data }).then((response) => {
             axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
                 setAcceptedQuestActions(response.data);
             });
