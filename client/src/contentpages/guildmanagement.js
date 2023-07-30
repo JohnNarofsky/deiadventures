@@ -169,6 +169,18 @@ const GuildManagement = () => {
 
   const rejectAdventurer = (adventurer) => {
     // .route("/perm/:user_id/rejected", put(set_user_rejected))
+    const data = {set: true};
+    axios.put(baseURL + "/perm/" + adventurer.id + "/rejected", data).then((response) => {
+      axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
+        setAvailableGuildLeaders(response.data);
+      });
+  
+      axios.get(baseURL + "/user").then((response) => {
+        setAdventurers(response.data);
+      });
+    });
+
+
   }
 
   const toggleSuperUser = (adventurer) => {
@@ -278,7 +290,7 @@ const GuildManagement = () => {
               <h2>Current Adventurers</h2>
               <div className="action-table-container">
                   <table className="action-table quest-examples"><tbody>
-                    {adventurers.filter((v)=>{return v.permissions?.length !== 0}).map((adventurer,index)=>{
+                    {adventurers.filter((v)=>{return v.permissions?.filter((p) => p.type === "Approved").length !== 0}).map((adventurer,index)=>{
                         return <Adventurer key={adventurer.id} toggleApprovedAdventurer={toggleApprovedAdventurer} toggleSuperUser={toggleSuperUser} toggleAvailableGuildLeader={toggleAvailableGuildLeader} adventurer={adventurer} />
                     })}
                   </tbody></table>
