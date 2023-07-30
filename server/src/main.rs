@@ -73,6 +73,7 @@ async fn main() {
         .route("/guild/:guild_id/name", put(set_guild_name))
         .route("/guild/:guild_id/name", get(get_guild_name))
         .route("/guild/:guild_id/leader", put(set_guild_leader))
+        .route("/guild/:guild_id", put(update_guild))
         .route(
             "/guild/:guild_id/quest-action",
             post(create_guild_quest_action),
@@ -935,6 +936,66 @@ async fn create_guild(
 }
 
 #[derive(Deserialize, Debug)]
+struct UpdateGuild {
+    name: String,
+    leader_id: Option<UserId>,
+}
+async fn update_guild(
+    State(state): State<ArcState>,
+    Path(guild_id): Path<GuildId>,
+    Json(update): Json<UpdateGuild>,
+) -> Result<(), (StatusCode, String)> {
+    let res = state.write_transaction(|db| {
+        let UpdateGuild { name, leader_id } = update;
+        if !db::guild_exists(&db, guild_id)? {
+            return Ok(Err((
+                StatusCode::NOT_FOUND,
+                format!("no guild with id = {guild_id} exists"),
+            )));
+        }
+
+        let mut query = db.prepare_cached("UPDATE Guild SET name = :name WHERE id = :guild_id;")?;
+        let n = query.execute(named_params! { ":name": name, ":guild_id": guild_id })?;
+        assert_eq!(n, 1);
+
+        let mut query = db.prepare_cached(
+            "DELETE FROM AdventurerRole WHERE guild_id = :guild_id AND assigned_role = 'leader';",
+        )?;
+        query.execute(named_params! { ":guild_id": guild_id })?;
+
+        if let Some(leader_id) = leader_id {
+            if !db::adventurer_exists(&db, leader_id)? {
+                return Ok(Err((
+                    StatusCode::NOT_FOUND,
+                    format!("no adventurer with id = {leader_id} exists"),
+                )));
+            }
+            let mut query = db.prepare_cached(
+                "INSERT INTO AdventurerRole (adventurer_id, guild_id, assigned_role)
+                 VALUES (:adventurer_id, :guild_id, 'leader');",
+            )?;
+            let n = query
+                .execute(named_params! { ":adventurer_id": leader_id, ":guild_id": guild_id })?;
+            assert_eq!(n, 1);
+        }
+
+        Ok(Ok(()))
+    });
+
+    match res {
+        Ok(Ok(())) => Ok(()),
+        Ok(Err(e)) => Err(e),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
 struct CreateGuildQuestAction {
     // "name" is the column name, but we're putting it in a "description" field
     #[serde(rename = "description")]
@@ -1117,12 +1178,12 @@ async fn set_guild_leader(
         let mut query = db.prepare_cached(
             "DELETE FROM AdventurerRole WHERE guild_id = :guild_id AND assigned_role = 'leader';",
         )?;
+        query.execute(named_params! { ":guild_id": guild_id })?;
 
         if let Some(leader_id) = leader.id {
             if !db::adventurer_exists(&db, leader_id)? {
                 return Ok(Err(format!("no adventurer with id = {} exists", leader_id)));
             }
-            query.execute(named_params! { ":guild_id": guild_id })?;
             let mut query = db.prepare_cached(
                 "INSERT INTO AdventurerRole (adventurer_id, guild_id, assigned_role)
                  VALUES (:adventurer_id, :guild_id, 'leader');",
