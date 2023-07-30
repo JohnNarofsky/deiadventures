@@ -73,6 +73,7 @@ async fn main() {
         .route("/guild/:guild_id/name", put(set_guild_name))
         .route("/guild/:guild_id/name", get(get_guild_name))
         .route("/guild/:guild_id/leader", put(set_guild_leader))
+        .route("/guild/:guild_id", put(update_guild))
         .route(
             "/guild/:guild_id/quest-action",
             post(create_guild_quest_action),
@@ -103,6 +104,11 @@ async fn main() {
             get(get_guild_quest_actions),
         )
         .route("/guild/quest-actions", get(get_all_guilds_quest_actions))
+        // Auth endpoints.
+        .route("/auth/account", post(auth_create_account))
+        .route("/auth/login", get(auth_login))
+        .route("/auth/logout", delete(auth_logout))
+        .route("/auth/renew-session", put(auth_renew_session))
         .fallback(fallback)
         .with_state(state.clone());
 
@@ -418,6 +424,26 @@ async fn get_user_accepted_quest_actions(
     }
 }
 
+/// A wrapper integer type for enforcing JS's bounds on safe integers
+/// on the server side.
+///
+/// See `Number.MAX_SAFE_INTEGER` and `Number.MIN_SAFE_INTEGER` on MDN.
+#[derive(Serialize, Debug)]
+#[serde(transparent)]
+struct JsInt(i64);
+impl TryFrom<i64> for JsInt {
+    type Error = ();
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        const MAX_SAFE_INT: i64 = 9007199254740991;
+        const MIN_SAFE_INT: i64 = -9007199254740991;
+        if (value <= MAX_SAFE_INT) && (value >= MIN_SAFE_INT) {
+            Ok(Self(value))
+        } else {
+            Err(())
+        }
+    }
+}
+
 #[derive(Serialize, Debug)]
 struct CompletedQuestAction {
     guild_id: GuildId,
@@ -426,6 +452,9 @@ struct CompletedQuestAction {
     #[serde(rename = "description")]
     name: String,
     xp: u32,
+    // To avoid the 2038 problem, we make sure to use the maximum possible
+    // integer width supported by JS, which resembles a 53 bit integer.
+    completed_date: JsInt,
 }
 async fn get_user_completed_quest_actions(
     State(state): State<ArcState>,
@@ -436,13 +465,15 @@ async fn get_user_completed_quest_actions(
             return Ok(None);
         }
         let mut query = db.prepare_cached(
-            "SELECT quest_id FROM PartyMember
+            "SELECT quest_id, close_date FROM PartyMember
                  JOIN Quest ON close_date IS NOT NULL
                  WHERE adventurer_id = :adventurer_id AND Quest.id = quest_id AND Quest.deleted_date IS NULL;",
         )?;
         let quests = query
             .query_map(named_params! { ":adventurer_id": user_id }, |row| {
                 let quest_id = row.get(0)?;
+                let close_date = i64::checked_mul(row.get(1)?, 1000).unwrap();
+                let completed_date = close_date.try_into().expect("completion date exceeded the year 27000");
                 let mut query =
                     db.prepare_cached("SELECT guild_id FROM Quest WHERE id = :quest_id;")?;
                 let guild_id =
@@ -455,6 +486,7 @@ async fn get_user_completed_quest_actions(
                         quest_id,
                         name: row.get(0)?,
                         xp: row.get(1)?,
+                        completed_date,
                     })
                 })
             })?
@@ -780,7 +812,8 @@ async fn get_allowed_guild_leaders(
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached(
             "SELECT adventurer_id FROM Permission
-                 WHERE permission_type = 2 OR permission_type = 0;",
+                 WHERE permission_type = 2 OR permission_type = 0
+                 GROUP BY adventurer_id;",
         )?;
         let leaders = query
             .query_map([], |row| {
@@ -904,17 +937,81 @@ async fn create_guild(
 }
 
 #[derive(Deserialize, Debug)]
+struct UpdateGuild {
+    name: String,
+    leader_id: Option<UserId>,
+}
+async fn update_guild(
+    State(state): State<ArcState>,
+    Path(guild_id): Path<GuildId>,
+    Json(update): Json<UpdateGuild>,
+) -> Result<(), (StatusCode, String)> {
+    let res = state.write_transaction(|db| {
+        let UpdateGuild { name, leader_id } = update;
+        if !db::guild_exists(&db, guild_id)? {
+            return Ok(Err((
+                StatusCode::NOT_FOUND,
+                format!("no guild with id = {guild_id} exists"),
+            )));
+        }
+
+        let mut query = db.prepare_cached("UPDATE Guild SET name = :name WHERE id = :guild_id;")?;
+        let n = query.execute(named_params! { ":name": name, ":guild_id": guild_id })?;
+        assert_eq!(n, 1);
+
+        let mut query = db.prepare_cached(
+            "DELETE FROM AdventurerRole WHERE guild_id = :guild_id AND assigned_role = 'leader';",
+        )?;
+        query.execute(named_params! { ":guild_id": guild_id })?;
+
+        if let Some(leader_id) = leader_id {
+            if !db::adventurer_exists(&db, leader_id)? {
+                return Ok(Err((
+                    StatusCode::NOT_FOUND,
+                    format!("no adventurer with id = {leader_id} exists"),
+                )));
+            }
+            let mut query = db.prepare_cached(
+                "INSERT INTO AdventurerRole (adventurer_id, guild_id, assigned_role)
+                 VALUES (:adventurer_id, :guild_id, 'leader');",
+            )?;
+            let n = query
+                .execute(named_params! { ":adventurer_id": leader_id, ":guild_id": guild_id })?;
+            assert_eq!(n, 1);
+        }
+
+        Ok(Ok(()))
+    });
+
+    match res {
+        Ok(Ok(())) => Ok(()),
+        Ok(Err(e)) => Err(e),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
 struct CreateGuildQuestAction {
     // "name" is the column name, but we're putting it in a "description" field
     #[serde(rename = "description")]
     name: String,
     xp: u32,
 }
+#[derive(Serialize, Debug)]
+struct CreatedGuildQuestAction {
+    quest_id: QuestId,
+}
 async fn create_guild_quest_action(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
     Json(action): Json<CreateGuildQuestAction>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<Json<CreatedGuildQuestAction>, (StatusCode, String)> {
     let res = state.write_transaction(|db| {
         let CreateGuildQuestAction { name, xp } = action;
         let mut query =
@@ -929,11 +1026,13 @@ async fn create_guild_quest_action(
         )?;
         let n = query.execute(named_params! { ":quest_id": quest_id, ":name": name, ":xp": xp })?;
         assert_eq!(n, 1);
-        Ok(())
+        Ok(CreatedGuildQuestAction {
+            quest_id: QuestId(quest_id.try_into().unwrap()),
+        })
     });
 
     match res {
-        Ok(()) => Ok(()),
+        Ok(x) => Ok(Json(x)),
         Err(e) => {
             tracing::error!("rusqlite error: {e:?}");
             Err((
@@ -1080,12 +1179,12 @@ async fn set_guild_leader(
         let mut query = db.prepare_cached(
             "DELETE FROM AdventurerRole WHERE guild_id = :guild_id AND assigned_role = 'leader';",
         )?;
+        query.execute(named_params! { ":guild_id": guild_id })?;
 
         if let Some(leader_id) = leader.id {
             if !db::adventurer_exists(&db, leader_id)? {
                 return Ok(Err(format!("no adventurer with id = {} exists", leader_id)));
             }
-            query.execute(named_params! { ":guild_id": guild_id })?;
             let mut query = db.prepare_cached(
                 "INSERT INTO AdventurerRole (adventurer_id, guild_id, assigned_role)
                  VALUES (:adventurer_id, :guild_id, 'leader');",
@@ -1162,40 +1261,45 @@ fn set_perm_endpoint(
     }
 }
 
+#[derive(Deserialize, Debug)]
+struct SetPerm {
+    set: bool,
+}
+
 async fn set_user_accepted(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
-    Json(accepted): Json<bool>,
+    Json(accepted): Json<SetPerm>,
 ) -> Result<(), (StatusCode, String)> {
-    set_perm_endpoint(state, user_id, PermissionType::Approved, accepted)
+    set_perm_endpoint(state, user_id, PermissionType::Approved, accepted.set)
 }
 
 async fn set_user_rejected(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
-    Json(rejected): Json<bool>,
+    Json(rejected): Json<SetPerm>,
 ) -> Result<(), (StatusCode, String)> {
-    set_perm_endpoint(state, user_id, PermissionType::Rejected, rejected)
+    set_perm_endpoint(state, user_id, PermissionType::Rejected, rejected.set)
 }
 
 async fn set_user_superuser(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
-    Json(superuser): Json<bool>,
+    Json(superuser): Json<SetPerm>,
 ) -> Result<(), (StatusCode, String)> {
-    set_perm_endpoint(state, user_id, PermissionType::SuperUser, superuser)
+    set_perm_endpoint(state, user_id, PermissionType::SuperUser, superuser.set)
 }
 
 async fn set_user_eligible_guild_leader(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
-    Json(eligible): Json<bool>,
+    Json(eligible): Json<SetPerm>,
 ) -> Result<(), (StatusCode, String)> {
     set_perm_endpoint(
         state,
         user_id,
         PermissionType::GuildLeaderEligible,
-        eligible,
+        eligible.set,
     )
 }
 
@@ -1247,3 +1351,11 @@ async fn retire_guild_quest_action(
         }
     }
 }
+
+// These top two are the only ones necessary for the MVP.
+async fn auth_create_account() {}
+async fn auth_login() {}
+
+// These are optional for the MVP.
+async fn auth_logout() {}
+async fn auth_renew_session() {}

@@ -22,6 +22,7 @@ INSERT INTO AdventurerRole (adventurer_id, guild_id, assigned_role)
 VALUES
 (1, 1, 'leader'),
 (1, 6, 'leader'),
+(1, 2, 'leader'),
 (2, 5, 'leader');
 
 INSERT INTO Permission (adventurer_id, permission_type)
