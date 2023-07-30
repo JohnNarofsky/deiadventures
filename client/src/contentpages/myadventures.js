@@ -12,7 +12,6 @@ const MyAdventures = () => {
     const [availableQuestActions, setAvailableGuildQuestActions] = useState([]);
     const [guilds, setGuilds] = useState([]);
     const user_id = 1;
-
   
     const baseURL="https://testdei.narofsky.org/api";
   
@@ -107,9 +106,6 @@ const MyAdventures = () => {
             </tr>
         );
       };
-
-
-
 
     const Guild = ({guild}) => {
         return (

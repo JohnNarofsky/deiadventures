@@ -39,6 +39,8 @@ const GuildManagement = () => {
     if (leaderName === undefined){
       leaderName = null;
     }
+    const data = {name: targetGuild.name, leader_id: targetGuild.leader_id};
+    axios.put(baseURL + "/guild/" + guildId, data).then((response) => {});
 
     let newGuilds = guilds.map((e) => {
       if (e.id === targetGuild.id){
@@ -65,19 +67,21 @@ const GuildManagement = () => {
       leaderName = null;
     }
 
-    //TODO: Add a call the server to save this new guild...
     let newGuild = {
-      id: guilds.length + 1, //TODO: this should be the result of the call
+      id: -1, 
       name: targetGuild.name, 
       leader_id: targetGuild.leader_id,
       leader_name: leaderName
     };
 
-    let newGuilds = [...guilds];
-    newGuilds.push(newGuild);
-    setNewGuildCreation(false);
-    setGuilds(newGuilds);
-
+    let data = {name: targetGuild.name, leader_id: targetGuild.leader_id};
+    axios.post(baseURL + "/guild", data).then((response) => {
+      newGuild.id = response.data;
+      let newGuilds = [...guilds];
+      newGuilds.push(newGuild);
+      setNewGuildCreation(false);
+      setGuilds(newGuilds);
+    });
   }
 
   const NewGuild = ({saveGuild, cancelGuild, availableGuildLeaders, setNewGuildCreation}) => {
@@ -168,7 +172,6 @@ const GuildManagement = () => {
   }
 
   const Adventurer = ({adventurer, makeSuperUser, makeAvailableGuildLeader, rejectAdventurer}) => {
-    console.log(adventurer);
     let permissionText = adventurer.permissions.map((v)=>{return v.type;}).join(", ");
     return (
         <tr>
