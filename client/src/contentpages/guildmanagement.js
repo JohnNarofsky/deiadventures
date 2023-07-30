@@ -39,8 +39,8 @@ const GuildManagement = () => {
     if (leaderName === undefined){
       leaderName = null;
     }
-    const data = {name: targetGuild.name, leader_id: targetGuild.leader_id};
-    axios.put(baseURL + "/guild/" + guildId, data).then((response) => {});
+    const data = {name: targetGuild.name, leader_id: targetGuild.leader_id !== -1? targetGuild.leader_id : null};
+    axios.put(baseURL + "/guild/" + targetGuild.id, data).then((response) => {});
 
     let newGuilds = guilds.map((e) => {
       if (e.id === targetGuild.id){
@@ -134,7 +134,6 @@ const GuildManagement = () => {
           </td>
         <td className="action-table-td right-col">
           <Button variant="dark" onClick={() => {
-            console.log({...targetGuild, leader_id: parseInt(currentleader_id), name: currentName});
             saveGuild({...targetGuild, leader_id: parseInt(currentleader_id), name: currentName});
             }}>Done</Button>
           &nbsp;<Button variant="dark" onClick={cancelGuild}>Cancel</Button>
