@@ -377,7 +377,7 @@ async fn get_user_accepted_quest_actions(
         let mut query = db.prepare_cached(
             "SELECT quest_id FROM PartyMember
                  JOIN Quest ON close_date IS NULL
-                 WHERE adventurer_id = :adventurer_id AND Quest.id = quest_id;",
+                 WHERE adventurer_id = :adventurer_id AND Quest.id = quest_id AND Quest.deleted_date IS NULL;",
         )?;
         let quests = query
             .query_map(named_params! { ":adventurer_id": user_id }, |row| {
@@ -438,7 +438,7 @@ async fn get_user_completed_quest_actions(
         let mut query = db.prepare_cached(
             "SELECT quest_id FROM PartyMember
                  JOIN Quest ON close_date IS NOT NULL
-                 WHERE adventurer_id = :adventurer_id AND Quest.id = quest_id;",
+                 WHERE adventurer_id = :adventurer_id AND Quest.id = quest_id AND Quest.deleted_date IS NULL;",
         )?;
         let quests = query
             .query_map(named_params! { ":adventurer_id": user_id }, |row| {
@@ -501,10 +501,10 @@ async fn get_user_available_quest_actions(
             "WITH
                     wa AS (SELECT parent_quest_id FROM Quest
                            JOIN PartyMember ON Quest.id = quest_id
-                           WHERE adventurer_id = :adventurer_id)
+                           WHERE adventurer_id = :adventurer_id AND deleted_date IS NULL)
                  SELECT id, guild_id FROM Quest
                  LEFT OUTER JOIN wa ON Quest.id = wa.parent_quest_id
-                 WHERE wa.parent_quest_id IS NULL AND quest_type = 0;",
+                 WHERE wa.parent_quest_id IS NULL AND quest_type = 0 AND Quest.deleted_date IS NULL;",
         )?;
         let quests = query
             .query_map(named_params! { ":adventurer_id": user_id }, |row| {
@@ -747,7 +747,7 @@ async fn cancel_quest(
         }
 
         let mut query = db.prepare_cached(
-            "UPDATE Quest SET delete_date = unixepoch() WHERE id = :quest_id;"
+            "UPDATE Quest SET deleted_date = unixepoch() WHERE id = :quest_id;"
         )?;
         let n = query.execute(named_params! { ":quest_id": quest_id })?;
         assert_eq!(n, 1);
