@@ -61,6 +61,10 @@ async fn main() {
             get(get_user_accepted_quest_actions),
         )
         .route(
+            "/user/:user_id/completed-quest-actions",
+            get(get_user_completed_quest_actions),
+        )
+        .route(
             "/user/:user_id/available-quest-actions",
             get(get_user_available_quest_actions),
         )
@@ -372,7 +376,8 @@ async fn get_user_accepted_quest_actions(
         }
         let mut query = db.prepare_cached(
             "SELECT quest_id FROM PartyMember
-                 WHERE adventurer_id = :adventurer_id;",
+                 JOIN Quest ON close_date IS NULL
+                 WHERE adventurer_id = :adventurer_id AND Quest.id = quest_id;",
         )?;
         let quests = query
             .query_map(named_params! { ":adventurer_id": user_id }, |row| {
@@ -385,6 +390,67 @@ async fn get_user_accepted_quest_actions(
                     .prepare_cached("SELECT name, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
                 query.query_row(named_params! { ":quest_id": quest_id }, |row| {
                     Ok(AcceptedQuestAction {
+                        guild_id,
+                        quest_id,
+                        name: row.get(0)?,
+                        xp: row.get(1)?,
+                    })
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(Some(quests))
+    });
+
+    match data {
+        Ok(Some(x)) => Ok(Json(x)),
+        Ok(None) => Err((
+            StatusCode::NOT_FOUND,
+            format!("no user with id = {user_id} exists"),
+        )),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}
+
+#[derive(Serialize, Debug)]
+struct CompletedQuestAction {
+    guild_id: GuildId,
+    quest_id: QuestId,
+    // "name" is the column name, but we're putting it in a "description" field
+    #[serde(rename = "description")]
+    name: String,
+    xp: u32,
+}
+async fn get_user_completed_quest_actions(
+    State(state): State<ArcState>,
+    Path(user_id): Path<UserId>,
+) -> Result<Json<Vec<CompletedQuestAction>>, (StatusCode, String)> {
+    let data = state.read_transaction(|db| {
+        if !db::adventurer_exists(&db, user_id)? {
+            return Ok(None);
+        }
+        let mut query = db.prepare_cached(
+            "SELECT quest_id FROM PartyMember
+                 JOIN Quest ON close_date IS NOT NULL
+                 WHERE adventurer_id = :adventurer_id AND Quest.id = quest_id;",
+        )?;
+        let quests = query
+            .query_map(named_params! { ":adventurer_id": user_id }, |row| {
+                let quest_id = row.get(0)?;
+                let mut query =
+                    db.prepare_cached("SELECT guild_id FROM Quest WHERE id = :quest_id;")?;
+                let guild_id =
+                    query.query_row(named_params! { ":quest_id": quest_id }, |row| row.get(0))?;
+                let mut query = db
+                    .prepare_cached("SELECT name, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
+                query.query_row(named_params! { ":quest_id": quest_id }, |row| {
+                    Ok(CompletedQuestAction {
                         guild_id,
                         quest_id,
                         name: row.get(0)?,
