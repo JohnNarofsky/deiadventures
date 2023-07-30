@@ -71,9 +71,25 @@ const GuildLeadership = () => {
     setTargetGuild({id:-1});
   };
 
-  const retireGuildQuestAction = (guildQuestAction) => {
-    //this waits for a delete call to the server then a retrieval of the actions and a set
-    setTargetGuildQuestAction({id:-1, description: null, xp: null});  
+  const retireGuildQuestAction = (guildId, questId) => {
+    const data = {quest_id: questId};
+    
+    axios.delete(baseURL + "/guild/" + guildId + "/quest-action", { headers: { 'Content-Type': 'application/json' }, data}).then((response) => {});
+
+    let currentGuildQuestActions = 
+      guildQuestActions.map((e) => {
+        if (e.guildId === guildId){
+          return {...e, 
+            guildQuestActions: e.guildQuestActions.filter((d) => {return d.id !== questId}).map((f) => {return {...f};})
+          }
+        }
+        return _.cloneDeep(e);
+      });
+
+    setGuildQuestActions(currentGuildQuestActions);
+    setTargetGuildQuestAction({id:-1, description: null, xp: null});
+    setTargetGuild({id:-1});
+
   };
 
   const cancelEditGuildQuestAction = () => {
@@ -97,8 +113,6 @@ const GuildLeadership = () => {
     setGuildQuestActions(currentGuildQuestActions);
     setTargetGuildQuestAction({id:-1, description: null, xp: null});
     setTargetGuild({id:-1});
-
-
     });
 
   }
@@ -153,14 +167,15 @@ const GuildLeadership = () => {
   );
   };
 
-  const QuestAction = ({guildQuestAction, setTargetGuildQuestAction, retireGuildQuestAction}) => {
+  const QuestAction = ({guildId, guildQuestAction, setTargetGuildQuestAction, retireGuildQuestAction}) => {
+    let questId = guildQuestAction.id;
     return (
         <tr>
             <td className="action-table-td left-col">{guildQuestAction.description}</td>
             <td className="action-table-td right-col">{guildQuestAction.xp} xp</td>
             <td className="action-table-td right-col">
               <Button variant="dark" onClick={() => setTargetGuildQuestAction(guildQuestAction)}>Edit</Button>&nbsp;
-              <Button variant="dark" onClick={() => retireGuildQuestAction(guildQuestAction)}>Retire</Button>
+              <Button variant="dark" onClick={() => retireGuildQuestAction(guildId, questId)}>Retire</Button>
             </td>
         </tr>
     );
@@ -193,6 +208,7 @@ const GuildLeadership = () => {
                   }
                   return <QuestAction
                     key={guildQuestAction.id} 
+                    guildId = {questActionSet.guildId}
                     guildQuestAction={guildQuestAction} 
                     setTargetGuildQuestAction={setTargetGuildQuestAction} 
                     retireGuildQuestAction={retireGuildQuestAction} 
