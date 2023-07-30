@@ -5,6 +5,9 @@ import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 import _ from 'lodash';
 
+const user_id = 1;
+
+
 const GuildLeadership = () => {
   //state
   const [guildQuestActions, setGuildQuestActions] = useState([]);
@@ -16,50 +19,37 @@ const GuildLeadership = () => {
 
   //initializing UseEffect
   useEffect(()=>{
+    let currentGuildQuestActions = [];
     axios.get(baseURL + "/guild").then((response) => {
-      console.log(response);
-    });
+      let guilds = response.data;
+      let promises = [];
+      guilds.filter((v) => {return v.leader_id === user_id}).map((guild) => {
+        let newPromise = axios.get(baseURL + "/guild/" + guild.id + "/quest-actions");
+        promises.push({guildId: guild.id, guildTitle: guild.name, promise: newPromise});
+      });
+      promises.map((p) => {
+        p.promise.then((response) => {
+          let newActions = {
+            guildId: p.guildId,
+            guildTitle: p.guildTitle,
+            guildQuestActions: response.data
+          };
+          currentGuildQuestActions.push(newActions);
 
-    let currentGuildQuestActions = [
-      {
-        guildId: 1,
-        guildTitle: "Scribe",
-        guildQuestActions:[
-          {id:1, description:"Schedule a DEI meeting", xp: "10"},
-          {id:2, description:"Update Zoom name with pronouns", xp: "15"},
-          {id:3, description:"Update email signature with pronouns", xp: "15"},
-          {id:4, description:"Track a set of DEI metrics", xp: "50"},
-          {id:5, description:"Draft a DEI or ERG-related survey", xp: "50"},
-          {id:6, description:"Review Job Descriptions to help remove bias", xp: "75"},
-          {id:7, description:"Review a presentation draft for Accessibility needs", xp: "75"},
-          {id:8, description:"Help plan a DEI-related event", xp: "100"},
-          {id:9, description:"Create a Fundraising Campaign", xp: "200"},
-          {id:10, description:"Submit a DEI presentation for an external conference", xp: "250"},
-        ],
-      },
-      {
-        guildId: 2,
-        guildTitle: "Warrior",
-        guildQuestActions:[
-          {id:11, description:"Schedule a DEI meeting", xp: "10"},
-          {id:12, description:"Update Zoom name with pronouns", xp: "15"},
-          {id:13, description:"Update email signature with pronouns", xp: "15"},
-          {id:14, description:"Track a set of DEI metrics", xp: "50"},
-          {id:15, description:"Draft a DEI or ERG-related survey", xp: "50"},
-          {id:16, description:"Review Job Descriptions to help remove bias", xp: "75"},
-          {id:17, description:"Review a presentation draft for Accessibility needs", xp: "75"},
-          {id:18, description:"Help plan a DEI-related event", xp: "100"},
-          {id:19, description:"Create a Fundraising Campaign", xp: "200"},
-          {id:20, description:"Submit a DEI presentation for an external conference", xp: "250"},
-        ],
-      },
-    ];
-    setGuildQuestActions(currentGuildQuestActions);
+          setGuildQuestActions(currentGuildQuestActions);
+        })
+      });
+    });
 
   }, []);
 
   //function components
   const editGuildQuestAction = (guildId, guildQuestAction) => {
+
+    const data = {quest_id: guildQuestAction.id, description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp)};
+    
+    axios.put(baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {});
+
     let currentGuildQuestActions = 
       guildQuestActions.map((e) => {
         if (e.guildId === guildId){
@@ -82,13 +72,33 @@ const GuildLeadership = () => {
 
   const retireGuildQuestAction = (guildQuestAction) => {
     //this waits for a delete call to the server then a retrieval of the actions and a set
-    setTargetGuildQuestAction({id:-1, description: null, xp: null});  };
+    setTargetGuildQuestAction({id:-1, description: null, xp: null});  
+  };
 
   const cancelEditGuildQuestAction = () => {
     setTargetGuildQuestAction({id:-1, description: null, xp: null});
   }  
 
-  const saveNewGuildQuestAction  = () => {
+  const saveNewGuildQuestAction  = (guildId, guildQuestAction) => {
+    let data = {description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp)};
+    axios.post(baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {
+      let questId = response.data.quest_id;
+
+      let currentGuildQuestActions = 
+        guildQuestActions.map((e) => {
+          if (e.guildId === guildId){
+            let guildActions = _.cloneDeep(e.guildQuestActions);
+            guildActions.push({...data, id: questId});
+            return {...e, guildQuestActions: guildActions};
+          }
+            return _.cloneDeep(e);
+        });
+    setGuildQuestActions(currentGuildQuestActions);
+    setTargetGuildQuestAction({id:-1, description: null, xp: null});
+    setTargetGuild({id:-1});
+
+
+    });
 
   }
 
@@ -98,14 +108,13 @@ const GuildLeadership = () => {
   }
 
   const NewQuestAction = ({guildId, targetGuild, setTargetGuild, saveNewGuildQuestAction, cancelNewGuildQuestAction, setNewQuestActionCreation}) => {
-    console.log(targetGuild);
     if (newGuildQuestActionCreation && targetGuild.id === guildId){
       return (
         <>
           <div className="action-table-container">
               <table className="action-table quest-examples">
                 <tbody>
-                return <TargetQuestAction 
+                  <TargetQuestAction 
                       guildId = {guildId}
                       guildQuestAction={{id:-2, description: null, xp: null}}
                       editGuildQuestAction={saveNewGuildQuestAction}
@@ -118,7 +127,6 @@ const GuildLeadership = () => {
         </>
       );
     }
-    console.log(targetGuild);
     return (
       <>
         <Button variant="dark" onClick={() => {setNewQuestActionCreation(true);setTargetGuild({id:guildId});setTargetGuildQuestAction({id:-2, description: null, xp: null});}}>Add an Action</Button> 
