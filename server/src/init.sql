@@ -1,7 +1,10 @@
 -- This file creates all the tables we need in the database.
 -- It is written with SQLite in mind.
 
--- Note that, due to our use of `STRICT` tables, we require version 3.37.0 or later.
+-- Note that, due to our use of certain features,
+-- we require a relatively new version of SQLite:
+-- - `STRICT` tables: 3.37.0 or later
+-- - `LEFT OUTER JOIN`: 3.39.0 or later
 
 -- TODO: we need to ensure that when the server initializes a connection,
 --       it enables foreign key constraint enforcement and such.

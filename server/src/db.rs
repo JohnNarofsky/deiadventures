@@ -130,6 +130,8 @@ pub(crate) fn set_user_permission(
 
         // TODO: perhaps make "Rejected" conflict with every other permission type,
         //  or at least keep an easy to append to list of those types which conflict with it
+        // TODO: when someone is rejected, it should also remove their roles
+        // TODO: make rejected persons not show up elsewhere
 
         // "Approved" conflicts with "Rejected"
         if perm == PermissionType::Approved {
