@@ -220,7 +220,6 @@ const GuildLeadership = () => {
     );
   }
 
-
   return (
     <div className="container">
       <div className="parallax-thin">
