@@ -103,6 +103,11 @@ async fn main() {
             get(get_guild_quest_actions),
         )
         .route("/guild/quest-actions", get(get_all_guilds_quest_actions))
+        // Auth endpoints.
+        .route("/auth/account", post(auth_create_account))
+        .route("/auth/login", get(auth_login))
+        .route("/auth/logout", delete(auth_logout))
+        .route("/auth/renew-session", put(auth_renew_session))
         .fallback(fallback)
         .with_state(state.clone());
 
@@ -418,6 +423,26 @@ async fn get_user_accepted_quest_actions(
     }
 }
 
+/// A wrapper integer type for enforcing JS's bounds on safe integers
+/// on the server side.
+///
+/// See `Number.MAX_SAFE_INTEGER` and `Number.MIN_SAFE_INTEGER` on MDN.
+#[derive(Serialize, Debug)]
+#[serde(transparent)]
+struct JsInt(i64);
+impl TryFrom<i64> for JsInt {
+    type Error = ();
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        const MAX_SAFE_INT: i64 = 9007199254740991;
+        const MIN_SAFE_INT: i64 = -9007199254740991;
+        if (value <= MAX_SAFE_INT) && (value >= MIN_SAFE_INT) {
+            Ok(Self(value))
+        } else {
+            Err(())
+        }
+    }
+}
+
 #[derive(Serialize, Debug)]
 struct CompletedQuestAction {
     guild_id: GuildId,
@@ -426,6 +451,9 @@ struct CompletedQuestAction {
     #[serde(rename = "description")]
     name: String,
     xp: u32,
+    // To avoid the 2038 problem, we make sure to use the maximum possible
+    // integer width supported by JS, which resembles a 53 bit integer.
+    completed_date: JsInt,
 }
 async fn get_user_completed_quest_actions(
     State(state): State<ArcState>,
@@ -436,13 +464,15 @@ async fn get_user_completed_quest_actions(
             return Ok(None);
         }
         let mut query = db.prepare_cached(
-            "SELECT quest_id FROM PartyMember
+            "SELECT quest_id, close_date FROM PartyMember
                  JOIN Quest ON close_date IS NOT NULL
                  WHERE adventurer_id = :adventurer_id AND Quest.id = quest_id AND Quest.deleted_date IS NULL;",
         )?;
         let quests = query
             .query_map(named_params! { ":adventurer_id": user_id }, |row| {
                 let quest_id = row.get(0)?;
+                let close_date = i64::checked_mul(row.get(1)?, 1000).unwrap();
+                let completed_date = close_date.try_into().expect("completion date exceeded the year 27000");
                 let mut query =
                     db.prepare_cached("SELECT guild_id FROM Quest WHERE id = :quest_id;")?;
                 let guild_id =
@@ -455,6 +485,7 @@ async fn get_user_completed_quest_actions(
                         quest_id,
                         name: row.get(0)?,
                         xp: row.get(1)?,
+                        completed_date,
                     })
                 })
             })?
@@ -910,11 +941,15 @@ struct CreateGuildQuestAction {
     name: String,
     xp: u32,
 }
+#[derive(Serialize, Debug)]
+struct CreatedGuildQuestAction {
+    quest_id: QuestId,
+}
 async fn create_guild_quest_action(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
     Json(action): Json<CreateGuildQuestAction>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<Json<CreatedGuildQuestAction>, (StatusCode, String)> {
     let res = state.write_transaction(|db| {
         let CreateGuildQuestAction { name, xp } = action;
         let mut query =
@@ -929,11 +964,13 @@ async fn create_guild_quest_action(
         )?;
         let n = query.execute(named_params! { ":quest_id": quest_id, ":name": name, ":xp": xp })?;
         assert_eq!(n, 1);
-        Ok(())
+        Ok(CreatedGuildQuestAction {
+            quest_id: QuestId(quest_id.try_into().unwrap()),
+        })
     });
 
     match res {
-        Ok(()) => Ok(()),
+        Ok(x) => Ok(Json(x)),
         Err(e) => {
             tracing::error!("rusqlite error: {e:?}");
             Err((
@@ -1247,3 +1284,11 @@ async fn retire_guild_quest_action(
         }
     }
 }
+
+// These top two are the only ones necessary for the MVP.
+async fn auth_create_account() {}
+async fn auth_login() {}
+
+// These are optional for the MVP.
+async fn auth_logout() {}
+async fn auth_renew_session() {}
