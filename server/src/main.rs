@@ -812,7 +812,8 @@ async fn get_allowed_guild_leaders(
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached(
             "SELECT adventurer_id FROM Permission
-                 WHERE permission_type = 2 OR permission_type = 0;",
+                 WHERE permission_type = 2 OR permission_type = 0
+                 GROUP BY adventurer_id;",
         )?;
         let leaders = query
             .query_map([], |row| {
