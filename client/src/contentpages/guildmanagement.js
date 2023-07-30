@@ -155,22 +155,63 @@ const GuildManagement = () => {
   };
 
   const acceptAdventurer = (adventurer) => {
-
+    const data = {set: true};
+    axios.put(baseURL + "/perm/" + adventurer.id + "/accepted", data).then((response) => {
+      axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
+        setAvailableGuildLeaders(response.data);
+      });
+  
+      axios.get(baseURL + "/user").then((response) => {
+        setAdventurers(response.data);
+      });
+    });
   }
 
   const rejectAdventurer = (adventurer) => {
-
+    // .route("/perm/:user_id/rejected", put(set_user_rejected))
   }
 
-  const makeSuperUser = (adventurer) => {
-
+  const toggleSuperUser = (adventurer) => {
+    const data = adventurer.permissions.filter((p) => p.type === "SuperUser").length !== 0 ? {set: false} : {set: true};
+    axios.put(baseURL + "/perm/" + adventurer.id + "/superuser", data).then((response) => {
+      axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
+        setAvailableGuildLeaders(response.data);
+      });
+  
+      axios.get(baseURL + "/user").then((response) => {
+        setAdventurers(response.data);
+      });
+    });
   }
 
-  const makeAvailableGuildLeader = (adventurer) => {
-
+  const toggleAvailableGuildLeader = (adventurer) => {
+    // .route("/perm/:user_id/eligible-guild-leader", put(set_user_eligible_guild_leader))
+    const data = adventurer.permissions.filter((p) => p.type === "GuildLeaderEligible").length !== 0 ? {set: false} : {set: true};
+    axios.put(baseURL + "/perm/" + adventurer.id + "/eligible-guild-leader", data).then((response) => {
+      axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
+        setAvailableGuildLeaders(response.data);
+      });
+  
+      axios.get(baseURL + "/user").then((response) => {
+        setAdventurers(response.data);
+      });
+    });
   }
 
-  const Adventurer = ({adventurer, makeSuperUser, makeAvailableGuildLeader, rejectAdventurer}) => {
+  const toggleApprovedAdventurer = (adventurer) => {
+    const data = adventurer.permissions.filter((p) => p.type === "Approved").length !== 0 ? {set: false} : {set: true};
+    axios.put(baseURL + "/perm/" + adventurer.id + "/accepted", data).then((response) => {
+      axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
+        setAvailableGuildLeaders(response.data);
+      });
+  
+      axios.get(baseURL + "/user").then((response) => {
+        setAdventurers(response.data);
+      });
+    });
+  }
+
+  const Adventurer = ({adventurer, toggleSuperUser, toggleAvailableGuildLeader, toggleApprovedAdventurer}) => {
     let permissionText = adventurer.permissions.map((v)=>{return v.type;}).join(", ");
     return (
         <tr>
@@ -178,9 +219,10 @@ const GuildManagement = () => {
           <td className="action-table-td left-col">{permissionText}</td>
           <td className="action-table-td right-col"></td>
           <td className="action-table-td right-col">
-            <Button variant="dark" onClick={() => makeSuperUser(adventurer.id)}>Toggle Admin</Button>&nbsp;
-            <Button variant="dark" onClick={() => makeAvailableGuildLeader(adventurer.id)}>Toggle Leader</Button>&nbsp;
-            <Button variant="dark" onClick={() => rejectAdventurer(adventurer.id)}>Reject</Button>
+            Toggles: &nbsp;
+            <Button variant="dark" onClick={() => toggleSuperUser(adventurer)}>Admin</Button>&nbsp;
+            <Button variant="dark" onClick={() => toggleAvailableGuildLeader(adventurer)}>Leader</Button>&nbsp;
+            <Button variant="dark" onClick={() => toggleApprovedAdventurer(adventurer)}>Approved</Button>
           </td>
         </tr>
     );
@@ -193,8 +235,8 @@ const GuildManagement = () => {
           <td className="action-table-td left-col"></td>
           <td className="action-table-td right-col"></td>
           <td className="action-table-td right-col">
-            <Button variant="dark" onClick={() => acceptAdventurer(adventurer.id)}>Accept</Button>&nbsp;
-            <Button variant="dark" onClick={() => rejectAdventurer(adventurer.id)}>Reject</Button>
+            <Button variant="dark" onClick={() => acceptAdventurer(adventurer)}>Accept</Button>&nbsp;
+            <Button variant="dark" onClick={() => rejectAdventurer(adventurer)}>Reject</Button>
             </td>
         </tr>
     );
@@ -237,7 +279,7 @@ const GuildManagement = () => {
               <div className="action-table-container">
                   <table className="action-table quest-examples"><tbody>
                     {adventurers.filter((v)=>{return v.permissions?.length !== 0}).map((adventurer,index)=>{
-                        return <Adventurer key={adventurer.id} rejectAdventurer={rejectAdventurer} makeSuperUser={makeSuperUser} makeAvailableGuildLeader={makeAvailableGuildLeader} adventurer={adventurer} />
+                        return <Adventurer key={adventurer.id} toggleApprovedAdventurer={toggleApprovedAdventurer} toggleSuperUser={toggleSuperUser} toggleAvailableGuildLeader={toggleAvailableGuildLeader} adventurer={adventurer} />
                     })}
                   </tbody></table>
               </div>
