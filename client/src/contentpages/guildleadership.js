@@ -11,7 +11,7 @@ const user_id = 1;
 const GuildLeadership = () => {
   //state
   const [guildQuestActions, setGuildQuestActions] = useState([]);
-  const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: null, xp: null});
+  const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: "", xp: ""});
   const [newGuildQuestActionCreation, setNewGuildQuestActionCreation] = useState(false);
   const [targetGuild, setTargetGuild] = useState({id:-1});
 
@@ -24,20 +24,21 @@ const GuildLeadership = () => {
       let guilds = response.data;
       let promises = [];
       guilds.filter((v) => {return v.leader_id === user_id}).map((guild) => {
-        let newPromise = axios.get(baseURL + "/guild/" + guild.id + "/quest-actions");
-        promises.push({guildId: guild.id, guildTitle: guild.name, promise: newPromise});
+        let newPromise = axios.get(baseURL + "/guild/" + guild.id + "/quest-actions").then(x => {
+          return {guildId: guild.id, guildTitle: guild.name, ...x};
+        });
+        promises.push(newPromise);
       });
-      promises.map((p) => {
-        p.promise.then((response) => {
+      Promise.all(promises).then((values)=>{
+        values.map((p) => {
           let newActions = {
             guildId: p.guildId,
             guildTitle: p.guildTitle,
-            guildQuestActions: response.data
+            guildQuestActions: p.data
           };
           currentGuildQuestActions.push(newActions);
-
-          setGuildQuestActions(currentGuildQuestActions);
-        })
+        });
+        setGuildQuestActions(currentGuildQuestActions);
       });
     });
 
@@ -116,7 +117,7 @@ const GuildLeadership = () => {
                 <tbody>
                   <TargetQuestAction 
                       guildId = {guildId}
-                      guildQuestAction={{id:-2, description: null, xp: null}}
+                      guildQuestAction={{id:-2, description: "", xp: ""}}
                       editGuildQuestAction={saveNewGuildQuestAction}
                       cancelEditGuildQuestAction={cancelNewGuildQuestAction}
                     />
