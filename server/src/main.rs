@@ -1260,40 +1260,45 @@ fn set_perm_endpoint(
     }
 }
 
+#[derive(Deserialize, Debug)]
+struct SetPerm {
+    set: bool,
+}
+
 async fn set_user_accepted(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
-    Json(accepted): Json<bool>,
+    Json(accepted): Json<SetPerm>,
 ) -> Result<(), (StatusCode, String)> {
-    set_perm_endpoint(state, user_id, PermissionType::Approved, accepted)
+    set_perm_endpoint(state, user_id, PermissionType::Approved, accepted.set)
 }
 
 async fn set_user_rejected(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
-    Json(rejected): Json<bool>,
+    Json(rejected): Json<SetPerm>,
 ) -> Result<(), (StatusCode, String)> {
-    set_perm_endpoint(state, user_id, PermissionType::Rejected, rejected)
+    set_perm_endpoint(state, user_id, PermissionType::Rejected, rejected.set)
 }
 
 async fn set_user_superuser(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
-    Json(superuser): Json<bool>,
+    Json(superuser): Json<SetPerm>,
 ) -> Result<(), (StatusCode, String)> {
-    set_perm_endpoint(state, user_id, PermissionType::SuperUser, superuser)
+    set_perm_endpoint(state, user_id, PermissionType::SuperUser, superuser.set)
 }
 
 async fn set_user_eligible_guild_leader(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
-    Json(eligible): Json<bool>,
+    Json(eligible): Json<SetPerm>,
 ) -> Result<(), (StatusCode, String)> {
     set_perm_endpoint(
         state,
         user_id,
         PermissionType::GuildLeaderEligible,
-        eligible,
+        eligible.set,
     )
 }
 
