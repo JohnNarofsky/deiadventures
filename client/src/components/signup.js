@@ -1,44 +1,31 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { Navigate } from "react-router-dom";
 
 export default function SignUp() {
 
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [company, setCompany] = useState('');
+    const [created,setCreated] = useState('no');
+    const [userName, setUserName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const baseURL="https://testdei.narofsky.org/api";
 
     const handleSignUp = async (e) => {
         e.preventDefault();
 
-        if (!firstName.trim() || !lastName.trim() || !company.trim() ||
-            !password.trim()  || !email.trim() ) {
+        if (!userName.trim() || !password.trim()  || !email.trim() ) {
             setErrorMessage('Please enter require fields.');
             return; // Prevent login when input fields are empty
         }
 
         try {
-        const response = await axios.post('http://example.com/api/signup', {
-            firstName,
-            lastName,
-            company,
-            email,
-            password,
-        });
+            const signup = {name: userName, email: email, password: password};
+            axios.post(baseURL + "/auth/account", signup).then((response) => {
+                setCreated('yes');
+            });
 
-        // Assuming the server returns a success message
-        console.log(response.data);
-        
-        // Reset the form fields and error message
-        setFirstName('');
-        setLastName('');
-        setCompany('');
-        setEmail('');
-        setPassword('');
-        setErrorMessage('');
         } catch (error) {
         // Handle error from the server
         console.error('Error during sign-up:', error);
@@ -46,6 +33,7 @@ export default function SignUp() {
         }
     };
 
+    if (created === 'no'){
     return(
         <div className="Auth-form-container">
             <form className="Auth-form" onSubmit={handleSignUp}>
@@ -56,30 +44,12 @@ export default function SignUp() {
                         <Link to="/login">Login</Link>
                     </div>
                     <div className="form-group m-4">
-                        <label>First Name</label>
+                        <label>Name</label>
                         <input
                         type="text"
                         className="form-control mt-1"
                         placeholder="e.g Jane"
-                        onChange={(e) => setFirstName(e.target.value)}
-                        />
-                    </div>
-                    <div className="form-group m-4">
-                        <label>Last Name</label>
-                        <input
-                        type="text"
-                        className="form-control mt-1"
-                        placeholder="e.g Doe"
-                        onChange={(e) => setLastName(e.target.value)}
-                        />
-                    </div>
-                    <div className="form-group m-4">
-                        <label>Company</label>
-                        <input
-                        type="text"
-                        className="form-control mt-1"
-                        placeholder="Company Name"
-                        onChange={(e) => setCompany(e.target.value)}
+                        onChange={(e) => setUserName(e.target.value)}
                         />
                     </div>
                     <div className="form-group m-4">
@@ -109,5 +79,8 @@ export default function SignUp() {
             </form>
             {errorMessage && <p className="error-message text-center fw-bold">{errorMessage}</p>}
         </div>
-    )
+    )    
+    } else {
+        return <Navigate replace to="/login" />
+    }
 }
