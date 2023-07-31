@@ -7,7 +7,6 @@ import _ from 'lodash';
 
 const user_id = 1;
 
-
 const GuildLeadership = () => {
   //state
   const [guildQuestActions, setGuildQuestActions] = useState([]);

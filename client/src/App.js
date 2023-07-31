@@ -11,6 +11,8 @@ import MyAdventures from './contentpages/myadventures';
 import MyHistory from './contentpages/myhistory';
 import GuildLeadership from './contentpages/guildleadership';
 import GuildManagement from './contentpages/guildmanagement';
+import Signup from './contentpages/signup';
+import Login from './contentpages/login';
 
 function App() {
   return (
@@ -25,6 +27,8 @@ function App() {
                 <Nav.Link as={Link} to="/myhistory">My History</Nav.Link>
                 <Nav.Link as={Link} to="/guildleadership">Guild Leadership</Nav.Link>
                 <Nav.Link as={Link} to="/guildmanagement">Administration</Nav.Link>
+                <Nav.Link as={Link} to="/signup">Sign Up</Nav.Link>
+                <Nav.Link as={Link} to="/login">Login</Nav.Link>
                 </Nav>
             </Navbar.Collapse>
             </Container>
@@ -36,6 +40,8 @@ function App() {
                 <Route path="myadventures" element={<MyAdventures />} />
                 <Route path="myhistory" element={<MyHistory />} />
                 <Route path="guildleadership" element={<GuildLeadership />} />
+                <Route path="signup" element={<Signup />}/>
+                <Route path="login" element={<Login />}/>
             </Routes>
         </div>
     </>
