@@ -27,7 +27,6 @@ export default function NavigationBar() {
 
   useEffect(()=>{ 
     localStorage.setItem("profile", profile);
-    console.log(profile);
   }, [profile]);
 
   const NoPermsNavigation = (handleNavClose) => {
@@ -52,6 +51,8 @@ export default function NavigationBar() {
         <Navbar.Toggle aria-controls="responsive-navbar-nav" />
         <Navbar.Collapse id="responsive-navbar-nav">
           <Nav className="me-auto">
+            <Nav.Link as={Link} to="/gmguide" onClick={handleNavClose}>Guild Master's Guide</Nav.Link>
+
             {(profile?.permissions?.filter((v)=>v.type === "Approved").length === 0 && profile !== undefined) ? (
               <NoPermsNavigation onClick={handleNavClose} />
             ) : (

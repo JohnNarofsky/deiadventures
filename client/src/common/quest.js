@@ -62,9 +62,10 @@ const QuestAction = ({id,description, xp, guild, editStatus, participateStatus})
 export const QuestActions = ({questActions, editStatus, participateStatus, reviewStatus}) => {
     return(
         <div className="action-table-container">
-            <table className="action-table quest-examples">
+            <table className="action-table quest-examples"><tbody>
             {questActions.map((questAction,index)=>{
                 return <QuestAction
+                    key={index}
                     id={questAction.id}
                     description={questAction.description} 
                     xp={questAction.xp} 
@@ -73,7 +74,7 @@ export const QuestActions = ({questActions, editStatus, participateStatus, revie
                     participateStatus={participateStatus} 
                     reviewStatus={reviewStatus} />
             })}
-            </table>
+            </tbody></table>
         </div>
     );
 };
@@ -97,8 +98,8 @@ export default function Quest({questTitle, questDescription, questDetails, quest
         <div className="section quests">
             <QuestTitle questTitle={questTitle} />
             <QuestDescription questDescription={questDescription}/>
-            {questDetails.map((questDetail) => (
-                <QuestDetail title={questDetail.title} detail ={questDetail.detail}/>
+            {questDetails.map((questDetail, index) => (
+                <QuestDetail key={index} title={questDetail.title} detail ={questDetail.detail}/>
             ))}
             {actionTitle}
             {actions}

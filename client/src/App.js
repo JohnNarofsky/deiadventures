@@ -4,6 +4,7 @@ import GuildManagement from './contentpages/guildmanagement';
 import MyAdventures from './contentpages/myadventures';
 import MyHistory from './contentpages/myhistory';
 import Home from './contentpages/home';
+import GMGuide from './contentpages/gmguide';
 import NavigationBar from './components/navigationbar';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import GuildLeadership from './contentpages/guildleadership';
@@ -20,6 +21,7 @@ function App() {
       <NavigationBar />
       <Routes>
           <Route index element={<Home />} />
+          <Route path="gmguide" element={<GMGuide />} />
           <Route element={<ProtectedRoute/>}>
             <Route path="guildmanagement" element={<GuildManagement />} />
             <Route path="myadventures" element={<MyAdventures />} />
