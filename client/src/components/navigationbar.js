@@ -24,6 +24,7 @@ export default function NavigationBar() {
     setNavExpanded(false);
   };
 
+
   return (
     <Navbar
       collapseOnSelect
@@ -37,9 +38,10 @@ export default function NavigationBar() {
         <Navbar.Toggle aria-controls="responsive-navbar-nav" />
         <Navbar.Collapse id="responsive-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link as={Link} to="/myadventures" onClick={handleNavClose}>My Adventure</Nav.Link>
+            <Nav.Link as={Link} to="/myadventures" onClick={handleNavClose}>My Adventures</Nav.Link>
             <Nav.Link as={Link} to="/myhistory" onClick={handleNavClose}>My History</Nav.Link>
-            <Nav.Link as={Link} to="/guildmanagement" onClick={handleNavClose}>Guild Management</Nav.Link>
+            <Nav.Link as={Link} to="/guildleadership" onClick={handleNavClose}>Leadership</Nav.Link>
+            <Nav.Link as={Link} to="/guildmanagement" onClick={handleNavClose}>Administration</Nav.Link>
           </Nav>
           <Nav className="ml-auto">
             {profile ? (

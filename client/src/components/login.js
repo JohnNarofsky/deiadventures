@@ -70,10 +70,10 @@ export default function Login() {
             const login = {"email": email, "password": password};
 
             axios.post(baseURL + "/auth/login", login).then((response) => {
-                localStorage.setItem("user", response);
+                localStorage.setItem("user", response.data.id);
 
                 const data = {
-                    id: response.id
+                    id: response.data.id
                   };
            
                 setProfile(data)
