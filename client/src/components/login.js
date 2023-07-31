@@ -57,32 +57,18 @@ export default function Login() {
         }
         
         try {
-            // const response = await fetch('http://localhost:5000/api/login', { //change the url for response
-            //     method: 'POST',
-            //     headers: {
-            //     'Content-Type': 'application/json',
-            //     },
-            //     body: JSON.stringify({ email, password }),
-            // });
-        
-            // const data = await response.json();
-
             const login = {"email": email, "password": password};
 
             axios.post(baseURL + "/auth/login", login).then((response) => {
                 localStorage.setItem("user", response.data.id);
-
-                const data = {
-                    id: response.data.id
-                  };
-           
-                setProfile(data)
-    
+                axios.get(baseURL + "/user/"+response.data.id).then((response) => {
+                    const data = {
+                        id: response.data.id,
+                        permissions: response.data.permissions
+                      };
+                      setProfile(data);
+                    });
             });
-          
-
-          
-
         } catch (error) {
             // if unsuccessful login, redirect to "login page" again.
             console.error('Error during login:', error);
