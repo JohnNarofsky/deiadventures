@@ -6,8 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+argon2 = "0.5.1"
 axum = "0.6.19"
 menv = "0.2.7"
+rand = "0.8.5"
 rusqlite = { version = "0.29.0", features = ["bundled"] }
 serde = { version = "1.0.176", features = ["derive"] }
 tokio = { version = "1.29.1", features = ["full"] }

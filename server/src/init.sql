@@ -73,11 +73,23 @@ CREATE TABLE Adventurer (
     name TEXT NOT NULL,
     -- email_address and password_hash are used for authentication,
     -- and are required at least until we have OAuth2 working in their stead
-    email_address TEXT NOT NULL,
+    email_address TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     -- randomly generated for each user, to make attacking many hashes at once
     -- more difficult. this is standard practice.
     password_salt TEXT NOT NULL
+) STRICT;
+
+-- This table is not surfaced in the UI directly.
+-- It is used to manage active login sessions.
+CREATE TABLE AuthSession (
+    id INTEGER PRIMARY KEY,
+    adventurer_id INTEGER NOT NULL,
+    -- token is SECRET, and used to prove that we gave someone a login session.
+    token TEXT NOT NULL UNIQUE,
+    start_time INTEGER NOT NULL,
+    -- time_to_live is stored in seconds
+    time_to_live INTEGER NOT NULL
 ) STRICT;
 
 -- Note: This table reflects permissions which the backend code knows about,
