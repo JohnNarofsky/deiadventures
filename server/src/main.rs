@@ -1,11 +1,14 @@
 mod db;
 
+use argon2::password_hash::{PasswordHashString, Salt, SaltString};
+use argon2::{password_hash, Argon2, PasswordHash, PasswordHasher};
 use axum::extract::{Path, State};
 use axum::http::{StatusCode, Uri};
 use axum::routing::{delete, get, post, put};
 use axum::{Json, Router};
-use rusqlite::types::{FromSqlResult, ToSqlOutput, ValueRef};
-use rusqlite::{named_params, OptionalExtension};
+use rand::Rng;
+use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSqlOutput, ValueRef};
+use rusqlite::{named_params, OptionalExtension, ToSql};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
@@ -106,7 +109,7 @@ async fn main() {
         .route("/guild/quest-actions", get(get_all_guilds_quest_actions))
         // Auth endpoints.
         .route("/auth/account", post(auth_create_account))
-        .route("/auth/login", get(auth_login))
+        .route("/auth/login", post(auth_login))
         .route("/auth/logout", delete(auth_logout))
         .route("/auth/renew-session", put(auth_renew_session))
         .fallback(fallback)
@@ -142,6 +145,11 @@ impl AppState {
         Self { db }
     }
 
+    // TODO: make an error type to use instead of rusqlite::Error, and refactor.
+    //       I'm pretty sure I should've done a couple rollbacks for when an adventurer
+    //       doesn't exist, but that incorrect handling is not a show stopper.
+    //       Also, generally, I believe the error handling in this server could be
+    //       made substantially less verbose. But fixing that is a problem for after GenCon.
     // These transaction wrapper methods, conveniently, prevent any async code from being passed to them,
     // which is good because performing an await while we hold a lock on the database will cause a deadlock.
     fn read_transaction<T, F: FnOnce(&mut rusqlite::Transaction) -> Result<T, rusqlite::Error>>(
@@ -441,6 +449,12 @@ impl TryFrom<i64> for JsInt {
         } else {
             Err(())
         }
+    }
+}
+impl FromSql for JsInt {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        i64::column_result(value)
+            .and_then(|x| JsInt::try_from(x).map_err(|()| FromSqlError::OutOfRange(x)))
     }
 }
 
@@ -1352,9 +1366,247 @@ async fn retire_guild_quest_action(
     }
 }
 
+/// Wrapper type for consuming passwords to prevent obvious misuse
+/// and accidental logging of passwords.
+/// Doesn't avoid extra copies of passwords lingering in memory,
+/// but should be good enough in the absence memory safety bugs.
+///
+/// DO NOT put this in the database.
+#[derive(Deserialize)]
+#[serde(transparent)]
+struct Password {
+    text: String,
+}
+// Manual Debug impl to avoid leaking password in logs.
+impl core::fmt::Debug for Password {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        write!(f, "Password {{ ... }}")
+    }
+}
+impl Password {
+    fn hash(&self, salt: Salt<'_>) -> Result<PasswordHashString, password_hash::Error> {
+        // TODO: we should pick something specific and save the
+        //       particular hash alg used with a row so that, when
+        //       there is a desire to change algs, we can replace
+        //       hashes as soon as we receive their password again
+        let argon2 = Argon2::default();
+
+        let hash = argon2.hash_password(self.text.as_bytes(), salt)?;
+
+        Ok(hash.into())
+    }
+    // I can have fun with names, right? lol
+    fn salty_hash(&self) -> Result<(PasswordHashString, SaltString), password_hash::Error> {
+        let salt = SaltString::generate(&mut rand::thread_rng());
+        let hash = self.hash(salt.as_salt());
+        Ok((hash?, salt))
+    }
+    fn check_hash(
+        &self,
+        test_hash: PasswordHash,
+        salt: Salt,
+    ) -> Result<bool, password_hash::Error> {
+        let hash = self.hash(salt)?;
+        Ok(hash.password_hash() == test_hash)
+    }
+}
+
 // These top two are the only ones necessary for the MVP.
-async fn auth_create_account() {}
-async fn auth_login() {}
+#[derive(Deserialize, Debug)]
+struct CreateAccount {
+    name: String,
+    // TODO: we should probably do email validation
+    email: String,
+    // TODO: maybe we should add a wrapper type to
+    //       ensure we don't put this anywhere we shouldn't
+    password: Password,
+}
+// #[derive(Serialize, Debug)]
+// struct CreatedAccount {
+//
+// }
+async fn auth_create_account(
+    State(state): State<ArcState>,
+    Json(account): Json<CreateAccount>,
+) -> Result<(), (StatusCode, String)> {
+    let res = state.write_transaction(|db| {
+        let CreateAccount {
+            name,
+            email,
+            password,
+        } = account;
+        // Steps:
+        //  1. Check if account *already* exists. Fail if so.
+        //  2. Generate password salt.
+        //  3. Compute password hash.
+        //  4. Insert name, email, password hash, and password salt, into
+        //     the Adventurer table.
+
+        let mut query = db.prepare_cached(
+            "SELECT 0 FROM Adventurer WHERE email_address = :email;"
+        )?;
+        if query.exists(named_params! { ":email": email })? {
+            return Ok(Err((StatusCode::BAD_REQUEST, "account already exists".to_string())))
+        }
+
+        let Ok((hash, salt)) = password.salty_hash() else {
+            return Ok(Err((StatusCode::INTERNAL_SERVER_ERROR, "failed to compute password hash".to_string())))
+        };
+
+        let mut query = db.prepare_cached(
+            "INSERT INTO Adventurer (name, email_address, password_hash, password_salt)
+                 VALUES (:name, :email, :hash, :salt);"
+        )?;
+        let n = query.execute(named_params! { ":name": name, ":email": email, ":hash": hash.as_str(), ":salt": salt.as_str() })?;
+        assert_eq!(n, 1);
+
+        Ok(Ok(()))
+    });
+
+    match res {
+        Ok(Ok(())) => Ok(()),
+        Ok(Err(e)) => Err(e),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+struct AuthLogin {
+    email: String,
+    password: Password,
+}
+
+// In a similar vein to `Password`, this type prevents obvious misuse,
+// and has a manual `Debug` impl to avoid accidentally leaking it in logs.
+#[derive(Serialize)]
+#[serde(transparent)]
+struct AuthToken {
+    token: String,
+}
+impl core::fmt::Debug for AuthToken {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Token {{ ... }}")
+    }
+}
+impl ToSql for AuthToken {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        self.token.to_sql()
+    }
+}
+impl AuthToken {
+    fn generate() -> Self {
+        // To make things easy to work with in JSON,
+        // our tokens are a buffer of printable ASCII text.
+        // The printable ASCII range is from 0x20 to 0x7e.
+        // To equal 128 bits of representation space, we want to compute
+        // a number of ASCII characters equal to
+        // 128 / log2(0x7e - 0x20), which roughly equals 20.
+        const WIDTH: usize = 20;
+        let mut rng = rand::thread_rng();
+        let mut token = String::with_capacity(WIDTH);
+        for _ in 0..WIDTH {
+            let c = rng.gen_range(0x20..0x7eu8);
+            token.push(c as char);
+        }
+        Self { token }
+    }
+}
+
+#[derive(Serialize, Debug)]
+struct AuthLoginSession {
+    id: UserId,
+    token: AuthToken,
+    start_time: JsInt,
+    time_to_live: JsInt,
+}
+async fn auth_login(
+    State(state): State<ArcState>,
+    Json(login): Json<AuthLogin>,
+) -> Result<Json<AuthLoginSession>, (StatusCode, String)> {
+    let data = state.write_transaction(|db| {
+        let AuthLogin { email, password } = login;
+        // Steps:
+        //  1. Lookup user by email. If doesn't exist, fail.
+        //  2. Pull the user's password hash and salt.
+        //  3. Compute the hash of the attempted password,
+        //     and compare it to the one from the database.
+        //     If it doesn't match, fail.
+        //  4. Generate an AuthToken and insert a new row in AuthSession.
+        //  5. Return the adventurer_id, token, start_time, and time_to_live.
+        //     (Note: It'd also be easy to return the adventurer name.)
+
+        let mut query = db.prepare_cached(
+            "SELECT id, password_hash, password_salt FROM Adventurer
+                 WHERE email_address = :email;",
+        )?;
+        let Some((adventurer_id, test_hash, salt)) =
+            query.query_row(named_params! { ":email": email }, |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            }).optional()? else {
+            return Ok(Err((StatusCode::NOT_FOUND, format!("no adventurer with email = {email} exists"))))
+        };
+
+        let test_hash =
+            PasswordHashString::new(&test_hash).expect("expected to save a valid password hash");
+        let salt = SaltString::from_b64(&salt).expect("expected to save a valid hash salt");
+
+        let check = password.check_hash(test_hash.password_hash(), salt.as_salt());
+        match check {
+            Ok(true) => (),
+            Ok(false) => return Ok(Err((StatusCode::UNAUTHORIZED, "failed login".to_string()))),
+            Err(_) => return Ok(Err((StatusCode::UNAUTHORIZED, "failed login".to_string()))),
+        }
+
+        let mut query = db.prepare_cached(
+            "INSERT INTO AuthSession (adventurer_id, token, start_time, time_to_live)
+                 VALUES (:adventurer_id, :token, unixepoch(), 2592000);",
+        )?;
+
+        let token = AuthToken::generate();
+        let n =
+            query.execute(named_params! { ":adventurer_id": adventurer_id, ":token": token })?;
+        assert_eq!(n, 1);
+
+        let session_id = db.last_insert_rowid();
+
+        let mut query = db.prepare_cached(
+            "SELECT start_time, time_to_live FROM AuthSession WHERE id = :session_id;",
+        )?;
+        let (start_time, time_to_live) = query
+            .query_row(named_params! { ":session_id": session_id }, |row| {
+                Ok((row.get(0)?, row.get(1)?))
+            })?;
+
+        Ok(Ok(AuthLoginSession {
+            id: adventurer_id,
+            token,
+            start_time,
+            time_to_live,
+        }))
+    });
+
+    match data {
+        Ok(Ok(session)) => Ok(Json(session)),
+        Ok(Err(e)) => Err(e),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}
 
 // These are optional for the MVP.
 async fn auth_logout() {}
