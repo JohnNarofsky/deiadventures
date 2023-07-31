@@ -56,6 +56,7 @@ async fn main() {
         // - DELETE for deleting objects (obviously)
         // .route("/user/:user_id", get(get_user))
         .route("/user", get(get_users))
+        .route("/user/:user_id", get(get_user))
         .route("/user/:user_id/accept-quest", put(accept_quest))
         .route("/user/:user_id/complete-quest", put(complete_quest))
         .route("/user/:user_id/cancel-quest", delete(cancel_quest))
@@ -316,60 +317,66 @@ async fn get_users(
         }
     }
 }
-// async fn get_user(
-//     State(state): State<ArcState>,
-//     Path(user_id): Path<UserId>,
-// ) -> Result<Json<User>, StatusCode> {
-//     dbg!(user_id);
-//     let data = state.read_transaction(|db| {
-//         // Steps:
-//         //  1. Check if adventurer exists. If not, 404.
-//         //  2. SELECT list of quests associated with the adventurer.
-//         //  3. Transform that list to a pair of lists, selected and completed,
-//         //     based on whether close_date is null.
-//
-//         let mut query = db.prepare_cached("SELECT name FROM Adventurer WHERE id = :id;")?;
-//         let name: Option<String> = query
-//             .query_row(
-//                 named_params! {
-//                     ":id": user_id,
-//                 },
-//                 |row| row.get(0),
-//             )
-//             .optional()?;
-//         if let Some(name) = name {
-//             let mut query =
-//                 db.prepare_cached("SELECT quest_id FROM PartyMember WHERE adventurer_id = :id;")?;
-//             let rows = query.query_map(
-//                 named_params! {
-//                     ":id": user_id,
-//                 },
-//                 |row| row.get::<_, QuestId>(0),
-//             )?;
-//             // let selected_quests = vec![];
-//             // let completed_quests = vec![];
-//             for row in rows {
-//                 dbg!(row);
-//             }
-//             Ok(Some(User {
-//                 name,
-//                 selected_quests: vec![],
-//                 completed_quests: vec![],
-//             }))
-//         } else {
-//             Ok(None)
-//         }
-//     });
-//
-//     match data {
-//         Ok(Some(x)) => Ok(Json(x)),
-//         Ok(None) => Err(StatusCode::NOT_FOUND),
-//         Err(e) => {
-//             tracing::error!("rusqlite error: {e:?}");
-//             Err(StatusCode::INTERNAL_SERVER_ERROR)
-//         }
-//     }
-// }
+
+async fn get_user(
+    State(state): State<ArcState>,
+    Path(user_id): Path<UserId>,
+) -> Result<Json<UserSummary>, (StatusCode, String)> {
+    let data = state.read_transaction(|db| {
+        if !db::adventurer_exists(&db, user_id)? {
+            return Ok(Err((
+                StatusCode::NOT_FOUND,
+                format!("no adventurer with id = {user_id} exists"),
+            )));
+        }
+        let name: String = db.query_row(
+            "SELECT name FROM Adventurer WHERE id = :user_id",
+            named_params! { ":user_id": user_id },
+            |row| row.get(0),
+        )?;
+        let mut query = db.prepare_cached(
+            "SELECT guild_id, assigned_role FROM AdventurerRole
+                 WHERE adventurer_id = :user_id;",
+        )?;
+        let roles = query
+            .query_map(named_params! { ":user_id": user_id }, |row| {
+                Ok(Role {
+                    guild_id: row.get(0)?,
+                    name: row.get(1)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        let mut query = db.prepare_cached(
+            "SELECT permission_type FROM Permission
+                 WHERE adventurer_id = :user_id;",
+        )?;
+        let permissions = query
+            .query_map(named_params! { ":user_id": user_id }, |row| {
+                Ok(Permission {
+                    r#type: PermissionType::extract(row.get(0)?).unwrap(),
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Ok(UserSummary {
+            id: user_id,
+            name,
+            roles,
+            permissions,
+        }))
+    });
+
+    match data {
+        Ok(Ok(user)) => Ok(Json(user)),
+        Ok(Err(e)) => Err(e),
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            ))
+        }
+    }
+}
 
 #[derive(Serialize, Debug)]
 struct AcceptedQuestAction {
