@@ -1,40 +1,53 @@
-# Getting Started with Create React App
+Note: This server provides the Web API which the frontend connects to,
+but does not serve the frontend web pages itself. That's done from S3.
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Getting Started with Cargo
+This subproject is made with Cargo, the official tool for building Rust applications.
 
-## Available Scripts
+## Cargo subcommands
+In the subproject directory, you can run:
 
-In the project directory, you can run:
+### `cargo run`
+Runs the app with the debug profile.
 
-### `npm start`
+You can pass `--release` to this command to build with optimizations.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### `cargo build`
+Builds the app with the debug profile.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+You can pass `--release` to this command to build with optimizations.
 
-### `npm test`
+The binary is placed at `target/<profile>/server`.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### `cargo test`
+We don't actually *have* any tests defined in this subproject yet,
+but they'd be run with this.
 
-### `npm run build`
+## Deployment
+To deploy this project, build it with `cargo build --release`
+(or just `cargo build` if you're in a hurry and the service isn't public yet)
+and copy the `server` binary over to your server machine,
+then run it with the appropriate environment variables.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+(I'll be adding a script for doing all those steps at once,
+and making us run at server boot, but that's low priority right now.)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Making an Axum web server
+I don't have time to write a tutorial, but you can read this for an introduction to Axum:
+<https://docs.rs/axum/latest/axum/index.html>.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+# SQLite
+We're starting out using SQLite for our database,
+because it makes testing and deployment *so* easy.
 
+If you have SQLite installed on your machine, you can use the `sqlite3` binary
+to open a database file and run SQL and stuff on it.
 
-### Making a Progressive Web App - a nice to have we're not doing yet
+If you don't, I do strongly recommend installing it if you're going to work on this
+part of the codebase, but you don't have to: this subproject is configured
+to build the SQLite library from source and so has no system dependency for it.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+Note that, due to our use of `STRICT` tables,
+we require version 3.37.0 or later, of SQLite.
 
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+SQLite can be downloaded here: <https://www.sqlite.org/download.html>

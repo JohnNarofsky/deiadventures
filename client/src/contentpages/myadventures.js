@@ -1,10 +1,154 @@
 import React from "react";
+import { useEffect, useCallback, useState } from 'react';
 import Decorations from "../common/decorations";
-import {QuestActions} from "../common/quest";
+import Button from 'react-bootstrap/Button';
+import axios from 'axios';
+import _ from 'lodash';
+import Quest, {QuestActions} from '../common/quest';
 
 const MyAdventures = () => {
 
-  return (
+    const [acceptedQuestActions, setAcceptedQuestActions] = useState([]);
+    const [availableQuestActions, setAvailableGuildQuestActions] = useState([]);
+    const [guilds, setGuilds] = useState([]);
+    const user_id = 1;
+  
+    const baseURL="https://testdei.narofsky.org/api";
+  
+    //initializing UseEffect
+    useEffect(()=>{
+        axios.get(baseURL + "/guild").then((response) => {
+            setGuilds(response.data);
+          });
+
+        //TODO: GET USER_ID FROM CONTEXT THAT IS UPDATED UPON LOGIN
+          axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
+            setAcceptedQuestActions(response.data);
+          });
+      
+          axios.get(baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
+            setAvailableGuildQuestActions(response.data);
+          });
+
+    }, []);
+
+    const finishQuestAction = (questAction) => {
+        const data = {quest_id: questAction.quest_id};
+        //TODO: Give them a little modal happiness telling them where this went
+        
+        axios.put(baseURL + "/user/" + user_id + "/complete-quest", data).then((response) => {
+            axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
+                setAcceptedQuestActions(response.data);
+            });
+          
+            axios.get(baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
+            setAvailableGuildQuestActions(response.data);
+            });
+    
+        });
+    };
+
+    const cancelQuestAction = (questAction) => {
+        const data = {quest_id: questAction.quest_id};
+        //TODO: Give them a little modal happiness telling them where this went
+        
+        axios.delete(baseURL + "/user/" + user_id + "/cancel-quest", { headers: { 'Content-Type': 'application/json' }, data }).then((response) => {
+            axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
+                setAcceptedQuestActions(response.data);
+            });
+          
+            axios.get(baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
+            setAvailableGuildQuestActions(response.data);
+            });
+    
+        });
+
+    };
+
+    const acceptQuestAction = (questAction) => {
+        const data = {quest_id: questAction.quest_id};
+
+        axios.put(baseURL + "/user/" + user_id + "/accept-quest", data).then((response) => {
+            axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
+                setAcceptedQuestActions(response.data);
+            });
+          
+            axios.get(baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
+            setAvailableGuildQuestActions(response.data);
+            });
+    
+        });
+    };
+
+    //{guild_id: 2, quest_id: 0, description: 'Schedule a DEI meeting', xp: 15}
+    const AcceptedQuestAction = ({questAction}) => {
+        return (
+            <tr>
+                <td className="action-table-td left-col">{questAction.description}</td>
+                <td className="action-table-td right-col">{questAction.xp} xp</td>
+                <td className="action-table-td right-col">
+                  <Button variant="dark" onClick={() => finishQuestAction(questAction)}>Finish</Button>&nbsp;
+                  <Button variant="dark" onClick={() => cancelQuestAction(questAction)}>Cancel</Button>
+                </td>
+            </tr>
+        );
+      };
+
+      
+      const AvailableQuestAction = ({questAction}) => {
+        return (
+            <tr>
+                <td className="action-table-td left-col">{questAction.description}</td>
+                <td className="action-table-td right-col">{questAction.xp} xp</td>
+                <td className="action-table-td right-col">
+                  <Button variant="dark" onClick={() => acceptQuestAction(questAction)}>Accept</Button>
+                </td>
+            </tr>
+        );
+      };
+
+    const Guild = ({guild}) => {
+        return (
+            <div>
+                <div className="action-table-header">
+                    <h2>{guild.name} Actions</h2>
+                </div>
+                <div className="action-table-container quest-examples">
+                    <table className="action-table"><tbody>
+                        <tr>
+                            <td>
+                                <div className="action-table-container quest-examples">
+                                    <h3>Your Accepted Guild Actions</h3>
+                                    <table className="action-table"><tbody>
+                                        {acceptedQuestActions.filter((v)=>v.guild_id===guild.id).map((questAction)=>{
+                                            return <AcceptedQuestAction key={questAction.quest_id} questAction={questAction} />
+                                            })
+                                        }
+                                    </tbody></table>
+                                </div>
+                            </td>
+                        </tr>                        
+                        <tr>
+                            <td>
+                                <br/>
+                                <div className="action-table-container quest-examples">
+                                    <h3>Available Guild Actions</h3>
+                                    <table className="action-table"><tbody>
+                                        {availableQuestActions.filter((v)=>v.guild_id===guild.id).map((questAction)=>{
+                                            return <AvailableQuestAction key={questAction.quest_id} questAction={questAction} />
+                                            })
+                                        }
+                                    </tbody></table>
+                                </div>
+                            </td>
+                        </tr>                        
+                    </tbody></table>
+                </div>                
+            </div>
+        );
+    };
+
+    return (
     <div className="container">
         <div className="parallax">
             <Decorations/>
@@ -15,51 +159,15 @@ const MyAdventures = () => {
                 <div className="cover-content cbttm">
                     <div className="section quests">
                         <h1 className="section-top">Welcome to Your Adventures!</h1>
-                        <p className="section-top"><strong>These are the adventure actions you've signed up for!</strong></p>
+                        <p className="section-top"><strong>These are the adventure actions you've signed up for along with the ones available!</strong></p>
                     </div>
-                    <div className="action-table-grid">
-                        <div>
-                            <div className="action-table-header"><h2>Scribe Actions</h2></div>
-                            <QuestActions
-                                questActions={[
-                                    {description:"Schedule a DEI meeting", xp: "10", guild: ""},
-                                    {description:"Update Zoom name with pronouns", xp: "15", guild: ""},
-                                    {description:"Update email signature with pronouns", xp: "15", guild: ""},
-                                    {description:"Help plan a DEI-related event", xp: "100", guild: ""},
-                                    {description:"Create a Fundraising Campaign", xp: "200", guild: ""},
-                                    {description:"Submit a DEI presentation for an external conference", xp: "250", guild: ""},
-                                ]}
-                                participateStatus="true"
-                            ></QuestActions>
-                        </div>    
-                        <div>
-                            <div className="action-table-header"><h2>Wizard Actions</h2></div>
-                            <QuestActions
-                                questActions={[
-                                    {description:"Produce reading lists/things to watch", xp: "75", guild: ""},
-                                    {description:"Create DEI content to share internally", xp: "200", guild: ""},
-                                    {description:"Produce a DEI-focused research paper", xp: "200", guild: ""},
-                                ]}
-                                participateStatus="true"
-                            ></QuestActions>
-                        </div>      
-                        <div>
-                            <div className="action-table-header"><h2>Artisan Actions</h2></div>
-                            <QuestActions
-                                questActions={[
-                                    {description:"Complete a ticket from a DEI-related Jira Project (2 or less story points)", xp: "250", guild: ""},
-                                    {description:"Complete a ticket from a DEI-related Jira Project (3-5 story points)", xp: "400", guild: ""},
-                                    {description:"Complete a ticket from a DEI-related Jira Project (8 or more story points)", xp: "500", guild: ""},
-                                    {description:"Create art for the DEI Adventure Game", xp: "200", guild: ""},
-                                ]}
-                                participateStatus="true"
-                            ></QuestActions>
-                        </div>    
-                    </div>
+                        {guilds.map((thisGuild) => {
+                            return <Guild key={thisGuild.id} guild={thisGuild}/>
+                    })}
                 </div>  
             </div>
         </div>
     </div>
-  )};
+    )};
   
 export default MyAdventures;
