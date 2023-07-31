@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext} from 'react';
-import { useGoogleLogin } from '@react-oauth/google';
+//import { useGoogleLogin } from '@react-oauth/google';
 import './login.css'
 import axios from 'axios';
 import { ProfileContext } from '../common/profilecontext';
@@ -14,44 +14,45 @@ export default function Login() {
     const {profile, setProfile, setUsedGoogleLogin} = useContext(ProfileContext);
     const loginFailMessage = 'Login Failed! Please Try Again!';
 
-    const loginWithGoogle = useGoogleLogin({
-        onSuccess: (codeResponse) => {
-            setUser(codeResponse);
-            setUsedGoogleLogin(true);
-            // regiester with our server???
-        },
-        onError: (error) => {
-            console.log('Login Failed:', error);
-            setErrorMessage(loginFailMessage);
-        }
-    });
-    
-    useEffect(
-        () => {
-            if (user) {
-                axios
-                    .get(`https://www.googleapis.com/oauth2/v1/userinfo?access_token=${user.access_token}`, {
-                        headers: {
-                            Authorization: `Bearer ${user.access_token}`,
-                            Accept: 'application/json'
-                        }
-                    })
-                    .then((res) => {
-                        console.log(res)
-                        setProfile(res.data);
-                        // use this to develope the cookie session with server?
-                    })
-                    .catch((err) => console.log(err));
-            }
-        },
-        [ user ]
-    );
+    // const loginWithGoogle = useGoogleLogin({
+    //     onSuccess: (codeResponse) => {
+    //         setUser(codeResponse);
+    //         setUsedGoogleLogin(true);
+    //         // regiester with our server???
+    //     },
+    //     onError: (error) => {
+    //         console.log('Login Failed:', error);
+    //         setErrorMessage(loginFailMessage);
+    //     }
+    // });
+    // useEffect(
+    //     () => {
+    //         if (user) {
+    //             axios
+    //                 .get(`https://www.googleapis.com/oauth2/v1/userinfo?access_token=${user.access_token}`, {
+    //                     headers: {
+    //                         Authorization: `Bearer ${user.access_token}`,
+    //                         Accept: 'application/json'
+    //                     }
+    //                 })
+    //                 .then((res) => {
+    //                     console.log(res)
+    //                     setProfile(res.data);
+    //                     // use this to develope the cookie session with server?
+    //                 })
+    //                 .catch((err) => console.log(err));
+    //         }
+    //     },
+    //     [ user ]
+    // );
+
+    const baseURL="https://testdei.narofsky.org/api";
 
     const handleLogin = async (e) => {
         e.preventDefault();
 
         if (!email.trim() || !password.trim()) {
-            setErrorMessage('Please enter your login creditenial.');
+            setErrorMessage('Please enter your login credential.');
             return; // Prevent login when input fields are empty
         }
         
@@ -65,17 +66,21 @@ export default function Login() {
             // });
         
             // const data = await response.json();
-            const data = {
-                firstName: "John",
-                lastName: "Doe",
-                picture: '',
-                email: "test@gmail.com"
-              };
 
-            console.log(data); // Response from the server
-        
-            // If login was successful, Redirect to "Home Page".
-            setProfile(data)
+            const login = {"email": email, "password": password};
+
+            axios.post(baseURL + "/auth/login", login).then((response) => {
+                localStorage.setItem("user", response);
+
+                const data = {
+                    id: response.id
+                  };
+           
+                setProfile(data)
+    
+            });
+          
+
           
 
         } catch (error) {
@@ -124,12 +129,12 @@ export default function Login() {
                             <p className="forgot-password text-center mt-2">
                                 Forgot <a href="#">password?</a>
                             </p>
-                            <h4 className="Auth-form-title text-center">OR</h4>
+                            {/* <h4 className="Auth-form-title text-center">OR</h4> */}
                         </div>
                     </form>
-                    <div className="d-grid gap-2 m-4">
+                    {/* <div className="d-grid gap-2 m-4">
                         <button className="btn btn-primary " onClick={() => loginWithGoogle()}>Sign in with Google 🚀 </button>
-                    </div>
+                    </div> */}
                 </div>
                 {errorMessage && <h3 className='text-center'>{errorMessage}</h3>}
             </>

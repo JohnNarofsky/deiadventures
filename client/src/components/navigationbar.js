@@ -45,13 +45,7 @@ export default function NavigationBar() {
             {profile ? (
               <NavDropdown
                 title={
-                  <div>
-                    <img
-                      src={profile.picture || './images/favicon.png'}
-                      className="rounded-circle"
-                      alt="profile picture"
-                    />
-                  </div>
+                  <div>My Profile</div>
                 }
                 id="collasible-nav-dropdown"
               >
