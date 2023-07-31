@@ -8,6 +8,7 @@ import NavigationBar from './components/navigationbar';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import GuildLeadership from './contentpages/guildleadership';
 import Login from './components/login';
+import SignUp from './components/signup';
 import { ProfileProvider } from './common/profilecontext';
 
 
@@ -16,16 +17,6 @@ function App() {
     <>
     <ProfileProvider>
       <NavigationBar />
-      {/* <div className='container'>
-        <Routes>
-            <Route index element={<Home />} />
-            <Route path="guildmanagement" element={<GuildManagement />} />
-            <Route path="myadventures" element={<MyAdventures />} />
-            <Route path="myhistory" element={<MyHistory />} />
-            <Route path="guildleadership" element={<GuildLeadership />} />
-            <Route path="login" element={<Login />} />
-        </Routes>
-      </div> */}
       
       <Routes>
           <Route index element={<Home />} />
@@ -34,6 +25,7 @@ function App() {
           <Route path="myhistory" element={<MyHistory />} />
           <Route path="guildleadership" element={<GuildLeadership />} />
           <Route path="login" element={<Login />} />
+          <Route path="signup" element={<SignUp />} />
       </Routes>
     </ProfileProvider>
     </>

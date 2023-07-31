@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { Link } from "react-router-dom"
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
@@ -9,38 +9,65 @@ import { ProfileContext } from "../common/profilecontext";
 import { googleLogout } from '@react-oauth/google';
 
 export default function NavigationBar() {
-  const { profile, setProfile } = useContext(ProfileContext);
+  const { profile, setProfile, usedGoogleLogin, setUsedGoogleLogin } = useContext(ProfileContext);
+  const [navExpanded, setNavExpanded] = useState(false);
 
   const logOut = () => {
-    googleLogout();
+    if (usedGoogleLogin) {
+      googleLogout();
+      setUsedGoogleLogin(false);
+    }
     setProfile(null);
   };
 
+  const handleNavClose = () => {
+    setNavExpanded(false);
+  };
+
   return (
-      <Navbar collapseOnSelect expand="sm" className="navbar-custom">
+    <Navbar
+      collapseOnSelect
+      expand="md"
+      className="navbar-custom"
+      expanded={navExpanded}
+      onToggle={setNavExpanded}
+    >
       <Container>
-        <Navbar.Brand as={Link} to ="/">DEI Adventure</Navbar.Brand>
+        <Navbar.Brand as={Link} to="/">DEI Adventure</Navbar.Brand>
         <Navbar.Toggle aria-controls="responsive-navbar-nav" />
         <Navbar.Collapse id="responsive-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link as={Link} to="/myadventures">My Adventure</Nav.Link>
-            <Nav.Link as={Link} to="/myhistory">My History</Nav.Link>
-            <Nav.Link as={Link} to="/guildmanagement">Guild Management</Nav.Link>
+            <Nav.Link as={Link} to="/myadventures" onClick={handleNavClose}>My Adventure</Nav.Link>
+            <Nav.Link as={Link} to="/myhistory" onClick={handleNavClose}>My History</Nav.Link>
+            <Nav.Link as={Link} to="/guildmanagement" onClick={handleNavClose}>Guild Management</Nav.Link>
+          </Nav>
+          <Nav className="ml-auto">
             {profile ? (
-              <NavDropdown title={            
-                <div>
-                  <img src={profile.picture} className="rounded-circle" alt="user image" />
-                </div>} 
-              id="collasible-nav-dropdown">
-                <NavDropdown.Item onClick={() => logOut()}>Logout</NavDropdown.Item>
+              <NavDropdown
+                title={
+                  <div>
+                    <img
+                      src={profile.picture || './images/favicon.png'}
+                      className="rounded-circle"
+                      alt="profile picture"
+                    />
+                  </div>
+                }
+                id="collasible-nav-dropdown"
+              >
+                <NavDropdown.Item onClick={() => {
+                  logOut();
+                  handleNavClose();
+                }}>Logout</NavDropdown.Item>
               </NavDropdown>
             ) : (
-              <Nav.Link as={Link} to="/login">Login</Nav.Link>
+              <>
+                <Nav.Link as={Link} to="/login" onClick={handleNavClose}>Login</Nav.Link>
+                <Nav.Link as={Link} to="/signup" onClick={handleNavClose}>Sign Up</Nav.Link>
+              </>
             )}
           </Nav>
         </Navbar.Collapse>
-        
-
       </Container>
     </Navbar>
   )

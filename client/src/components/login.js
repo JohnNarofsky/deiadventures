@@ -1,21 +1,29 @@
 import { useState, useEffect, useContext} from 'react';
-import { googleLogout, useGoogleLogin } from '@react-oauth/google';
+import { useGoogleLogin } from '@react-oauth/google';
 import './login.css'
 import axios from 'axios';
 import { ProfileContext } from '../common/profilecontext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 
 export default function Login() {
 
-    const [username, setUsername] = useState();
-    const [password, setPassword] = useState();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [ user, setUser ] = useState([]);
-    const {profile, setProfile} = useContext(ProfileContext)
+    const [ errorMessage, setErrorMessage ] = useState('');
+    const {profile, setProfile, setUsedGoogleLogin} = useContext(ProfileContext);
+    const loginFailMessage = 'Login Failed! Please Try Again!';
 
     const loginWithGoogle = useGoogleLogin({
-        onSuccess: (codeResponse) => setUser(codeResponse),
-        // onSuccess: (codeResponse) => console.log(codeResponse),
-        onError: (error) => console.log('Login Failed:', error)
+        onSuccess: (codeResponse) => {
+            setUser(codeResponse);
+            setUsedGoogleLogin(true);
+            // regiester with our server???
+        },
+        onError: (error) => {
+            console.log('Login Failed:', error);
+            setErrorMessage(loginFailMessage);
+        }
     });
     
     useEffect(
@@ -29,7 +37,9 @@ export default function Login() {
                         }
                     })
                     .then((res) => {
+                        console.log(res)
                         setProfile(res.data);
+                        // use this to develope the cookie session with server?
                     })
                     .catch((err) => console.log(err));
             }
@@ -37,72 +47,85 @@ export default function Login() {
         [ user ]
     );
 
-    const handleLogin = async () => {
-        try {
-          const response = await fetch('http://localhost:5000/api/login', { //change the url for response
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username, password }),
-          });
-    
-          const data = await response.json();
-          console.log(data); // Response from the server
-    
-          // If login was successful, Redirect to "Home Page".
+    const handleLogin = async (e) => {
+        e.preventDefault();
 
+        if (!email.trim() || !password.trim()) {
+            setErrorMessage('Please enter your login creditenial.');
+            return; // Prevent login when input fields are empty
+        }
+        
+        try {
+            const response = await fetch('http://localhost:5000/api/login', { //change the url for response
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+        
+            const data = await response.json();
+
+            console.log(data); // Response from the server
+        
+            // If login was successful, Redirect to "Home Page".
+            setProfile(data)
+          
 
         } catch (error) {
-          // if unsuccessful login, redirect to "login page" again.
-          console.error('Error during login:', error);
+            // if unsuccessful login, redirect to "login page" again.
+            console.error('Error during login:', error);
+            setErrorMessage(loginFailMessage);
         }
-      };
-
-        // log out function to log the user out of google and set the profile array to null
-    const logOut = () => {
-            googleLogout();
-            setProfile(null);
     };
     
     if(!profile){
         return (
             <>
                 <div className="Auth-form-container">
-                    <form className="Auth-form">
+                    <form className="Auth-form" onSubmit={handleLogin}>
                         <div className="Auth-form-content">
-                            <h3 className="Auth-form-title">Sign In</h3>
-                            <div className="form-group mt-3">
+                            <h3 className="text-center Auth-form-title">Login Into Your DEI Journey Here</h3>
+                            <div className="text-center m-4">
+                                Haven't registered?{" "}
+                                <Link to="/signup">Sign Up</Link>
+                            </div>
+                            <div className="form-group m-4">
                                 <label>Email address</label>
                                 <input
                                 type="email"
                                 className="form-control mt-1"
                                 placeholder="Enter email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 />
                             </div>
-                            <div className="form-group mt-3">
+                            <div className="form-group m-4">
                                 <label>Password</label>
                                 <input
                                 type="password"
                                 className="form-control mt-1"
                                 placeholder="Enter password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                                 />
                             </div>
-                            <div className="d-grid gap-2 mt-3">
+                            <div className="d-grid gap-2 m-4">
                                 <button type="submit" className="btn btn-primary">
                                 Submit
                                 </button>
                             </div>
-                            <p className="forgot-password text-right mt-2">
+                            <p className="forgot-password text-center mt-2">
                                 Forgot <a href="#">password?</a>
                             </p>
-                            <h4 className="Auth-form-title">OR</h4>
-                            <div className="d-grid gap-3 mt-1">
-                            </div>
+                            <h4 className="Auth-form-title text-center">OR</h4>
                         </div>
                     </form>
-                    <button className="btn btn-primary" onClick={() => loginWithGoogle()}>Sign in with Google 🚀 </button>
+                    <div className="d-grid gap-2 m-4">
+                        <button className="btn btn-primary " onClick={() => loginWithGoogle()}>Sign in with Google 🚀 </button>
+                    </div>
                 </div>
+                {errorMessage && <h3 className='text-center'>{errorMessage}</h3>}
             </>
         )
     } else {
