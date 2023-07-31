@@ -10,6 +10,7 @@ import GuildLeadership from './contentpages/guildleadership';
 import Login from './components/login';
 import SignUp from './components/signup';
 import { ProfileProvider } from './common/profilecontext';
+import ProtectedRoute from './components/protectedroute';
 
 
 function App() {
@@ -17,13 +18,14 @@ function App() {
     <>
     <ProfileProvider>
       <NavigationBar />
-      
       <Routes>
           <Route index element={<Home />} />
-          <Route path="guildmanagement" element={<GuildManagement />} />
-          <Route path="myadventures" element={<MyAdventures />} />
-          <Route path="myhistory" element={<MyHistory />} />
-          <Route path="guildleadership" element={<GuildLeadership />} />
+          <Route element={<ProtectedRoute/>}>
+            <Route path="guildmanagement" element={<GuildManagement />} />
+            <Route path="myadventures" element={<MyAdventures />} />
+            <Route path="myhistory" element={<MyHistory />} />
+            <Route path="guildleadership" element={<GuildLeadership />} />
+          </Route>
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<SignUp />} />
       </Routes>

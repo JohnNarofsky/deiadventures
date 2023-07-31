@@ -56,15 +56,21 @@ export default function Login() {
         }
         
         try {
-            const response = await fetch('http://localhost:5000/api/login', { //change the url for response
-                method: 'POST',
-                headers: {
-                'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-            });
+            // const response = await fetch('http://localhost:5000/api/login', { //change the url for response
+            //     method: 'POST',
+            //     headers: {
+            //     'Content-Type': 'application/json',
+            //     },
+            //     body: JSON.stringify({ email, password }),
+            // });
         
-            const data = await response.json();
+            // const data = await response.json();
+            const data = {
+                firstName: "John",
+                lastName: "Doe",
+                picture: '',
+                email: "test@gmail.com"
+              };
 
             console.log(data); // Response from the server
         

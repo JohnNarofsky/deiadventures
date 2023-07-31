@@ -33,7 +33,7 @@ export default function NavigationBar() {
       onToggle={setNavExpanded}
     >
       <Container>
-        <Navbar.Brand as={Link} to="/">DEI Adventure</Navbar.Brand>
+        <Navbar.Brand as={Link} to="/" onClick={handleNavClose}>DEI Adventure</Navbar.Brand>
         <Navbar.Toggle aria-controls="responsive-navbar-nav" />
         <Navbar.Collapse id="responsive-navbar-nav">
           <Nav className="me-auto">
