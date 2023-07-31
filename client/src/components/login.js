@@ -9,7 +9,7 @@ export default function Login() {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [ user, setUser ] = useState([]);
+    const [ user, setUser ] = useState(null);
     const [ errorMessage, setErrorMessage ] = useState('');
     const {profile, setProfile, setUsedGoogleLogin} = useContext(ProfileContext);
     const loginFailMessage = 'Login Failed! Please Try Again!';
