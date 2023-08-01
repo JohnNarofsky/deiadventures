@@ -151,8 +151,7 @@ const MyAdventures = () => {
     return (
     <div className="container">
         <div className="parallax">
-            <Decorations/>
-            <div className="parallax__cover">
+            <div className="parallax__cover-clean">
                 <div className="cover-div">
                     <img src="./images/dei_site_layer_trees_div_lt.png" alt="More Trees" />
                 </div>

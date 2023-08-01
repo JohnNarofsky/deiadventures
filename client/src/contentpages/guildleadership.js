@@ -221,9 +221,8 @@ const GuildLeadership = () => {
 
   return (
     <div className="container">
-      <div className="parallax-thin">
-        <Decorations/> 
-        <div className="parallax__cover">
+      <div className="parallax">
+        <div className="parallax__cover-clean">
           <div className="cover-content ctop">
             <div className="section quests">
                 <h1 className="section-top">Guild Leadership</h1>
