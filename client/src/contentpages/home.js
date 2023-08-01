@@ -10,36 +10,41 @@ function Home() {
             <div className="parallax__cover">
                 <div className="cover-content ctop">
                     <div className="section quests">
-                        <h1 className="section-top">Welcome Adventurers!</h1>
-                        <p className="section-top-content">This guide is for all Game Masters <strong>or GM's</strong> out there looking to start a Choose Your DEI Adventure game. Following these starting quests will help you along your journey. Good luck!</p>
+                        <h2 className="section-top">What is the <strong>"Choose your DEI Adventure"</strong> program?</h2><br/>
+                        <p className="section-top-content">
+                            The Choose Your DEI Adventure Game was created in 2020 to help Morningstar improve employee engagement with
+                            Diversity, Equity, and Inclusion (DEI) work.
+                        </p>
+                        <p className="section-top-content">
+                            One of the many obstacles companies face in meeting their DEI goals is that most folks who aren't engaged in DEI either
+                            don't understand the problem or don't know where to start. This game is meant to help solve both.
+                        </p>
+                        <p className="section-top-content">
+                            Those who are unaware as to the why, this game can help address that. Through playing, they can look at various issues,
+                            causes, and areas that are impactful to communities both within and outside of work. This discovery will help foster that
+                            deeper understanding and give avenues where individuals are comfortable participating. For those who don't know where
+                            to start, the game provides a menu of options that make it easy to engage without suffering from paralysis of analysis. The
+                            2021 pilot of this program at Morningstar set a goal for all employees to earn a minimum of 1500 points in a calendar year,
+                            which equated to approximately 5% of their time allocation at work.
+                        </p>
+                        <p className="section-top-content">
+                            This is all made possible by Guild Leaders creating and maintaining a list of actions that adventurers can undertake.
+                            Whether the actions are to help Employee Resource Groups (ERGs) reach their goals in outreach, education, or
+                            belonging - or corporate DEI goals such as recruitment and retention.
+                        </p>
                     </div>
-                    <Quest 
-                        questTitle={"First Quest: Assemble the Adventure"} 
-                        questDescription={"Confirm that your company has formal, actionable DEI Goals & Objectives that can be aligned with the actions in the game. Without clear Goals and Objectives, the actions will not be as impactful, and you'll do a lot of work for minimal results. Find at least one executive sponsor. This person will be the one to make sure that the efforts within the game are prioritized and funded (where needed). Assemble your Guild Leaders to manage and support the players if they need help with any of the actions in the game. In this guide, we're using six guilds - Warrior, Scribe, Cultivator, Wizard, Artisan, and Storyteller.                   But feel free to custimize guilds as you like. Next, gather your employees that are ready to take on a grass-roots initiative to work on DEI. These are the folks that will help the guild leaders design quests and play the game. Once these are in place, you're ready for your second quest!"} 
-                        questActions={[]}
-                        questDetails={[]}
-                        >
-                    </Quest>
-                    <Quest
-                        questTitle={"Second Quest: Draw the Map"}
-                        questDescription={"Align your company Goals & Objectives to actions in the game. Take a look at the actions for each Guild and create Quests for you and your colleagues to embark on to help meet those goals. An example:"}
-                        questDetails={[{title:"Company DEI Goal", detail:"Diversity in Hiring/Recruitment"}, {title:"Quest", detail:"Recruitment Quest"},{title:"Required Guilds", detail:"Scribe & Cultivator"}]}
-                        questActions={[
-                            {description:"Review Job Descriptions for open roles to remove bias", xp:"75", guild:"Scribe"},
-                            {description:"Participate in a Structured Interview", xp:"100", guild:"Cultivator"},
-                            {description:"Conduct interviews at a diversity-related recruitment event", xp:"175", guild:"Cultivator"},
-                        ]}
-                        questNotes={"Partner with your grassroots groups in your company, such as Employee Resource Groups. What quests would they like to organize for folks to participate in? Share the quests you've created with your Executive Sponsor(s). Get their feedback and buy-in before you launch. Decide how you want to track points until the tracker is finished. Some teams prefer Excel, while others prefer Microsoft Forms for folks to enter the actions they've completed and accumulate points. Now the real fun begins! "}
-                    >
-                    </Quest>
-                    <Quest
-                        questTitle={"Third Quest: Gather Your Adventure Parties and Play!"}
-                        questDescription={"You know what's best for your organization when it comes to rolling out large scale initiatives, so do what works for you. Town Halls, Emails, Intranet Links, Word of Mouth - it's all likely going to be necessary to get folks excited about the game! As the adventure unfolds, share your stories (and get Storyteller points!) on social media with the hashtag #DEIAdventureGame so we can all be inspired! "}
-                        questDetails={[]}
-                        questActions={[]}
-                        questNotes={""}
-                    >
-                    </Quest>
+                    <div className="section quests">
+                        <h2 className="section-top">How do I play the game?</h2><br/>
+                        <p className="section-top-content">
+                            Getting started is easy! First, take a look at the description of each Guild below and decide which one feels best based on
+                            the type of work you prefer to do. Keep in mind that you're not locked into any type of work once you've chosen a Guild.
+                            Multi-guild participation is not only allowed, it is encouraged!
+                        </p>
+                        <p className="section-top-content">
+                            After that, sign-up! After the Admin have given you the go-ahead to participate, navigate to <b>My Adventures</b> to select 
+                            the actions that appeal to you. Then do that thing, come back to track your points, and find more things to do!
+                        </p>
+                    </div>
                     <div className="section quests">
                         <h2>Want more information?</h2>
                         Contact <a className="linkedin-link" href="https://www.linkedin.com/in/abbydryer/" target="_new">Abby Dryer</a>
@@ -50,106 +55,50 @@ function Home() {
                 </div>
                 <div className="cover-content cbttm">
                     <div className="section quests">
-                        <h1 className="section-top">Ideas for Guild Actions</h1>
-                        <p className="section-top-content">Members of a guild can complete actions to gain experience points <strong>(XP)</strong>. As adventurers continue to accumulate points, they can ‘level up’ and gain other abilities, like being able to define quests or lead Adventure parties. </p>
-                    </div>
-                    <div className="action-table-grid">
-                        <div>
-                            <div className="action-table-header"><h2>Warrior Actions</h2></div>
-                            <QuestActions
-                                questActions={[
-                                    {description:"Join an Employee Resource Group (ERG)", xp: "20", guild: ""},
-                                    {description:"Attend an ERG event", xp: "30", guild: ""},
-                                    {description:"Attend an ERG Committee meeting", xp: "50", guild: ""},
-                                    {description:"Find ERG partners for groups", xp: "120", guild: ""},
-                                    {description:"Be a Guild Leader", xp: "200", guild: ""},
-                                    {description:"Be a DEI Champion", xp: "200", guild: ""},
-                                    {description:"Be an ERG Officer or Committee Lead", xp: "200", guild: ""},
-                                    {description:"Run a DEI-related event", xp: "200", guild: ""},
-                                    {description:"Found an ERG", xp: "300", guild: ""}
-                                ]}
-                            ></QuestActions>
-                        </div>    
-                        <div>
-                            <div className="action-table-header"><h2>Scribe Actions</h2></div>
-                            <QuestActions
-                                questActions={[
-                                    {description:"Schedule a DEI meeting", xp: "10", guild: ""},
-                                    {description:"Update Zoom name with pronouns", xp: "15", guild: ""},
-                                    {description:"Update email signature with pronouns", xp: "15", guild: ""},
-                                    {description:"Track a set of DEI metrics", xp: "50", guild: ""},
-                                    {description:"Draft a DEI or ERG-related survey", xp: "50", guild: ""},
-                                    {description:"Review Job Descriptions to help remove bias", xp: "75", guild: ""},
-                                    {description:"Review a presentation draft for Accessibility needs", xp: "75", guild: ""},
-                                    {description:"Help plan a DEI-related event", xp: "100", guild: ""},
-                                    {description:"Create a Fundraising Campaign", xp: "200", guild: ""},
-                                    {description:"Submit a DEI presentation for an external conference", xp: "250", guild: ""},
-                                ]}
-                            ></QuestActions>
-                        </div>    
-                        <div>
-                            <div className="action-table-header"><h2>Cultivator Actions</h2></div>
-                            <QuestActions
-                                questActions={[
-                                    {description:"Celebrate an emplyee's DEI efforts", xp: "50", guild: ""},
-                                    {description:"Recruit a new member for an ERG", xp: "50", guild: ""},
-                                    {description:"Involve someone new in a DEI initiative", xp: "75", guild: ""},
-                                    {description:"Arrange a speaker for a DEI panel", xp: "100", guild: ""},
-                                    {description:"Conduct interviews at a diversity-related recruitment event", xp: "150", guild: ""},
-                                    {description:"Find Community Organizations for ERGs to work with", xp: "175", guild: ""},
-                                    {description:"Submit a colleague for an external DEI Award", xp: "175", guild: ""},
-                                    {description:"Define DEI metrics for your team", xp: "175", guild: ""},
-                                    {description:"Act as a Mentor or Manager for a DEI program", xp: "200", guild: ""},
-                                ]}
-                            ></QuestActions>
-                        </div>    
-                        <div>
-                            <div className="action-table-header"><h2>Wizard Actions</h2></div>
-                            <QuestActions
-                                questActions={[
-                                    {description:"Use your education stipend to purchase DEI-related materials or DEI Conference tickets", xp: "5", guild: ""},
-                                    {description:"Complete a DEI-focused Learning Course", xp: "30", guild: ""},
-                                    {description:"Participate in a DEI-focused Book Club", xp: "30", guild: ""},
-                                    {description:"Attend a DEI session at an external conference", xp: "30", guild: ""},
-                                    {description:"Read a chapter in a DEI-related book", xp: "50", guild: ""},
-                                    {description:"Suggest DEI improvements to your DEI Champion", xp: "50", guild: ""},
-                                    {description:"Attend an Inclusive Leader Workshop in your region", xp: "50", guild: ""},
-                                    {description:"Produce reading lists/things to watch", xp: "75", guild: ""},
-                                    {description:"Create DEI content to share internally", xp: "200", guild: ""},
-                                    {description:"Produce a DEI-focused research paper", xp: "200", guild: ""},
-                                ]}
-                            ></QuestActions>
-                        </div>      
-                        <div>
-                            <div className="action-table-header"><h2>Artisan Actions</h2></div>
-                            <QuestActions
-                                questActions={[
-                                    {description:"Complete a ticket from a DEI-related Jira Project (2 or less story points)", xp: "250", guild: ""},
-                                    {description:"Complete a ticket from a DEI-related Jira Project (3-5 story points)", xp: "400", guild: ""},
-                                    {description:"Complete a ticket from a DEI-related Jira Project (8 or more story points)", xp: "500", guild: ""},
-                                    {description:"Create art for the DEI Adventure Game", xp: "200", guild: ""},
-                                ]}
-                            ></QuestActions>
-                        </div>    
-                        <div>
-                            <div className="action-table-header"><h2>Storyteller Actions</h2></div>
-                            <QuestActions
-                                questActions={[
-                                    {description:"Share a DEI post on social media", xp: "10", guild: ""},
-                                    {description:"Provide information about a cultural holiday to your team", xp: "15", guild: ""},
-                                    {description:"Promote a DEI Event", xp: "20", guild: ""},
-                                    {description:"Share DEI information at a meeting", xp: "50", guild: ""},
-                                    {description:"Promote an ERG event/meeting", xp: "50", guild: ""},
-                                    {description:"Produce DEI content for social media", xp: "175", guild: ""},
-                                    {description:"Be part of a DEI panel", xp: "200", guild: ""},
-                                    {description:"Write a blog post or article about a DEI event experience", xp: "250", guild: ""},
-                                    {description:"Produce a DEI-focused research paper", xp: "300", guild: ""},
-                                    {description:"Present at a national/international conference", xp: "350", guild: ""},
-                                ]}
-                            ></QuestActions>
-                        </div>     
+                        <h1 className="section-top">Guilds</h1><br/>
+                        <p className="section-top-content">
+                            <h3>Warriors</h3>
+                            Warriors are the ones that come to mind when we think about DEI work. They're the ones that are excited to be out in the
+                            fray, fighting injustice and socio-economic problems head on. Warriors are our ERG Leads, DEI/ERG committee leaders,
+                            community volunteers, event planners, and DEI program leads that keep things moving forward towards continued progress.
+                        </p><br/>
+                        <p className="section-top-content">
+                            <h3>Scribes</h3>
+                            Scribes are the ones who remain outside the fray but are just as engaged in the cause. They're the ones who track the
+                            themes, report on patterns, handle the logistics, and keep the Warriors informed as they head towards the chaos. Without
+                            our Scribes, we wouldn't have Best Places to Work awards, or have our folks featured in various notable and
+                            distinguished lists. This illustrious group also helps develop DEI Dashboards which help point us in the right direction to
+                            ensure we're making a meaningful and lasting impact. Scribes are generally the invisible support structure that keep our
+                            DEI efforts alive. You rarely see who is doing the work, but you can always see the benefits of their efforts.
+                        </p><br/>
+                        <p className="section-top-content">
+                            <h3>Cultivators</h3>
+                            Cultivators are the ones help our employees grow to meet their true potential. They are the ones who keep an eye to the
+                            future and work with all of us to see that vision and work together towards it. Cultivators are our mentors, leaders,
+                            interviewers, and generally inspire us to find the best in ourselves.
+                        </p><br/>
+                        <p className="section-top-content">
+                            <h3>Wizards</h3>
+                            Wizards are accumulators of knowledge. They always seem to have just the right information at just the right time. By
+                            finding books, articles, podcasts, videos, and LinkedIn Learning Courses, their accumulated wisdom can help drive and
+                            inform future adventures.
+                        </p><br/>
+                        <p className="section-top-content">
+                            <h3>Artisans</h3>
+                            Artisans are our builders, creating the things that can make a tangible change. Whether they are updating our products to
+                            be more accessible and inclusive, creating art to inspire action, or building and improving the tools we use to track our
+                            progress in this game, our Artisans help bring it all together in a very real way.
+                        </p><br/>
+                        <p className="section-top-content">
+                            <h3>Storytellers</h3>
+                            Storytellers bring the hype. Who would know about the adventures unfolding without someone sharing the heroic deeds
+                            of their fellow adventurers? By forwarding invites, sharing stories on social media, or just plain talking about what's going
+                            on to anyone who will listen, our Storytellers help us maintain our momentum and excitement as we all work together to
+                            save the world.
+                        </p><br/>
                     </div>
                 </div>  
+
             </div>
         </div>
     </div>
