@@ -45,12 +45,6 @@ font-weight:700;
   text-align: center;
 }
 
-.section-top-content {
-  font-size: 21px !important;
-  font-weight:600;
-  line-height: 1.2em;
-}
-
 .logo-top {
 margin: auto;
 padding-top: 20px;
@@ -96,18 +90,6 @@ position:static;
 
 /* Increase OR Descrease whitespace by modifying height below: */
 
-.parallax__cover {
-  display: block;
-  position: fixed;
-  background: #FFF;
-  /* height: 2000px; */
-  width: 3000px;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 2;
-}
-
 .parallax__cover-clean {
   display: block;
   background: #FFF;
@@ -120,6 +102,12 @@ position:static;
 }
 
 @media (min-width: 1200px) {
+  .section-top-content {
+    font-size: 21px !important;
+    font-weight:600;
+    line-height: 1.2em;
+  }
+
   .cover-content {
     width: 100vw;
     margin: 0 auto;
@@ -127,31 +115,73 @@ position:static;
     padding: 40px 180px 60px;
     position: relative;
   }
+
+  .parallax__cover {
+    display: block;
+    position: fixed;
+    background: #FFF;
+     height: 2000px; 
+    width: 3000px;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 2;
+  }
+
+  .cover-content.cbttm {
+    background: #D6EAEA; /* D6EAEA 8FC5C7 */
+    height: 100%;
+    color: #1B474B;
+    overflow-y: auto;
+  }
+
+  .cover-content.ctop {
+    background: #276970;
+    height: 100%;
+    color: #D6EAEA;
+  }
 }
 
 @media (max-width: 1200px) {
+  .section-top-content {
+    font-size: 18px !important;
+    font-weight:600;
+    line-height: 1.2em;
+  }
+
+  .parallax__cover {
+    display: block;
+    position: fixed;
+    background: #FFF;
+    height: 2000px; 
+    width: 3000px;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 2;
+  }
+
   .cover-content {
     width: 100vw;
     margin: 0 auto;
     margin-bottom: -1px;
-    padding: 40px 40px 40px;
+    padding: 20px 15px 20px 20px;
     position: relative;
   }
   
-}
+  .cover-content.ctop {
+    background: #276970;
+    height: 100%;
+    color: #D6EAEA;
+  }
 
-
-.cover-content.ctop {
-  background: #276970;
-  height: 100%;
-  color: #D6EAEA;
-}
-
-.cover-content.cbttm {
-  background: #D6EAEA; /* D6EAEA 8FC5C7 */
-  height: 100%;
-  color: #1B474B;
-  overflow-y: auto;
+  .cover-content.cbttm {
+    background: #D6EAEA; /* D6EAEA 8FC5C7 */
+    height: 100%;
+    color: #1B474B;
+    padding: 20px 15px 200px 20px;
+    overflow-y: auto;
+  }
 }
 
 .cover-div {
