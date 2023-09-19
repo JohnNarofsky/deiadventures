@@ -256,9 +256,6 @@ const GuildManagement = () => {
 
 
   return (
-    <div className="container">
-      <div className="parallax">
-        <div className="parallax__cover-clean">
           <div className="cover-content ctop">
             <div className="section quests">
                 <h1 className="section-top">Administration</h1>
@@ -308,9 +305,6 @@ const GuildManagement = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
     )
 
   };
