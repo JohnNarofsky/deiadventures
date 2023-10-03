@@ -127,16 +127,14 @@ const GuildLeadership = () => {
       return (
         <>
           <div className="sub-content">
-              <table className="action-table quest-examples">
-                <tbody>
-                  <TargetQuestAction 
-                      guildId = {guildId}
-                      guildQuestAction={{id:-2, description: "", xp: ""}}
-                      editGuildQuestAction={saveNewGuildQuestAction}
-                      cancelEditGuildQuestAction={cancelNewGuildQuestAction}
-                    />
-                </tbody>
-              </table>
+          <div className="action-title">Adding a New Action</div>
+
+            <TargetQuestAction 
+                guildId = {guildId}
+                guildQuestAction={{id:-2, description: "", xp: ""}}
+                editGuildQuestAction={saveNewGuildQuestAction}
+                cancelEditGuildQuestAction={cancelNewGuildQuestAction}
+              />
           </div>
         </>
       );
