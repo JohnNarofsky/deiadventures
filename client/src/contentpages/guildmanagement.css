@@ -1,0 +1,86 @@
+.main {
+    background: #276970;
+    height: 100%;
+    color: #D6EAEA;
+    padding: 0px 10px 10px 10px ;
+}
+
+.content {
+    display: flex;
+    flex-flow: row wrap;
+}
+
+.main-title {
+    font-size: 2rem;
+    font-weight:500;
+    padding-top: 40px;
+    padding-bottom: 10px;
+}
+
+.main-description {
+}
+
+.sub-title {
+    font-weight: 500;
+    font-size: 1.5rem;
+    color: #1B474B;
+    text-align: center;
+}
+
+.sub-action {
+    text-align: center;
+    width: 100%;
+}
+
+.sub-content {
+    padding: 5px;
+    margin: 20px 5px;
+    box-shadow: 3px 5px 60px 0px rgba(65, 75, 79, 0.20);
+    border-radius: 15px;
+    background: #F1F8F8;
+    width: 100%;
+    max-width: 500px;
+}
+
+.action-title {
+    font-weight: 500;
+    font-size: 1.25rem;
+    color: #1B474B;
+    padding-bottom: 10px;
+
+}
+
+.action {
+    display: flex;
+    flex-flow:row wrap;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.action > * {
+    margin: 5px 5px 5px 5px;
+    width: 100%;
+    max-width: 200px;
+    height: 40px;
+}
+
+.listing {
+    font-weight: 300;
+    font-size: 1rem;
+    color: #1B474B;
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-between;
+    margin-top: 5px;
+}
+
+.listing > details {
+    margin: 5px 5px 5px 5px;
+    min-width: 100px;
+    width: 100%;
+
+}
+
+.listing > .actions {
+    margin: 5px;
+}

@@ -3,6 +3,7 @@ import { useEffect, useCallback, useState } from 'react';
 import Decorations from "../common/decorations";
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
+import './guildmanagement.css';
 
 const GuildManagement = () => {
 
@@ -88,21 +89,16 @@ const GuildManagement = () => {
     if (newGuildCreation){
       return (
         <>
-          <div className="action-table-container">
-              <table className="action-table quest-examples">
-                <tbody>
-                  <TargetGuild saveGuild={saveGuild} cancelGuild={cancelGuild} targetGuild={{id:-2, name:"", leader_id: -1, leader_name: null}} availableGuildLeaders={availableGuildLeaders} />  
-                </tbody>
-              </table>
+          <div className="sub-content">
+            <div className="action-title">Adding a New Guild</div>
+            <TargetGuild saveGuild={saveGuild} cancelGuild={cancelGuild} targetGuild={{id:-2, name:"", leader_id: -1, leader_name: null}} availableGuildLeaders={availableGuildLeaders} />  
           </div>
-          <br/>
         </>
       );
     }
     return (
       <>
-        <Button variant="dark" onClick={() => {setNewGuildCreation(true);setTargetGuild({id:-2, name:"", leader_id: -1, leader_name: null});}}>Add a Guild</Button> 
-        <br/>
+        <Button className="sub-action" variant="dark" onClick={() => {setNewGuildCreation(true);setTargetGuild({id:-2, name:"", leader_id: -1, leader_name: null});}}>Add a Guild</Button> 
       </>
     );
     
@@ -120,37 +116,34 @@ const GuildManagement = () => {
     }
 
     return (
-      <tr>
-        <td className="action-table-td left-col"><input onChange={handleChangeName} value={currentName} /></td>
-        <td className="action-table-td left-col">
+      <div className="action">
+          <input onChange={handleChangeName} value={currentName} />
           <select value={currentleader_id?currentleader_id:-1} onChange={handleChangeLeader}>
             <option value="-1">No Guild Leader</option>
             {availableGuildLeaders.map((option) => (
               <option key={option.id} value={option.id}>{option.name}</option>
             ))}
           </select>
-        </td>
-        <td className="action-table-td right-col">
-          </td>
-        <td className="action-table-td right-col">
-          <Button variant="dark" onClick={() => {
-            saveGuild({...targetGuild, leader_id: parseInt(currentleader_id), name: currentName});
-            }}>Done</Button>
-          &nbsp;<Button variant="dark" onClick={cancelGuild}>Cancel</Button>
-        </td>
-      </tr>
+          <div>
+            <Button variant="dark" onClick={() => {
+              saveGuild({...targetGuild, leader_id: parseInt(currentleader_id), name: currentName});
+              }}>Done</Button>
+            &nbsp;<Button variant="dark" onClick={cancelGuild}>Cancel</Button>
+          </div>
+      </div>
     );
   };
 
   const Guild = ({guild, setTargetGuild}) => {
     let leaderText = guild.leader_name !== null ? "Guild Leader: " + guild.leader_name : "No Current Guild Leader";
     return (
-        <tr>
-          <td className="action-table-td left-col">{guild.name}</td>
-          <td className="action-table-td left-col">{leaderText}</td>
-          <td className="action-table-td right-col"></td>
-          <td className="action-table-td right-col"><Button variant="dark" onClick={() => setTargetGuild({...guild})}>Edit</Button></td>
-        </tr>
+        <div className="listing">
+          <div>
+            <div>{guild.name}</div>
+            <div>{leaderText}</div>
+          </div>
+          <div className="actions"><Button variant="dark" onClick={() => setTargetGuild({...guild})}>Edit</Button></div>
+        </div>
     );
   };
 
@@ -256,55 +249,89 @@ const GuildManagement = () => {
 
 
   return (
-          <div className="cover-content ctop">
-            <div className="section quests">
-                <h1 className="section-top">Administration</h1>
-                <p className="section-top-content">As an administrator of guilds, it's your task to add guilds, remove guilds, accept adventurers into the game, and remove adventurers from the game.</p>
-            </div>
-
-            <div className="section quests">
-              <h2>Current Guilds</h2>
-              <div className="section quests">
+    <>
+      <div className="main">
+        <div className="main-title">Administration</div>
+        <div className="main-description">As an administrator of guilds, it's your task to add guilds, remove guilds, accept adventurers into the game, and remove adventurers from the game.</div>
+        <div className="content">
+          <div className="sub-content">
+            <div className="sub-title">Current Guilds</div>
+            <div className="sub-content">
               <NewGuild setNewGuildCreation={setNewGuildCreation} saveGuild={saveNewGuild} cancelGuild={cancelNewGuild} availableGuildLeaders={availableGuildLeaders} />
-              </div>
-              <div className="action-table-container">
-                  <table className="action-table quest-examples">
-                    <tbody>
-                    {guilds.map((guild,index)=>{
-                      if (guild.id === targetGuild.id){
-                        return <TargetGuild key={index} saveGuild={saveGuild} cancelGuild={cancelGuild} targetGuild={targetGuild} availableGuildLeaders={availableGuildLeaders} />  
-                      }
-                      return <Guild key={index} guild={guild} setTargetGuild={setTargetGuild} availableGuildLeaders={availableGuildLeaders} />
-                    })}
-                    </tbody>
-                  </table>
-              </div>
-            </div>
-            <br/>
-
-            <div className="section quests">
-              <h2>Current Adventurers</h2>
-              <div className="action-table-container">
-                  <table className="action-table quest-examples"><tbody>
-                    {adventurers.filter((v)=>{return v.permissions?.filter((p) => p.type === "Approved").length !== 0}).map((adventurer,index)=>{
-                        return <Adventurer key={adventurer.id} toggleApprovedAdventurer={toggleApprovedAdventurer} toggleSuperUser={toggleSuperUser} toggleAvailableGuildLeader={toggleAvailableGuildLeader} adventurer={adventurer} />
-                    })}
-                  </tbody></table>
-              </div>
-            </div>
-
-            <div className="section quests">
-              <h2>Prospective Adventurers</h2>
-              <p>These are adventurers that have asked to join your game.</p>
-              <div className="action-table-container">
-                  <table className="action-table quest-examples"><tbody>
-                    {adventurers.filter((v)=>{return v.permissions?.length === 0}).map((adventurer,index)=>{
-                        return <ProspectiveAdventurer key={adventurer.id} adventurer={adventurer} acceptAdventurer={acceptAdventurer} rejectAdventurer={rejectAdventurer} />
-                    })}
-                  </tbody></table>
-              </div>
+              {guilds.map((guild,index)=>{
+                    if (guild.id === targetGuild.id){
+                      return <TargetGuild key={index} saveGuild={saveGuild} cancelGuild={cancelGuild} targetGuild={targetGuild} availableGuildLeaders={availableGuildLeaders} />  
+                    }
+                    return <Guild key={index} guild={guild} setTargetGuild={setTargetGuild} availableGuildLeaders={availableGuildLeaders} />
+                  })}
             </div>
           </div>
+
+          <div className="sub-content">
+            <div className="sub-title">Current Guilds</div>
+            <div className="sub-content">
+              <NewGuild setNewGuildCreation={setNewGuildCreation} saveGuild={saveNewGuild} cancelGuild={cancelNewGuild} availableGuildLeaders={availableGuildLeaders} />
+              {guilds.map((guild,index)=>{
+                    if (guild.id === targetGuild.id){
+                      return <TargetGuild key={index} saveGuild={saveGuild} cancelGuild={cancelGuild} targetGuild={targetGuild} availableGuildLeaders={availableGuildLeaders} />  
+                    }
+                    return <Guild key={index} guild={guild} setTargetGuild={setTargetGuild} availableGuildLeaders={availableGuildLeaders} />
+                  })}
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div className="cover-content ctop">
+        <div className="section quests">
+            <h1 className="section-top">Administration</h1>
+            <p className="section-top-content">As an administrator of guilds, it's your task to add guilds, remove guilds, accept adventurers into the game, and remove adventurers from the game.</p>
+        </div>
+        <div className="section quests">
+          <h2>Current Guilds</h2>
+          <div className="section quests">
+          <NewGuild setNewGuildCreation={setNewGuildCreation} saveGuild={saveNewGuild} cancelGuild={cancelNewGuild} availableGuildLeaders={availableGuildLeaders} />
+          </div>
+          <div className="action-table-container">
+              <table className="action-table quest-examples">
+                <tbody>
+                {guilds.map((guild,index)=>{
+                  if (guild.id === targetGuild.id){
+                    return <TargetGuild key={index} saveGuild={saveGuild} cancelGuild={cancelGuild} targetGuild={targetGuild} availableGuildLeaders={availableGuildLeaders} />  
+                  }
+                  return <Guild key={index} guild={guild} setTargetGuild={setTargetGuild} availableGuildLeaders={availableGuildLeaders} />
+                })}
+                </tbody>
+              </table>
+          </div>
+        </div>
+        <br/>
+
+        <div className="section quests">
+          <h2>Current Adventurers</h2>
+          <div className="action-table-container">
+              <table className="action-table quest-examples"><tbody>
+                {adventurers.filter((v)=>{return v.permissions?.filter((p) => p.type === "Approved").length !== 0}).map((adventurer,index)=>{
+                    return <Adventurer key={adventurer.id} toggleApprovedAdventurer={toggleApprovedAdventurer} toggleSuperUser={toggleSuperUser} toggleAvailableGuildLeader={toggleAvailableGuildLeader} adventurer={adventurer} />
+                })}
+              </tbody></table>
+          </div>
+        </div>
+
+        <div className="section quests">
+          <h2>Prospective Adventurers</h2>
+          <p>These are adventurers that have asked to join your game.</p>
+          <div className="action-table-container">
+              <table className="action-table quest-examples"><tbody>
+                {adventurers.filter((v)=>{return v.permissions?.length === 0}).map((adventurer,index)=>{
+                    return <ProspectiveAdventurer key={adventurer.id} adventurer={adventurer} acceptAdventurer={acceptAdventurer} rejectAdventurer={rejectAdventurer} />
+                })}
+              </tbody></table>
+          </div>
+        </div>
+      </div>
+    </>
+
     )
 
   };
