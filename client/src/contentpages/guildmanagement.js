@@ -138,7 +138,7 @@ const GuildManagement = () => {
     let leaderText = guild.leader_name !== null ? "Guild Leader: " + guild.leader_name : "No Current Guild Leader";
     return (
         <div className="listing">
-          <div>
+          <div className="details">
             <div>{guild.name}</div>
             <div>{leaderText}</div>
           </div>
@@ -272,18 +272,18 @@ const GuildManagement = () => {
           <div className="sub-content">
             <div className="sub-title">Prospective Adventurers</div>
             <div className="sub-content">
-            {adventurers.filter((v)=>{return v.permissions?.length === 0}).map((adventurer,index)=>{
-                    return <ProspectiveAdventurer key={adventurer.id} adventurer={adventurer} acceptAdventurer={acceptAdventurer} rejectAdventurer={rejectAdventurer} />
-                })}
-            </div>
+              {adventurers.filter((v)=>{return v.permissions?.length === 0}).map((adventurer,index)=>{
+                      return <ProspectiveAdventurer key={adventurer.id} adventurer={adventurer} acceptAdventurer={acceptAdventurer} rejectAdventurer={rejectAdventurer} />
+                  })}
+              </div>
           </div>
 
           <div className="sub-content">
             <div className="sub-title">Current Adventurers</div>
             <div className="sub-content">
-            {adventurers.filter((v)=>{return v.permissions?.filter((p) => p.type === "Approved").length !== 0}).map((adventurer,index)=>{
-                    return <Adventurer key={adventurer.id} toggleApprovedAdventurer={toggleApprovedAdventurer} toggleSuperUser={toggleSuperUser} toggleAvailableGuildLeader={toggleAvailableGuildLeader} adventurer={adventurer} />
-                })}
+              {adventurers.filter((v)=>{return v.permissions?.filter((p) => p.type === "Approved").length !== 0}).map((adventurer,index)=>{
+                      return <Adventurer key={adventurer.id} toggleApprovedAdventurer={toggleApprovedAdventurer} toggleSuperUser={toggleSuperUser} toggleAvailableGuildLeader={toggleAvailableGuildLeader} adventurer={adventurer} />
+                  })}
             </div>
           </div>
 
