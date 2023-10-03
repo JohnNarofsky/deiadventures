@@ -18,6 +18,7 @@
 }
 
 .main-description {
+    font-size: 1.25rem;
 }
 
 .sub-title {
@@ -38,8 +39,8 @@
     box-shadow: 3px 5px 60px 0px rgba(65, 75, 79, 0.20);
     border-radius: 15px;
     background: #F1F8F8;
-    width: 100%;
-    max-width: 500px;
+    min-width: 200px;
+    flex: 1;
 }
 
 .action-title {
@@ -71,16 +72,20 @@
     display: flex;
     flex-flow: row wrap;
     justify-content: space-between;
-    margin-top: 5px;
+    margin-top: 10px;
+    margin-bottom: 1px;
+    background-color: #D6EAEA;
+    border-radius: 12px;
+    padding: 5px;
 }
 
-.listing > details {
-    margin: 5px 5px 5px 5px;
-    min-width: 100px;
+.listing .details {
+    min-width: 200px;
     width: 100%;
 
 }
 
 .listing > .actions {
     margin: 5px;
+    margin-left: auto;
 }
