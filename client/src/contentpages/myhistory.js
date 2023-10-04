@@ -54,25 +54,21 @@ const MyHistory = () => {
     };
 
     return (
-    <div className="container">
-        <div className="parallax">
-            <div className="parallax__cover-clean">
-                <div className="cover-div">
-                    <img src="./images/dei_site_layer_trees_div_lt.png" alt="More Trees" />
-                </div>
-                <div className="cover-content cbttm">
-                    <div className="section quests">
-                        <h1 className="section-top">PRESENTING YOUR HISTORY</h1>
-                        <p className="section-top"><strong>These are the adventure actions you've completed.</strong></p>
-                    </div>
-                        {guilds.map((thisGuild) => {
-                            return <Guild key={thisGuild.id} guild={thisGuild}/>
-                    })}
-                    <br/>
-                </div>  
+        <>
+            <div className="cover-div">
+                <img src="./images/dei_site_layer_trees_div_lt.png" alt="More Trees" />
             </div>
-        </div>
-    </div>
+            <div className="cover-content cbttm">
+                <div className="section quests">
+                    <h1 className="section-top">PRESENTING YOUR HISTORY</h1>
+                    <p className="section-top"><strong>These are the adventure actions you've completed.</strong></p>
+                </div>
+                    {guilds.map((thisGuild) => {
+                        return <Guild key={thisGuild.id} guild={thisGuild}/>
+                })}
+                <br/>
+            </div> 
+        </> 
     )};
   
 export default MyHistory;

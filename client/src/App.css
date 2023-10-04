@@ -8,7 +8,6 @@ body {
   height: 100vh;
   margin: 0;
   background-repeat: no-repeat;
-  position: fixed;
   width: 100vw;
   /*background-attachment: fixed;*/
   font-family: "Source Serif Pro", sans-serif; 
@@ -19,7 +18,7 @@ body {
 }
 
 .container {
-  max-width: 95%;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -44,12 +43,6 @@ font-weight:700;
 
 .section-top {
   text-align: center;
-}
-
-.section-top-content {
-  font-size: 21px !important;
-  font-weight:600;
-  line-height: 1.2em;
 }
 
 .logo-top {
@@ -97,18 +90,6 @@ position:static;
 
 /* Increase OR Descrease whitespace by modifying height below: */
 
-.parallax__cover {
-  display: block;
-  position: fixed;
-  background: #FFF;
-  /* height: 2000px; */
-  width: 3000px;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 2;
-}
-
 .parallax__cover-clean {
   display: block;
   background: #FFF;
@@ -120,26 +101,87 @@ position:static;
   z-index: 2;
 }
 
-.cover-content {
-  width: 100vw;
-  margin: 0 auto;
-  margin-bottom: -1px;
-  padding: 40px 180px 60px;
-  position: relative;
- 
+@media (min-width: 1200px) {
+  .section-top-content {
+    font-size: 21px !important;
+    font-weight:600;
+    line-height: 1.2em;
+  }
+
+  .cover-content {
+    width: 100vw;
+    margin: 0 auto;
+    margin-bottom: -1px;
+    padding: 40px 180px 60px;
+    position: relative;
+  }
+
+  .parallax__cover {
+    display: block;
+    position: fixed;
+    background: #FFF;
+     height: 2000px; 
+    width: 3000px;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 2;
+  }
+
+  .cover-content.cbttm {
+    background: #D6EAEA; /* D6EAEA 8FC5C7 */
+    height: 100%;
+    color: #1B474B;
+    overflow-y: auto;
+  }
+
+  .cover-content.ctop {
+    background: #276970;
+    height: 100%;
+    color: #D6EAEA;
+  }
 }
 
-.cover-content.ctop {
-  background: #276970;
-  height: 100%;
-  color: #D6EAEA;
-}
+@media (max-width: 1200px) {
+  .section-top-content {
+    font-size: 18px !important;
+    font-weight:600;
+    line-height: 1.2em;
+  }
 
-.cover-content.cbttm {
-  background: #D6EAEA; /* D6EAEA 8FC5C7 */
-  height: 100%;
-  color: #1B474B;
-  overflow-y: auto;
+  .parallax__cover {
+    display: block;
+    position: fixed;
+    background: #FFF;
+    height: 2000px; 
+    width: 3000px;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 2;
+  }
+
+  .cover-content {
+    width: 100vw;
+    margin: 0 auto;
+    margin-bottom: -1px;
+    padding: 20px 15px 20px 20px;
+    position: relative;
+  }
+  
+  .cover-content.ctop {
+    background: #276970;
+    height: 100%;
+    color: #D6EAEA;
+  }
+
+  .cover-content.cbttm {
+    background: #D6EAEA; /* D6EAEA 8FC5C7 */
+    height: 100%;
+    color: #1B474B;
+    padding: 20px 15px 200px 20px;
+    overflow-y: auto;
+  }
 }
 
 .cover-div {
@@ -156,7 +198,6 @@ position:static;
 	margin-top: 20px;
     margin-bottom: 40px;
 	max-width: 900px;
-    min-width: 600px;
 	margin-left: auto;
 	margin-right: auto;
 }

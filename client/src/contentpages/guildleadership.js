@@ -4,6 +4,7 @@ import Decorations from "../common/decorations";
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 import _ from 'lodash';
+import './guildmanagement.css';
 
 const user_id = 1;
 
@@ -125,25 +126,22 @@ const GuildLeadership = () => {
     if (newGuildQuestActionCreation && targetGuild.id === guildId){
       return (
         <>
-          <div className="action-table-container">
-              <table className="action-table quest-examples">
-                <tbody>
-                  <TargetQuestAction 
-                      guildId = {guildId}
-                      guildQuestAction={{id:-2, description: "", xp: ""}}
-                      editGuildQuestAction={saveNewGuildQuestAction}
-                      cancelEditGuildQuestAction={cancelNewGuildQuestAction}
-                    />
-                </tbody>
-              </table>
+          <div className="sub-content">
+          <div className="action-title">Adding a New Action</div>
+
+            <TargetQuestAction 
+                guildId = {guildId}
+                guildQuestAction={{id:-2, description: "", xp: ""}}
+                editGuildQuestAction={saveNewGuildQuestAction}
+                cancelEditGuildQuestAction={cancelNewGuildQuestAction}
+              />
           </div>
-          <br/>
         </>
       );
     }
     return (
       <>
-        <Button variant="dark" onClick={() => {setNewQuestActionCreation(true);setTargetGuild({id:guildId});setTargetGuildQuestAction({id:-2, description: null, xp: null});}}>Add an Action</Button> 
+        <Button className="sub-action" variant="dark" onClick={() => {setNewQuestActionCreation(true);setTargetGuild({id:guildId});setTargetGuildQuestAction({id:-2, description: null, xp: null});}}>Add an Action</Button> 
         <br/>
       </>
     );
@@ -155,99 +153,93 @@ const GuildLeadership = () => {
     const [xp, setXp] = useState(guildQuestAction.xp);
 
     return (
-      <tr>
-          <td className="action-table-td left-col"><input className="wide-input" onChange={(event) => setDescription(event.target.value)} value={description} /></td>
-          <td className="action-table-td right-col"><input onChange={(event) => setXp(event.target.value)} value={xp} /> xp</td>
-          <td className="action-table-td right-col">
+      <div className="listing">
+        <div className="details">
+          <div>Description:&nbsp;<input className="wide-input" onChange={(event) => setDescription(event.target.value)} value={description} /></div>
+          <div><input onChange={(event) => setXp(event.target.value)} value={xp} /> xp</div>
+        </div>
+          <div className="actions">
             <Button variant="dark" onClick={() => editGuildQuestAction(guildId, {...guildQuestAction, xp: Number.isSafeInteger(Number.parseInt(xp)) ? xp : -1, description: description})}>Done</Button>&nbsp;
             <Button variant="dark" onClick={() => cancelEditGuildQuestAction()}>Cancel</Button>
-          </td>
-      </tr>
+          </div>
+      </div>
   );
   };
 
   const QuestAction = ({guildId, guildQuestAction, setTargetGuildQuestAction, retireGuildQuestAction}) => {
     let questId = guildQuestAction.id;
     return (
-        <tr>
-            <td className="action-table-td left-col">{guildQuestAction.description}</td>
-            <td className="action-table-td right-col">{guildQuestAction.xp} xp</td>
-            <td className="action-table-td right-col">
+        <div className="listing">
+          <div className="details">
+            <div>{guildQuestAction.description}</div>
+            <div>{guildQuestAction.xp} xp</div>
+          </div>
+            <div className="actions">
               <Button variant="dark" onClick={() => setTargetGuildQuestAction(guildQuestAction)}>Edit</Button>&nbsp;
               <Button variant="dark" onClick={() => retireGuildQuestAction(guildId, questId)}>Retire</Button>
-            </td>
-        </tr>
+            </div>
+        </div>
     );
   };
 
   const GuildActionSet = ({questActionSet, editGuildQuestAction, retireGuildQuestAction, targetGuild, setTargetGuild, setTargetGuildQuestAction, cancelEditGuildQuestAction, saveNewGuildQuestAction, cancelNewGuildQuestAction, setNewGuildQuestActionCreation}) => {
 
     return (
-      <>
-        <div className="action-table-header"><h2>{questActionSet.guildTitle}</h2></div>
-        <NewQuestAction
-        guildId = {questActionSet.guildId}
-        targetGuild = {targetGuild}
-        setTargetGuild = {setTargetGuild}
-        saveNewGuildQuestAction = {saveNewGuildQuestAction} 
-        cancelNewGuildQuestAction = {cancelNewGuildQuestAction} 
-        setNewQuestActionCreation = {setNewGuildQuestActionCreation} 
-        /><br/>
-        <div className="action-table-container quest-examples">
-              <table className="action-table"><tbody>
-                {questActionSet.guildQuestActions.map((guildQuestAction,index)=>{
-                  if (guildQuestAction.id === targetGuildQuestAction.id){
-                    return <TargetQuestAction 
-                      guildId = {questActionSet.guildId}
-                      key={guildQuestAction.id}
-                      guildQuestAction={guildQuestAction}
-                      editGuildQuestAction={editGuildQuestAction}
-                      cancelEditGuildQuestAction={cancelEditGuildQuestAction}
-                    />
-                  }
-                  return <QuestAction
-                    key={guildQuestAction.id} 
-                    guildId = {questActionSet.guildId}
-                    guildQuestAction={guildQuestAction} 
-                    setTargetGuildQuestAction={setTargetGuildQuestAction} 
-                    retireGuildQuestAction={retireGuildQuestAction} 
-                    />
-                })}
-              </tbody></table>
-          </div>
-      </>
+      <div className="sub-content">
+        <div className="sub-title">{questActionSet.guildTitle}</div>
+        <div className="sub-content">
+          <NewQuestAction
+            guildId = {questActionSet.guildId}
+            targetGuild = {targetGuild}
+            setTargetGuild = {setTargetGuild}
+            saveNewGuildQuestAction = {saveNewGuildQuestAction} 
+            cancelNewGuildQuestAction = {cancelNewGuildQuestAction} 
+            setNewQuestActionCreation = {setNewGuildQuestActionCreation} 
+          />
+          {questActionSet.guildQuestActions.map((guildQuestAction,index)=>{
+            if (guildQuestAction.id === targetGuildQuestAction.id){
+              return <TargetQuestAction 
+                guildId = {questActionSet.guildId}
+                key={guildQuestAction.id}
+                guildQuestAction={guildQuestAction}
+                editGuildQuestAction={editGuildQuestAction}
+                cancelEditGuildQuestAction={cancelEditGuildQuestAction}
+              />
+            }
+            return <QuestAction
+              key={guildQuestAction.id} 
+              guildId = {questActionSet.guildId}
+              guildQuestAction={guildQuestAction} 
+              setTargetGuildQuestAction={setTargetGuildQuestAction} 
+              retireGuildQuestAction={retireGuildQuestAction} 
+              />
+          })}
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="container">
-      <div className="parallax">
-        <div className="parallax__cover-clean">
-          <div className="cover-content ctop">
-            <div className="section quests">
-                <h1 className="section-top">Guild Leadership</h1>
-                <p className="section-top-content">As a leader of a guild, it's your task to open and close actions for players to complete.</p>
-                <p className="section-top-content">Additionally, from time to time you may run quests that groups of players can sign up for as a party. This is an upcoming feature.</p>
-            </div>
-            <div className="section quests">
-              {guildQuestActions.map((questActionSet) => {
-                  return <GuildActionSet 
-                    key={questActionSet.guildId} 
-                    questActionSet={questActionSet} 
-                    retireGuildQuestAction={retireGuildQuestAction} 
-                    editGuildQuestAction={editGuildQuestAction} 
-                    targetGuild={targetGuild}
-                    setTargetGuild={setTargetGuild}
-                    setTargetGuildQuestAction={setTargetGuildQuestAction}
-                    cancelEditGuildQuestAction={cancelEditGuildQuestAction}
-                    saveNewGuildQuestAction={saveNewGuildQuestAction}
-                    cancelNewGuildQuestAction={cancelNewGuildQuestAction}
-                    setNewGuildQuestActionCreation={setNewGuildQuestActionCreation}
-                    />
-              })}
-            </div>
-          </div>
-        </div>
+    <div className="main">
+      <div className="main-title">Guild Leadership</div>
+      <div className="main-description">As a leader of a guild, it's your task to open and close actions for players to complete.</div>
+      <div className="main-description">Additionally, from time to time you may run quests that groups of players can sign up for as a party. This is an upcoming feature.</div>
+      <div className="content">
+        {guildQuestActions.map((questActionSet) => {
+            return <GuildActionSet 
+              key={questActionSet.guildId} 
+              questActionSet={questActionSet} 
+              retireGuildQuestAction={retireGuildQuestAction} 
+              editGuildQuestAction={editGuildQuestAction} 
+              targetGuild={targetGuild}
+              setTargetGuild={setTargetGuild}
+              setTargetGuildQuestAction={setTargetGuildQuestAction}
+              cancelEditGuildQuestAction={cancelEditGuildQuestAction}
+              saveNewGuildQuestAction={saveNewGuildQuestAction}
+              cancelNewGuildQuestAction={cancelNewGuildQuestAction}
+              setNewGuildQuestActionCreation={setNewGuildQuestActionCreation}
+              />
+        })}
       </div>
     </div>
     )
