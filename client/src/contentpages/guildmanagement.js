@@ -4,6 +4,7 @@ import Decorations from "../common/decorations";
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 import './guildmanagement.css';
+import baseURL from '../api_config.json'
 
 const GuildManagement = () => {
 
@@ -13,7 +14,6 @@ const GuildManagement = () => {
   const [targetGuild, setTargetGuild] = useState({id:-1, name:"", leader_id:-1, leader_name: ""});
   const [newGuildCreation, setNewGuildCreation] = useState(false);
 
-  const baseURL="https://testdei.narofsky.org/api";
 
   useEffect(()=>{
 

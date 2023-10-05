@@ -5,6 +5,8 @@ import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 import _ from 'lodash';
 import './guildmanagement.css';
+import baseURL from '../api_config.json'
+
 
 const user_id = 1;
 
@@ -14,8 +16,6 @@ const GuildLeadership = () => {
   const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: "", xp: ""});
   const [newGuildQuestActionCreation, setNewGuildQuestActionCreation] = useState(false);
   const [targetGuild, setTargetGuild] = useState({id:-1});
-
-  const baseURL="https://testdei.narofsky.org/api";
 
   //initializing UseEffect
   useEffect(()=>{

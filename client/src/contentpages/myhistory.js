@@ -3,13 +3,14 @@ import { useEffect, useCallback, useState } from 'react';
 import Decorations from "../common/decorations";
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
+import baseURL from '../api_config.json'
+
 
 const MyHistory = () => {
 
     const [completedQuestActions, setCompletedQuestActions] = useState([]);
     const [guilds, setGuilds] = useState([]);
   
-    const baseURL="https://testdei.narofsky.org/api";
   
     //initializing UseEffect
     useEffect(()=>{
