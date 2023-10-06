@@ -3,7 +3,7 @@ import { useEffect, useCallback, useState } from 'react';
 import Decorations from "../common/decorations";
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
-import baseURL from '../api_config.json'
+import api_config from '../api_config.json'
 
 
 const MyHistory = () => {
@@ -14,14 +14,14 @@ const MyHistory = () => {
   
     //initializing UseEffect
     useEffect(()=>{
-        axios.get(baseURL + "/guild").then((response) => {
+        axios.get(api_config.baseURL + "/guild").then((response) => {
             setGuilds(response.data);
           });
 
         //TODO: GET USER_ID FROM CONTEXT THAT IS UPDATED UPON LOGIN
           let user_id = 1;
 
-          axios.get(baseURL + "/user/" + user_id + "/completed-quest-actions").then((response) => {
+          axios.get(api_config.baseURL + "/user/" + user_id + "/completed-quest-actions").then((response) => {
             setCompletedQuestActions(response.data);
           });
     }, []);

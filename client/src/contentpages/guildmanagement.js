@@ -4,7 +4,7 @@ import Decorations from "../common/decorations";
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 import './guildmanagement.css';
-import baseURL from '../api_config.json'
+import api_config from '../api_config.json'
 
 const GuildManagement = () => {
 
@@ -17,15 +17,15 @@ const GuildManagement = () => {
 
   useEffect(()=>{
 
-    axios.get(baseURL + "/guild").then((response) => {
+    axios.get(api_config.baseURL + "/guild").then((response) => {
       setGuilds(response.data);
     });
 
-    axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
+    axios.get(api_config.baseURL + "/perm/allowed-leaders").then((response) => {
       setAvailableGuildLeaders(response.data);
     });
 
-    axios.get(baseURL + "/user").then((response) => {
+    axios.get(api_config.baseURL + "/user").then((response) => {
       setAdventurers(response.data);
     });
 
@@ -41,7 +41,7 @@ const GuildManagement = () => {
       leaderName = null;
     }
     const data = {name: targetGuild.name, leader_id: targetGuild.leader_id !== -1? targetGuild.leader_id : null};
-    axios.put(baseURL + "/guild/" + targetGuild.id, data).then((response) => {});
+    axios.put(api_config.baseURL + "/guild/" + targetGuild.id, data).then((response) => {});
 
     let newGuilds = guilds.map((e) => {
       if (e.id === targetGuild.id){
@@ -76,7 +76,7 @@ const GuildManagement = () => {
     };
 
     let data = {name: targetGuild.name, leader_id: targetGuild.leader_id};
-    axios.post(baseURL + "/guild", data).then((response) => {
+    axios.post(api_config.baseURL + "/guild", data).then((response) => {
       newGuild.id = response.data;
       let newGuilds = [...guilds];
       newGuilds.push(newGuild);
@@ -149,12 +149,12 @@ const GuildManagement = () => {
 
   const acceptAdventurer = (adventurer) => {
     const data = {set: true};
-    axios.put(baseURL + "/perm/" + adventurer.id + "/accepted", data).then((response) => {
-      axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
+    axios.put(api_config.baseURL + "/perm/" + adventurer.id + "/accepted", data).then((response) => {
+      axios.get(api_config.baseURL + "/perm/allowed-leaders").then((response) => {
         setAvailableGuildLeaders(response.data);
       });
   
-      axios.get(baseURL + "/user").then((response) => {
+      axios.get(api_config.baseURL + "/user").then((response) => {
         setAdventurers(response.data);
       });
     });
@@ -163,12 +163,12 @@ const GuildManagement = () => {
   const rejectAdventurer = (adventurer) => {
     // .route("/perm/:user_id/rejected", put(set_user_rejected))
     const data = {set: true};
-    axios.put(baseURL + "/perm/" + adventurer.id + "/rejected", data).then((response) => {
-      axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
+    axios.put(api_config.baseURL + "/perm/" + adventurer.id + "/rejected", data).then((response) => {
+      axios.get(api_config.baseURL + "/perm/allowed-leaders").then((response) => {
         setAvailableGuildLeaders(response.data);
       });
   
-      axios.get(baseURL + "/user").then((response) => {
+      axios.get(api_config.baseURL + "/user").then((response) => {
         setAdventurers(response.data);
       });
     });
@@ -178,12 +178,12 @@ const GuildManagement = () => {
 
   const toggleSuperUser = (adventurer) => {
     const data = adventurer.permissions.filter((p) => p.type === "SuperUser").length !== 0 ? {set: false} : {set: true};
-    axios.put(baseURL + "/perm/" + adventurer.id + "/superuser", data).then((response) => {
-      axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
+    axios.put(api_config.baseURL + "/perm/" + adventurer.id + "/superuser", data).then((response) => {
+      axios.get(api_config.baseURL + "/perm/allowed-leaders").then((response) => {
         setAvailableGuildLeaders(response.data);
       });
   
-      axios.get(baseURL + "/user").then((response) => {
+      axios.get(api_config.baseURL + "/user").then((response) => {
         setAdventurers(response.data);
       });
     });
@@ -192,12 +192,12 @@ const GuildManagement = () => {
   const toggleAvailableGuildLeader = (adventurer) => {
     // .route("/perm/:user_id/eligible-guild-leader", put(set_user_eligible_guild_leader))
     const data = adventurer.permissions.filter((p) => p.type === "GuildLeaderEligible").length !== 0 ? {set: false} : {set: true};
-    axios.put(baseURL + "/perm/" + adventurer.id + "/eligible-guild-leader", data).then((response) => {
-      axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
+    axios.put(api_config.baseURL + "/perm/" + adventurer.id + "/eligible-guild-leader", data).then((response) => {
+      axios.get(api_config.baseURL + "/perm/allowed-leaders").then((response) => {
         setAvailableGuildLeaders(response.data);
       });
   
-      axios.get(baseURL + "/user").then((response) => {
+      axios.get(api_config.baseURL + "/user").then((response) => {
         setAdventurers(response.data);
       });
     });
@@ -205,12 +205,12 @@ const GuildManagement = () => {
 
   const toggleApprovedAdventurer = (adventurer) => {
     const data = adventurer.permissions.filter((p) => p.type === "Approved").length !== 0 ? {set: false} : {set: true};
-    axios.put(baseURL + "/perm/" + adventurer.id + "/accepted", data).then((response) => {
-      axios.get(baseURL + "/perm/allowed-leaders").then((response) => {
+    axios.put(api_config.baseURL + "/perm/" + adventurer.id + "/accepted", data).then((response) => {
+      axios.get(api_config.baseURL + "/perm/allowed-leaders").then((response) => {
         setAvailableGuildLeaders(response.data);
       });
   
-      axios.get(baseURL + "/user").then((response) => {
+      axios.get(api_config.baseURL + "/user").then((response) => {
         setAdventurers(response.data);
       });
     });
