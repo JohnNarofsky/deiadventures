@@ -5,6 +5,8 @@ import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 import _ from 'lodash';
 import './guildmanagement.css';
+import api_config from '../api_config.json'
+
 
 const user_id = 1;
 
@@ -15,16 +17,14 @@ const GuildLeadership = () => {
   const [newGuildQuestActionCreation, setNewGuildQuestActionCreation] = useState(false);
   const [targetGuild, setTargetGuild] = useState({id:-1});
 
-  const baseURL="https://testdei.narofsky.org/api";
-
   //initializing UseEffect
   useEffect(()=>{
     let currentGuildQuestActions = [];
-    axios.get(baseURL + "/guild").then((response) => {
+    axios.get(api_config.baseURL + "/guild").then((response) => {
       let guilds = response.data;
       let promises = [];
       guilds.filter((v) => {return v.leader_id === user_id}).map((guild) => {
-        let newPromise = axios.get(baseURL + "/guild/" + guild.id + "/quest-actions").then(x => {
+        let newPromise = axios.get(api_config.baseURL + "/guild/" + guild.id + "/quest-actions").then(x => {
           return {guildId: guild.id, guildTitle: guild.name, ...x};
         });
         promises.push(newPromise);
@@ -49,7 +49,7 @@ const GuildLeadership = () => {
 
     const data = {quest_id: guildQuestAction.id, description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp)};
     
-    axios.put(baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {});
+    axios.put(api_config.baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {});
 
     let currentGuildQuestActions = 
       guildQuestActions.map((e) => {
@@ -74,7 +74,7 @@ const GuildLeadership = () => {
   const retireGuildQuestAction = (guildId, questId) => {
     const data = {quest_id: questId};
     
-    axios.delete(baseURL + "/guild/" + guildId + "/quest-action", { headers: { 'Content-Type': 'application/json' }, data}).then((response) => {});
+    axios.delete(api_config.baseURL + "/guild/" + guildId + "/quest-action", { headers: { 'Content-Type': 'application/json' }, data}).then((response) => {});
 
     let currentGuildQuestActions = 
       guildQuestActions.map((e) => {
@@ -98,7 +98,7 @@ const GuildLeadership = () => {
 
   const saveNewGuildQuestAction  = (guildId, guildQuestAction) => {
     let data = {description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp)};
-    axios.post(baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {
+    axios.post(api_config.baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {
       let questId = response.data.quest_id;
 
       let currentGuildQuestActions = 

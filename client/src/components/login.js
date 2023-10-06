@@ -4,6 +4,7 @@ import './login.css'
 import axios from 'axios';
 import { ProfileContext } from '../common/profilecontext';
 import { Navigate, Link } from 'react-router-dom';
+import api_config from '../api_config.json';
 
 export default function Login() {
 
@@ -46,7 +47,6 @@ export default function Login() {
     //     [ user ]
     // );
 
-    const baseURL="https://testdei.narofsky.org/api";
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -59,9 +59,9 @@ export default function Login() {
         try {
             const login = {"email": email, "password": password};
 
-            axios.post(baseURL + "/auth/login", login).then((response) => {
+            axios.post(api_config.baseURL + "/auth/login", login).then((response) => {
                 localStorage.setItem("user", response.data.id);
-                axios.get(baseURL + "/user/"+response.data.id).then((response) => {
+                axios.get(api_config.baseURL + "/user/"+response.data.id).then((response) => {
                     const data = {
                         id: response.data.id,
                         permissions: response.data.permissions

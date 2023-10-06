@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { Navigate } from "react-router-dom";
+import api_config from '../api_config.json';
 
 export default function SignUp() {
 
@@ -10,7 +11,6 @@ export default function SignUp() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
-    const baseURL="https://testdei.narofsky.org/api";
 
     const handleSignUp = async (e) => {
         e.preventDefault();
@@ -22,7 +22,7 @@ export default function SignUp() {
 
         try {
             const signup = {name: userName, email: email, password: password};
-            axios.post(baseURL + "/auth/account", signup).then((response) => {
+            axios.post(api_config.baseURL + "/auth/account", signup).then((response) => {
                 setCreated('yes');
             });
 

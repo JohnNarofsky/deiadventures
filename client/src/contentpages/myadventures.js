@@ -5,6 +5,8 @@ import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 import _ from 'lodash';
 import Quest, {QuestActions} from '../common/quest';
+import api_config from '../api_config.json'
+
 
 const MyAdventures = () => {
 
@@ -13,20 +15,19 @@ const MyAdventures = () => {
     const [guilds, setGuilds] = useState([]);
     const user_id = 1;
   
-    const baseURL="https://testdei.narofsky.org/api";
   
     //initializing UseEffect
     useEffect(()=>{
-        axios.get(baseURL + "/guild").then((response) => {
+        axios.get(api_config.baseURL + "/guild").then((response) => {
             setGuilds(response.data);
           });
 
         //TODO: GET USER_ID FROM CONTEXT THAT IS UPDATED UPON LOGIN
-          axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
+          axios.get(api_config.baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
             setAcceptedQuestActions(response.data);
           });
       
-          axios.get(baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
+          axios.get(api_config.baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
           });
 
@@ -36,12 +37,12 @@ const MyAdventures = () => {
         const data = {quest_id: questAction.quest_id};
         //TODO: Give them a little modal happiness telling them where this went
         
-        axios.put(baseURL + "/user/" + user_id + "/complete-quest", data).then((response) => {
-            axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
+        axios.put(api_config.baseURL + "/user/" + user_id + "/complete-quest", data).then((response) => {
+            axios.get(api_config.baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
                 setAcceptedQuestActions(response.data);
             });
           
-            axios.get(baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
+            axios.get(api_config.baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
             });
     
@@ -52,12 +53,12 @@ const MyAdventures = () => {
         const data = {quest_id: questAction.quest_id};
         //TODO: Give them a little modal happiness telling them where this went
         
-        axios.delete(baseURL + "/user/" + user_id + "/cancel-quest", { headers: { 'Content-Type': 'application/json' }, data }).then((response) => {
-            axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
+        axios.delete(api_config.baseURL + "/user/" + user_id + "/cancel-quest", { headers: { 'Content-Type': 'application/json' }, data }).then((response) => {
+            axios.get(api_config.baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
                 setAcceptedQuestActions(response.data);
             });
           
-            axios.get(baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
+            axios.get(api_config.baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
             });
     
@@ -68,12 +69,12 @@ const MyAdventures = () => {
     const acceptQuestAction = (questAction) => {
         const data = {quest_id: questAction.quest_id};
 
-        axios.put(baseURL + "/user/" + user_id + "/accept-quest", data).then((response) => {
-            axios.get(baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
+        axios.put(api_config.baseURL + "/user/" + user_id + "/accept-quest", data).then((response) => {
+            axios.get(api_config.baseURL + "/user/" + user_id + "/accepted-quest-actions").then((response) => {
                 setAcceptedQuestActions(response.data);
             });
           
-            axios.get(baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
+            axios.get(api_config.baseURL + "/user/" + user_id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
             });
     
