@@ -6,33 +6,34 @@ import api_config from '../api_config.json';
 
 export default function ForgotPass() {
 
-    const [checked,getChecked] = useState('');
-    const [userName, setUserName] = useState('');
+    const [checked,setChecked] = useState('no');
     const [email, setEmail] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
 
     const handleForgotPass = async (e) => {
         e.preventDefault();
 
-        if (!userName.trim() ||  !email.trim() ) {
+        if (!email.trim() ) {
             setErrorMessage('Please enter require fields.');
             return; 
         }
-
         try {
-            const checkuser = {name: userName, email: email};
-            axios.get(api_config.baseURL + "/auth/account", checkuser).then((response) => {
-                getChecked('yes');
-            });
 
+        const login = {"email": email};
+
+        axios.post(api_config.baseURL + "/auth/login", login).then((response) => {
+            localStorage.setItem("user", response.data.id);
+            axios.get(api_config.baseURL + "/user/"+response.data.id).then((response) => {
+                    setChecked('yes')
+                });
+            // need to figure out next steps for after check it complete 
+            });
         } catch (error) {
-        // Handle error from the server
-        console.error('Error during sign-up:', error);
         setErrorMessage('This email is not in our system.');
         }
     };
 
-    if (checked === ''){
+    if (checked === 'no'){
     return(
         <div className="Auth-form-container">
             <form className="Auth-form" onSubmit={handleForgotPass}>
@@ -41,15 +42,6 @@ export default function ForgotPass() {
                     <div className="text-center mt-3">
                         Not Signed Up?{" "}
                         <Link to="/signup">Sign Up</Link>
-                    </div>
-                    <div className="form-group m-4">
-                        <label>Name</label>
-                        <input
-                        type="text"
-                        className="form-control mt-1"
-                        placeholder="e.g Jane"
-                        onChange={(e) => setUserName(e.target.value)}
-                        />
                     </div>
                     <div className="form-group m-4">
                         <label>Email address</label>
