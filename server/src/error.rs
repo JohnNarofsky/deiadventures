@@ -1,3 +1,4 @@
+use std::convert::Infallible;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use crate::{GuildId, QuestId, UserId};
@@ -11,7 +12,7 @@ use crate::{GuildId, QuestId, UserId};
 /// so we should have *some* way of exiting a transaction
 /// on the failure path with arbitrary data.
 #[derive(Debug)]
-pub(crate) enum Error<E> {
+pub(crate) enum Error<E = Infallible> {
     DbError(rusqlite::Error),
     AdventurerNotFound {
         id: Option<UserId>,

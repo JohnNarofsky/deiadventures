@@ -14,6 +14,7 @@ use rusqlite::{named_params, OptionalExtension, ToSql};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
+use crate::error::Error;
 
 mod env {
     use std::path::PathBuf;
@@ -159,10 +160,10 @@ impl AppState {
     //       made substantially less verbose. But fixing that is a problem for after GenCon.
     // These transaction wrapper methods, conveniently, prevent any async code from being passed to them,
     // which is good because performing an await while we hold a lock on the database will cause a deadlock.
-    fn read_transaction<T, F: FnOnce(&mut rusqlite::Transaction) -> Result<T, rusqlite::Error>>(
+    fn read_transaction<T, E, F: FnOnce(&mut rusqlite::Transaction) -> Result<T, Error<E>>>(
         &self,
         f: F,
-    ) -> Result<T, rusqlite::Error> {
+    ) -> Result<T, Error<E>> {
         // Not a fan of lock poisoning, but whatever. We'll cope with it for now.
         let mut guard = self.db.lock().unwrap();
         let mut transaction =
@@ -282,7 +283,7 @@ impl FromSql for PermissionType {
 
 async fn get_users(
     State(state): State<ArcState>,
-) -> Result<Json<Vec<UserSummary>>, (StatusCode, String)> {
+) -> Result<Json<Vec<UserSummary>>, Error> {
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached("SELECT id, name FROM Adventurer;")?;
         let users = query.query_map([], |row| {
@@ -319,31 +320,19 @@ async fn get_users(
             })
         })?;
 
-        users.collect::<Result<Vec<_>, _>>()
+        Ok::<_, Error>(users.collect::<Result<Vec<_>, _>>()?)
     });
 
-    match data {
-        Ok(users) => Ok(Json(users)),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    data.map(Json)
 }
 
 async fn get_user(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
-) -> Result<Json<UserSummary>, (StatusCode, String)> {
-    let data = state.read_transaction(|db| {
+) -> Result<Json<UserSummary>, Error> {
+    let data: Result<UserSummary, Error> = state.read_transaction(|db| {
         if !db::adventurer_exists(&db, user_id)? {
-            return Ok(Err((
-                StatusCode::NOT_FOUND,
-                format!("no adventurer with id = {user_id} exists"),
-            )));
+            return Err(Error::AdventurerNotFound { id: Some(user_id) })
         }
         let name: String = db.query_row(
             "SELECT name FROM Adventurer WHERE id = :user_id",
@@ -373,25 +362,15 @@ async fn get_user(
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
-        Ok(Ok(UserSummary {
+        Ok(UserSummary {
             id: user_id,
             name,
             roles,
             permissions,
-        }))
+        })
     });
 
-    match data {
-        Ok(Ok(user)) => Ok(Json(user)),
-        Ok(Err(e)) => Err(e),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    data.map(Json)
 }
 
 #[derive(Serialize, Debug)]
@@ -406,10 +385,10 @@ struct AcceptedQuestAction {
 async fn get_user_accepted_quest_actions(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
-) -> Result<Json<Vec<AcceptedQuestAction>>, (StatusCode, String)> {
+) -> Result<Json<Vec<AcceptedQuestAction>>, Error> {
     let data = state.read_transaction(|db| {
         if !db::adventurer_exists(&db, user_id)? {
-            return Ok(None);
+            return Err(Error::AdventurerNotFound { id: Some(user_id) })
         }
         let mut query = db.prepare_cached(
             "SELECT quest_id FROM PartyMember
@@ -436,23 +415,10 @@ async fn get_user_accepted_quest_actions(
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(Some(quests))
+        Ok(quests)
     });
 
-    match data {
-        Ok(Some(x)) => Ok(Json(x)),
-        Ok(None) => Err((
-            StatusCode::NOT_FOUND,
-            format!("no user with id = {user_id} exists"),
-        )),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    data.map(Json)
 }
 
 /// A wrapper integer type for enforcing JS's bounds on safe integers
@@ -496,10 +462,10 @@ struct CompletedQuestAction {
 async fn get_user_completed_quest_actions(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
-) -> Result<Json<Vec<CompletedQuestAction>>, (StatusCode, String)> {
+) -> Result<Json<Vec<CompletedQuestAction>>, Error> {
     let data = state.read_transaction(|db| {
         if !db::adventurer_exists(&db, user_id)? {
-            return Ok(None);
+            return Err(Error::AdventurerNotFound { id: Some(user_id) })
         }
         let mut query = db.prepare_cached(
             "SELECT quest_id, close_date FROM PartyMember
@@ -529,23 +495,10 @@ async fn get_user_completed_quest_actions(
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(Some(quests))
+        Ok(quests)
     });
 
-    match data {
-        Ok(Some(x)) => Ok(Json(x)),
-        Ok(None) => Err((
-            StatusCode::NOT_FOUND,
-            format!("no user with id = {user_id} exists"),
-        )),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    data.map(Json)
 }
 
 #[derive(Serialize, Debug)]
@@ -560,10 +513,10 @@ struct AvailableQuestAction {
 async fn get_user_available_quest_actions(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
-) -> Result<Json<Vec<AvailableQuestAction>>, (StatusCode, String)> {
+) -> Result<Json<Vec<AvailableQuestAction>>, Error> {
     let data = state.read_transaction(|db| {
         if !db::adventurer_exists(&db, user_id)? {
-            return Ok(None);
+            return Err(Error::AdventurerNotFound { id: Some(user_id) })
         }
 
         let mut query = db.prepare_cached(
@@ -592,23 +545,10 @@ async fn get_user_available_quest_actions(
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(Some(quests))
+        Ok(quests)
     });
 
-    match data {
-        Ok(Some(x)) => Ok(Json(x)),
-        Ok(None) => Err((
-            StatusCode::NOT_FOUND,
-            format!("no user with id = {user_id} exists"),
-        )),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    data.map(Json)
 }
 
 /// An "Action" is stored as a nameless quest with one QuestTask associated with it.
@@ -623,25 +563,13 @@ struct GuildQuestAction {
 async fn get_guild_quest_actions(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
-) -> Result<Json<Vec<GuildQuestAction>>, (StatusCode, String)> {
+) -> Result<Json<Vec<GuildQuestAction>>, Error> {
     let data = state.read_transaction(|db| {
-        Ok(db::lookup_guild_quest_actions(&db, guild_id)?.ok_or((
-            StatusCode::NOT_FOUND,
-            format!("no guild with id = {guild_id} exists"),
-        )))
+        db::lookup_guild_quest_actions(&db, guild_id)?
+            .ok_or(Error::GuildNotFound { id: Some(guild_id) })
     });
 
-    match data {
-        Ok(Ok(quests)) => Ok(Json(quests)),
-        Ok(Err(e)) => Err(e),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    data.map(Json)
 }
 
 #[derive(Serialize, Debug)]
@@ -654,7 +582,7 @@ struct GuildQuestActionsBundle {
 
 async fn get_all_guilds_quest_actions(
     State(state): State<ArcState>,
-) -> Result<Json<Vec<GuildQuestActionsBundle>>, (StatusCode, String)> {
+) -> Result<Json<Vec<GuildQuestActionsBundle>>, Error> {
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached("SELECT id, name FROM Guild;")?;
         let bundles = query
@@ -674,16 +602,7 @@ async fn get_all_guilds_quest_actions(
         Ok(bundles)
     });
 
-    match data {
-        Ok(x) => Ok(Json(x)),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    data.map(Json)
 }
 
 #[derive(Deserialize, Debug)]
@@ -845,7 +764,7 @@ struct AllowedGuildLeader {
 /// Get the list of people who are allowed to be guild leaders.
 async fn get_allowed_guild_leaders(
     State(state): State<ArcState>,
-) -> Result<Json<Vec<AllowedGuildLeader>>, (StatusCode, String)> {
+) -> Result<Json<Vec<AllowedGuildLeader>>, Error> {
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached(
             "SELECT adventurer_id FROM Permission
@@ -863,16 +782,7 @@ async fn get_allowed_guild_leaders(
         Ok(leaders)
     });
 
-    match data {
-        Ok(leaders) => Ok(Json(leaders)),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    data.map(Json)
 }
 
 #[derive(Serialize, Debug)]
@@ -884,7 +794,7 @@ struct Guild {
 }
 async fn get_guilds(
     State(state): State<ArcState>,
-) -> Result<Json<Vec<Guild>>, (StatusCode, String)> {
+) -> Result<Json<Vec<Guild>>, Error> {
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached("SELECT id, name FROM Guild;")?;
         let guilds = query
@@ -919,16 +829,8 @@ async fn get_guilds(
 
         Ok(guilds)
     });
-    match data {
-        Ok(x) => Ok(Json(x)),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+
+    data.map(Json)
 }
 
 #[derive(Deserialize, Debug)]
@@ -1131,7 +1033,7 @@ async fn edit_guild_quest_action(
 async fn get_guild_name(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
-) -> Result<Json<String>, (StatusCode, String)> {
+) -> Result<Json<String>, Error> {
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached("SELECT name FROM Guild WHERE id = :id;")?;
         query
@@ -1139,21 +1041,10 @@ async fn get_guild_name(
                 row.get::<_, String>(0)
             })
             .optional()
+            .map_err(Error::DbError)
+            .and_then(|x| x.ok_or(Error::GuildNotFound { id: Some(guild_id) }))
     });
-    match data {
-        Ok(Some(x)) => Ok(Json(x)),
-        Ok(None) => Err((
-            StatusCode::NOT_FOUND,
-            format!("no guild with id = {guild_id} exists"),
-        )),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    data.map(Json)
 }
 
 async fn set_guild_name(
@@ -1254,7 +1145,7 @@ struct GetGuildLeader {
 async fn get_guild_leader(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
-) -> Result<Json<Option<GetGuildLeader>>, (StatusCode, String)> {
+) -> Result<Json<Option<GetGuildLeader>>, Error> {
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached(
             "SELECT adventurer_id FROM AdventurerRole
@@ -1266,16 +1157,7 @@ async fn get_guild_leader(
         Ok(id.map(|id| GetGuildLeader { id }))
     });
 
-    match data {
-        Ok(leader) => Ok(Json(leader)),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    data.map(Json)
 }
 
 fn set_perm_endpoint(
