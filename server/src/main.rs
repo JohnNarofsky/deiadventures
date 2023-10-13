@@ -1,4 +1,5 @@
 mod db;
+mod error;
 
 use argon2::password_hash::{PasswordHashString, Salt, SaltString};
 use argon2::{password_hash, Argon2, PasswordHash, PasswordHasher};
