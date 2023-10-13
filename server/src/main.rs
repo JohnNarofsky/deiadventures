@@ -172,10 +172,10 @@ impl AppState {
         transaction.commit()?;
         Ok(res)
     }
-    fn write_transaction<T, F: FnOnce(&mut rusqlite::Transaction) -> Result<T, rusqlite::Error>>(
+    fn write_transaction<T, E, F: FnOnce(&mut rusqlite::Transaction) -> Result<T, Error<E>>>(
         &self,
         f: F,
-    ) -> Result<T, rusqlite::Error> {
+    ) -> Result<T, Error<E>> {
         let mut guard = self.db.lock().unwrap();
         let mut transaction =
             rusqlite::Transaction::new(&mut guard, rusqlite::TransactionBehavior::Immediate)?;
@@ -621,7 +621,7 @@ async fn accept_quest(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
     Json(quest): Json<AcceptQuest>,
-) -> Result<Json<AcceptedQuest>, (StatusCode, String)> {
+) -> Result<Json<AcceptedQuest>, Error> {
     let data = state.write_transaction(|db| {
         let AcceptQuest { quest_id } = quest;
         // Steps:
@@ -631,34 +631,18 @@ async fn accept_quest(
         //  4. Return ID of new quest
 
         if !db::adventurer_exists(&db, user_id)? {
-            return Ok(Err((
-                StatusCode::NOT_FOUND,
-                format!("adventurer with id = {user_id} doesn't exist"),
-            )));
+            return Err(Error::AdventurerNotFound { id: Some(user_id) })
         }
 
         if !db::quest_exists(&db, quest_id)? {
-            return Ok(Err((
-                StatusCode::NOT_FOUND,
-                format!("quest with id = {quest_id} doesn't exist"),
-            )));
+            return Err(Error::QuestNotFound { id: Some(quest_id) })
         }
 
         let new_id = db::accept_quest(&db, user_id, quest_id)?;
-        Ok(Ok(new_id))
+        Ok(new_id)
     });
 
-    match data {
-        Ok(Ok(quest_id)) => Ok(Json(AcceptedQuest { quest_id })),
-        Ok(Err(e)) => Err(e),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    data.map(|quest_id| Json(AcceptedQuest { quest_id }))
 }
 
 #[derive(Deserialize, Debug)]
@@ -669,21 +653,21 @@ async fn complete_quest(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
     Json(quest): Json<CompleteQuest>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<(), Error> {
     let res = state.write_transaction(|db| {
         let CompleteQuest { quest_id } = quest;
         if !db::adventurer_exists(&db, user_id)? {
-            return Ok(Err((StatusCode::NOT_FOUND, format!("no user with id = {user_id} exists"))))
+            return Err(Error::AdventurerNotFound { id: Some(user_id) })
         }
         if !db::quest_exists(&db, quest_id)? {
-            return Ok(Err((StatusCode::NOT_FOUND, format!("no quest with id = {quest_id} exists"))))
+            return Err(Error::QuestNotFound { id: Some(quest_id) })
         }
         let mut query = db.prepare_cached(
             "SELECT 0 FROM PartyMember WHERE adventurer_id = :adventurer_id AND quest_id = :quest_id;"
         )?;
         let has_accepted = query.exists(named_params! { ":adventurer_id": user_id, ":quest_id": quest_id })?;
         if !has_accepted {
-            return Ok(Err((StatusCode::BAD_REQUEST, format!("adventurer {user_id} is not a member of party for quest {quest_id}"))))
+            return Err(Error::NotQuestMember { user_id, quest_id })
         }
 
         let mut query = db.prepare_cached(
@@ -692,20 +676,10 @@ async fn complete_quest(
         let n = query.execute(named_params! { ":quest_id": quest_id })?;
         assert_eq!(n, 1);
 
-        Ok(Ok(()))
+        Ok(())
     });
 
-    match res {
-        Ok(Ok(())) => Ok(()),
-        Ok(Err(e)) => Err(e),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    res
 }
 
 #[derive(Deserialize, Debug)]
@@ -716,22 +690,22 @@ async fn cancel_quest(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
     Json(cancel): Json<CancelQuest>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<(), Error> {
     let res = state.write_transaction(|db| {
         // TODO: unify this with complete_quest somehow, seeing as they're virtually identical
         let CancelQuest { quest_id } = cancel;
         if !db::adventurer_exists(&db, user_id)? {
-            return Ok(Err((StatusCode::NOT_FOUND, format!("no user with id = {user_id} exists"))))
+            return Err(Error::AdventurerNotFound { id: Some(user_id) })
         }
         if !db::quest_exists(&db, quest_id)? {
-            return Ok(Err((StatusCode::NOT_FOUND, format!("no quest with id = {quest_id} exists"))))
+            return Err(Error::QuestNotFound { id: Some(quest_id) })
         }
         let mut query = db.prepare_cached(
             "SELECT 0 FROM PartyMember WHERE adventurer_id = :adventurer_id AND quest_id = :quest_id;"
         )?;
         let has_accepted = query.exists(named_params! { ":adventurer_id": user_id, ":quest_id": quest_id })?;
         if !has_accepted {
-            return Ok(Err((StatusCode::BAD_REQUEST, format!("adventurer {user_id} is not a member of party for quest {quest_id}"))))
+            return Err(Error::NotQuestMember { user_id, quest_id })
         }
 
         let mut query = db.prepare_cached(
@@ -739,20 +713,10 @@ async fn cancel_quest(
         )?;
         let n = query.execute(named_params! { ":quest_id": quest_id })?;
         assert_eq!(n, 1);
-        Ok(Ok(()))
+        Ok(())
     });
 
-    match res {
-        Ok(Ok(())) => Ok(()),
-        Ok(Err(e)) => Err(e),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    res
 }
 
 #[derive(Serialize, Debug)]
@@ -841,7 +805,7 @@ struct CreateGuild {
 async fn create_guild(
     State(state): State<ArcState>,
     Json(guild): Json<CreateGuild>,
-) -> Result<Json<GuildId>, (StatusCode, String)> {
+) -> Result<Json<GuildId>, Error> {
     let data = state.write_transaction(|db| {
         let mut query = db.prepare_cached("INSERT INTO Guild (name) VALUES (:name);")?;
         let n = query.execute(named_params! { ":name": guild.name })?;
@@ -863,16 +827,7 @@ async fn create_guild(
         ))
     });
 
-    match data {
-        Ok(x) => Ok(Json(x)),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    data.map(Json)
 }
 
 #[derive(Deserialize, Debug)]
@@ -884,14 +839,11 @@ async fn update_guild(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
     Json(update): Json<UpdateGuild>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<(), Error> {
     let res = state.write_transaction(|db| {
         let UpdateGuild { name, leader_id } = update;
         if !db::guild_exists(&db, guild_id)? {
-            return Ok(Err((
-                StatusCode::NOT_FOUND,
-                format!("no guild with id = {guild_id} exists"),
-            )));
+            return Err(Error::GuildNotFound { id: Some(guild_id) })
         }
 
         let mut query = db.prepare_cached("UPDATE Guild SET name = :name WHERE id = :guild_id;")?;
@@ -905,10 +857,7 @@ async fn update_guild(
 
         if let Some(leader_id) = leader_id {
             if !db::adventurer_exists(&db, leader_id)? {
-                return Ok(Err((
-                    StatusCode::NOT_FOUND,
-                    format!("no adventurer with id = {leader_id} exists"),
-                )));
+                return Err(Error::AdventurerNotFound { id: Some(leader_id) })
             }
             let mut query = db.prepare_cached(
                 "INSERT INTO AdventurerRole (adventurer_id, guild_id, assigned_role)
@@ -919,20 +868,10 @@ async fn update_guild(
             assert_eq!(n, 1);
         }
 
-        Ok(Ok(()))
+        Ok(())
     });
 
-    match res {
-        Ok(Ok(())) => Ok(()),
-        Ok(Err(e)) => Err(e),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    res
 }
 
 #[derive(Deserialize, Debug)]
@@ -950,7 +889,7 @@ async fn create_guild_quest_action(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
     Json(action): Json<CreateGuildQuestAction>,
-) -> Result<Json<CreatedGuildQuestAction>, (StatusCode, String)> {
+) -> Result<Json<CreatedGuildQuestAction>, Error> {
     let res = state.write_transaction(|db| {
         let CreateGuildQuestAction { name, xp } = action;
         let mut query =
@@ -970,16 +909,7 @@ async fn create_guild_quest_action(
         })
     });
 
-    match res {
-        Ok(x) => Ok(Json(x)),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    res.map(Json)
 }
 
 #[derive(Deserialize, Debug)]
@@ -993,20 +923,14 @@ async fn edit_guild_quest_action(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
     Json(action): Json<EditGuildQuestAction>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<(), Error> {
     let res = state.write_transaction(|db| {
         let EditGuildQuestAction { quest_id, name, xp } = action;
         if !db::guild_exists(&db, guild_id)? {
-            return Ok(Err((
-                StatusCode::NOT_FOUND,
-                format!("no guild with id = {guild_id} exists"),
-            )));
+            return Err(Error::GuildNotFound { id: Some(guild_id) })
         }
         if !db::quest_exists(&db, quest_id)? {
-            return Ok(Err((
-                StatusCode::NOT_FOUND,
-                format!("no quest with id = {quest_id} exists"),
-            )));
+            return Err(Error::QuestNotFound { id: Some(quest_id) })
         }
         let mut query = db.prepare_cached(
             "UPDATE QuestTask SET name = :name, xp = :xp WHERE quest_id = :quest_id;",
@@ -1014,20 +938,10 @@ async fn edit_guild_quest_action(
         let n = query.execute(named_params! { ":name": name, ":xp": xp, ":quest_id": quest_id })?;
         assert_eq!(n, 1);
 
-        Ok(Ok(()))
+        Ok(())
     });
 
-    match res {
-        Ok(Ok(())) => Ok(()),
-        Ok(Err(e)) => Err(e),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    res
 }
 
 async fn get_guild_name(
@@ -1051,7 +965,7 @@ async fn set_guild_name(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
     Json(name): Json<String>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<(), Error> {
     let res = state.write_transaction(|db| {
         let mut query = db.prepare_cached(
             "UPDATE Guild SET name = :name WHERE id = :id;"
@@ -1059,28 +973,15 @@ async fn set_guild_name(
         let n = query.execute(named_params! { ":name": name, ":id": guild_id })?;
         match n {
             // No guilds existed with that ID.
-            0 => Ok(None),
+            0 => Err(Error::GuildNotFound { id: Some(guild_id) }),
             // One guild existed with that ID.
-            1 => Ok(Some(())),
+            1 => Ok(()),
             // More than one guild existed with that ID.
             _ => unreachable!("somehow we affected more than one row when we were updating based on a primary key"),
         }
     });
 
-    match res {
-        Ok(Some(())) => Ok(()),
-        Ok(None) => Err((
-            StatusCode::NOT_FOUND,
-            format!("no guild with id = {guild_id} exists"),
-        )),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    res
 }
 
 #[derive(Deserialize, Debug)]
@@ -1093,7 +994,7 @@ async fn set_guild_leader(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
     Json(leader): Json<SetGuildLeader>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<(), Error> {
     let res = state.write_transaction(|db| {
         // Steps:
         //  1. Ensure the guild exists
@@ -1101,7 +1002,7 @@ async fn set_guild_leader(
         //  3. Delete any existing AdventurerRole 'leaders' of the guild
         //  4. Insert a new 'leader' into AdventurerRole
         if !db::guild_exists(&db, guild_id)? {
-            return Ok(Err(format!("no guild with id = {guild_id} exists")));
+            return Err(Error::GuildNotFound { id: Some(guild_id) })
         }
 
         let mut query = db.prepare_cached(
@@ -1111,7 +1012,7 @@ async fn set_guild_leader(
 
         if let Some(leader_id) = leader.id {
             if !db::adventurer_exists(&db, leader_id)? {
-                return Ok(Err(format!("no adventurer with id = {} exists", leader_id)));
+                return Err(Error::AdventurerNotFound { id: Some(leader_id) })
             }
             let mut query = db.prepare_cached(
                 "INSERT INTO AdventurerRole (adventurer_id, guild_id, assigned_role)
@@ -1122,20 +1023,10 @@ async fn set_guild_leader(
             assert_eq!(n, 1);
         }
 
-        Ok(Ok(()))
+        Ok(())
     });
 
-    match res {
-        Ok(Ok(())) => Ok(()),
-        Ok(Err(msg)) => Err((StatusCode::NOT_FOUND, msg)),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    res
 }
 
 #[derive(Serialize, Debug)]
@@ -1165,19 +1056,10 @@ fn set_perm_endpoint(
     user: UserId,
     perm: PermissionType,
     truth: bool,
-) -> Result<(), (StatusCode, String)> {
-    let res = state.write_transaction(|db| db::set_user_permission(&db, user, perm, truth));
+) -> Result<(), Error> {
+    let res = state.write_transaction(|db| db::set_user_permission(&db, user, perm, truth).map_err(Error::DbError));
 
-    match res {
-        Ok(()) => Ok(()),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    res
 }
 
 #[derive(Deserialize, Debug)]
@@ -1189,7 +1071,7 @@ async fn set_user_accepted(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
     Json(accepted): Json<SetPerm>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<(), Error> {
     set_perm_endpoint(state, user_id, PermissionType::Approved, accepted.set)
 }
 
@@ -1197,7 +1079,7 @@ async fn set_user_rejected(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
     Json(rejected): Json<SetPerm>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<(), Error> {
     set_perm_endpoint(state, user_id, PermissionType::Rejected, rejected.set)
 }
 
@@ -1205,7 +1087,7 @@ async fn set_user_superuser(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
     Json(superuser): Json<SetPerm>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<(), Error> {
     set_perm_endpoint(state, user_id, PermissionType::SuperUser, superuser.set)
 }
 
@@ -1213,7 +1095,7 @@ async fn set_user_eligible_guild_leader(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
     Json(eligible): Json<SetPerm>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<(), Error> {
     set_perm_endpoint(
         state,
         user_id,
@@ -1230,21 +1112,15 @@ async fn retire_guild_quest_action(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
     Json(delete): Json<DeleteGuildQuestAction>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<(), Error> {
     let res = state.write_transaction(|db| {
         let DeleteGuildQuestAction { quest_id } = delete;
         if !db::quest_exists(&db, delete.quest_id)? {
-            return Ok(Err((
-                StatusCode::NOT_FOUND,
-                format!("no quest with id = {quest_id} exists"),
-            )));
+            return Err(Error::QuestNotFound { id: Some(quest_id) })
         }
         let mut query = db.prepare_cached("SELECT guild_id FROM Quest WHERE id = :quest_id;")?;
         if !query.exists(named_params! { ":quest_id": quest_id })? {
-            return Ok(Err((
-                StatusCode::BAD_REQUEST,
-                format!("quest {quest_id} does not belong to guild {guild_id}"),
-            )));
+            return Err(Error::QuestNotBelongToGuild { quest_id, guild_id })
         }
         let mut query = db.prepare_cached(
             // To make recovery from mistakes possible,
@@ -1255,20 +1131,10 @@ async fn retire_guild_quest_action(
         let n = query.execute(named_params! { ":quest_id": quest_id })?;
         assert_eq!(n, 1);
 
-        Ok(Ok(()))
+        Ok(())
     });
 
-    match res {
-        Ok(Ok(())) => Ok(()),
-        Ok(Err(e)) => Err(e),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    res
 }
 
 /// Wrapper type for consuming passwords to prevent obvious misuse
@@ -1333,7 +1199,7 @@ struct CreateAccount {
 async fn auth_create_account(
     State(state): State<ArcState>,
     Json(account): Json<CreateAccount>,
-) -> Result<(), (StatusCode, String)> {
+) -> Result<(), Error> {
     let res = state.write_transaction(|db| {
         let CreateAccount {
             name,
@@ -1351,11 +1217,11 @@ async fn auth_create_account(
             "SELECT 0 FROM Adventurer WHERE email_address = :email;"
         )?;
         if query.exists(named_params! { ":email": email })? {
-            return Ok(Err((StatusCode::BAD_REQUEST, "account already exists".to_string())))
+            return Err(Error::AccountAlreadyExists)
         }
 
         let Ok((hash, salt)) = password.salty_hash() else {
-            return Ok(Err((StatusCode::INTERNAL_SERVER_ERROR, "failed to compute password hash".to_string())))
+            return Err(Error::CannotComputePasswordHash)
         };
 
         let mut query = db.prepare_cached(
@@ -1365,20 +1231,10 @@ async fn auth_create_account(
         let n = query.execute(named_params! { ":name": name, ":email": email, ":hash": hash.as_str(), ":salt": salt.as_str() })?;
         assert_eq!(n, 1);
 
-        Ok(Ok(()))
+        Ok(())
     });
 
-    match res {
-        Ok(Ok(())) => Ok(()),
-        Ok(Err(e)) => Err(e),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    res
 }
 
 #[derive(Deserialize, Debug)]
@@ -1457,7 +1313,7 @@ struct AuthLoginSession {
 async fn auth_login(
     State(state): State<ArcState>,
     Json(login): Json<AuthLogin>,
-) -> Result<Json<AuthLoginSession>, (StatusCode, String)> {
+) -> Result<Json<AuthLoginSession>, Error> {
     let data = state.write_transaction(|db| {
         let AuthLogin { email, password } = login;
         // Steps:
@@ -1482,7 +1338,7 @@ async fn auth_login(
                     row.get::<_, String>(2)?,
                 ))
             }).optional()? else {
-            return Ok(Err((StatusCode::NOT_FOUND, format!("no adventurer with email = {email} exists"))))
+            return Err(Error::AdventurerNotFoundByEmail { email })
         };
 
         let test_hash =
@@ -1492,8 +1348,7 @@ async fn auth_login(
         let check = password.check_hash(test_hash.password_hash(), salt.as_salt());
         match check {
             Ok(true) => (),
-            Ok(false) => return Ok(Err((StatusCode::UNAUTHORIZED, "failed login".to_string()))),
-            Err(_) => return Ok(Err((StatusCode::UNAUTHORIZED, "failed login".to_string()))),
+            _ => return Err(Error::UnauthorizedLogin),
         }
 
         let mut query = db.prepare_cached(
@@ -1516,25 +1371,15 @@ async fn auth_login(
                 Ok((row.get(0)?, row.get(1)?))
             })?;
 
-        Ok(Ok(AuthLoginSession {
+        Ok(AuthLoginSession {
             id: adventurer_id,
             token,
             start_time,
             time_to_live,
-        }))
+        })
     });
 
-    match data {
-        Ok(Ok(session)) => Ok(Json(session)),
-        Ok(Err(e)) => Err(e),
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            ))
-        }
-    }
+    data.map(Json)
 }
 
 // These are optional for the MVP.
@@ -1550,7 +1395,7 @@ async fn auth_set_password(
     Path(target_user_id): Path<UserId>,
     TypedHeader(headers::Authorization(token)): TypedHeader<headers::Authorization<AuthToken>>,
     Json(set_password): Json<SetPassword>,
-) -> (StatusCode, String) {
+) -> Result<(), Error> {
     let SetPassword { password } = set_password;
     // Steps:
     // 1. Check that the request is authorized.
@@ -1572,7 +1417,7 @@ async fn auth_set_password(
             )
             .optional()?
         else {
-            return Ok((StatusCode::UNAUTHORIZED, "session not found".to_string()));
+            return Err(Error::SessionNotFound)
         };
         let mut is_admin = db.prepare_cached(
             "SELECT 0 FROM Permission WHERE
@@ -1601,10 +1446,7 @@ async fn auth_set_password(
                 Ok(salt) => salt,
                 Err(e) => {
                     tracing::error!("salt decoding failure: {e:?}");
-                    return Ok((
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        "failed to compute password hash".to_string(),
-                    ));
+                    return Err(Error::CannotComputePasswordHash)
                 }
             };
 
@@ -1612,10 +1454,7 @@ async fn auth_set_password(
                 Ok(hash) => hash,
                 Err(e) => {
                     tracing::error!("password hashing failure: {e:?}");
-                    return Ok((
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        "failed to compute password hash".to_string(),
-                    ));
+                    return Err(Error::CannotComputePasswordHash)
                 }
             };
             let n = set_password.execute(named_params! {
@@ -1623,24 +1462,14 @@ async fn auth_set_password(
                 ":user_id": target_user_id,
             })?;
             assert_eq!(n, 1);
-            Ok((StatusCode::OK, "successfully changed password".to_string()))
+            Ok(())
         } else {
             // The request is not authorized.
-            Ok((
-                StatusCode::UNAUTHORIZED,
-                "insufficient permissions to set another user's password".to_string(),
-            ))
+            Err(Error::InsufficientPermissions {
+                msg: "insufficient permissions to set another user's password".to_string(),
+            })
         }
     });
 
-    match res {
-        Ok(s) => s,
-        Err(e) => {
-            tracing::error!("rusqlite error: {e:?}");
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "database access failed".to_string(),
-            )
-        }
-    }
+    res
 }

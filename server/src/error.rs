@@ -3,6 +3,9 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use crate::{GuildId, QuestId, UserId};
 
+// TODO: We could plausibly split a lot of the error types out of this,
+//  to make the return type of each endpoint more specific.
+
 // See the `IntoResponse` impl below.
 /// Errors for which we have defined HTTP responses,
 /// and so can bubble up to the top.
@@ -17,12 +20,29 @@ pub(crate) enum Error<E = Infallible> {
     AdventurerNotFound {
         id: Option<UserId>,
     },
+    AdventurerNotFoundByEmail {
+        email: String,
+    },
     GuildNotFound {
         id: Option<GuildId>,
     },
     QuestNotFound {
         id: Option<QuestId>,
     },
+    NotQuestMember {
+        user_id: UserId,
+        quest_id: QuestId,
+    },
+    QuestNotBelongToGuild {
+        quest_id: QuestId,
+        guild_id: GuildId,
+    },
+    AccountAlreadyExists,
+    CannotComputePasswordHash,
+    UnauthorizedLogin,
+    SessionNotFound,
+    // TODO: decide how to model this
+    InsufficientPermissions { msg: String },
     Other(E),
 }
 
@@ -46,6 +66,9 @@ impl<E: IntoResponse> IntoResponse for Error<E> {
                     (StatusCode::NOT_FOUND, "specified adventurer not found").into_response()
                 }
             },
+            Self::AdventurerNotFoundByEmail { email } => {
+                (StatusCode::NOT_FOUND, format!("no adventurer with email = {email} exists")).into_response()
+            },
             Self::GuildNotFound { id } => {
                 if let Some(id) = id {
                     (StatusCode::NOT_FOUND, format!("no guild with id = {id} exists")).into_response()
@@ -59,6 +82,30 @@ impl<E: IntoResponse> IntoResponse for Error<E> {
                 } else {
                     (StatusCode::NOT_FOUND, "specified quest not found").into_response()
                 }
+            },
+            Self::NotQuestMember { user_id, quest_id } => {
+                (StatusCode::BAD_REQUEST, format!("adventurer {user_id} is not a member of party for quest {quest_id}")).into_response()
+            },
+            Self::QuestNotBelongToGuild { quest_id, guild_id } => {
+                (
+                    StatusCode::BAD_REQUEST,
+                    format!("quest {quest_id} does not belong to guild {guild_id}"),
+                ).into_response()
+            },
+            Self::AccountAlreadyExists => {
+                (StatusCode::BAD_REQUEST, "account already exists").into_response()
+            },
+            Self::CannotComputePasswordHash => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "failed to compute password hash").into_response()
+            },
+            Self::UnauthorizedLogin => {
+                (StatusCode::UNAUTHORIZED, "failed login").into_response()
+            },
+            Self::SessionNotFound => {
+                (StatusCode::UNAUTHORIZED, "session not found").into_response()
+            },
+            Self::InsufficientPermissions { msg } => {
+                (StatusCode::UNAUTHORIZED, msg).into_response()
             },
             Self::Other(e) => e.into_response(),
         }
