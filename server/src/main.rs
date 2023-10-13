@@ -3,9 +3,10 @@ mod db;
 use argon2::password_hash::{PasswordHashString, Salt, SaltString};
 use argon2::{password_hash, Argon2, PasswordHash, PasswordHasher};
 use axum::extract::{Path, State};
+use axum::headers::HeaderValue;
 use axum::http::{StatusCode, Uri};
 use axum::routing::{delete, get, post, put};
-use axum::{Json, Router};
+use axum::{headers, Json, Router, TypedHeader};
 use rand::Rng;
 use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSqlOutput, ValueRef};
 use rusqlite::{named_params, OptionalExtension, ToSql};
@@ -113,6 +114,10 @@ async fn main() {
         .route("/auth/login", post(auth_login))
         .route("/auth/logout", delete(auth_logout))
         .route("/auth/renew-session", put(auth_renew_session))
+        .route(
+            "/auth/account/:user_id/set-password",
+            put(auth_set_password),
+        )
         .fallback(fallback)
         .with_state(state.clone());
 
@@ -185,7 +190,7 @@ type ArcState = Arc<AppState>;
 macro_rules! decl_ids {
     ($($kind:ident),*) => {
         $(
-            #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+            #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
             #[serde(transparent)]
             struct $kind (u32);
             impl rusqlite::ToSql for $kind {
@@ -261,6 +266,16 @@ impl PermissionType {
 impl rusqlite::ToSql for PermissionType {
     fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
         Ok(ToSqlOutput::from(*self as i64))
+    }
+}
+impl FromSql for PermissionType {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        let code: i64 = <i64 as FromSql>::column_result(value)?;
+        if let Some(ty) = Self::extract(code) {
+            Ok(ty)
+        } else {
+            Err(FromSqlError::OutOfRange(code))
+        }
     }
 }
 
@@ -1491,7 +1506,7 @@ struct AuthLogin {
 
 // In a similar vein to `Password`, this type prevents obvious misuse,
 // and has a manual `Debug` impl to avoid accidentally leaking it in logs.
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(transparent)]
 struct AuthToken {
     token: String,
@@ -1504,6 +1519,30 @@ impl core::fmt::Debug for AuthToken {
 impl ToSql for AuthToken {
     fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
         self.token.to_sql()
+    }
+}
+impl headers::authorization::Credentials for AuthToken {
+    const SCHEME: &'static str = "Bearer";
+
+    fn decode(value: &HeaderValue) -> Option<Self> {
+        let s = value.to_str().ok()?;
+        // The documentation for Credentials says this this will always be the case.
+        assert!(s.starts_with(Self::SCHEME));
+        println!("auth decode: {s}");
+        let rest = &s[Self::SCHEME.len()..];
+        let rest = rest.trim_start();
+        Some(Self {
+            token: rest.to_string(),
+        })
+    }
+
+    fn encode(&self) -> HeaderValue {
+        let cred = Self::SCHEME.to_string() + " " + &self.token;
+        // Since we restrict the token to printable ASCII,
+        // this is infallible.
+        let mut header = HeaderValue::from_str(&cred).unwrap();
+        header.set_sensitive(true);
+        header
     }
 }
 impl AuthToken {
@@ -1618,3 +1657,107 @@ async fn auth_login(
 // These are optional for the MVP.
 async fn auth_logout() {}
 async fn auth_renew_session() {}
+
+#[derive(Deserialize, Debug)]
+struct SetPassword {
+    password: Password,
+}
+async fn auth_set_password(
+    State(state): State<ArcState>,
+    Path(target_user_id): Path<UserId>,
+    TypedHeader(headers::Authorization(token)): TypedHeader<headers::Authorization<AuthToken>>,
+    Json(set_password): Json<SetPassword>,
+) -> (StatusCode, String) {
+    let SetPassword { password } = set_password;
+    // Steps:
+    // 1. Check that the request is authorized.
+    // 2. Execute UPDATE and report failure if it tried to update a row which didn't exist
+    //    (since a request is always authorized if sent by an admin)
+    let res = state.write_transaction(|db| {
+        // TODO: we are intentionally not checking ttl right now, but
+        //  we should in the future, when the client knows how to refresh a session
+        // TODO: we should be able to do db::is_user() || db::is_admin()
+        //  or similar for this permission check
+        let mut executing_user_id =
+            db.prepare_cached("SELECT adventurer_id FROM AuthSession WHERE token = :token;")?;
+        let Some(executing_user_id): Option<UserId> = executing_user_id
+            .query_row(
+                named_params! {
+                    ":token": token,
+                },
+                |row| row.get(0),
+            )
+            .optional()?
+        else {
+            return Ok((StatusCode::UNAUTHORIZED, "session not found".to_string()));
+        };
+        let mut is_admin = db.prepare_cached(
+            "SELECT 0 FROM Permission WHERE
+                 permission_type = :admin_type AND adventurer_id = :adventurer_id;",
+        )?;
+        if target_user_id == executing_user_id
+            || is_admin.exists(named_params! {
+                ":admin_type": PermissionType::SuperUser,
+                ":adventurer_id": executing_user_id,
+            })?
+        {
+            // The request is authorized.
+            let mut password_salt =
+                db.prepare_cached("SELECT password_salt FROM Adventurer WHERE id = :user_id;")?;
+            let mut set_password = db.prepare_cached(
+                "UPDATE Adventurer SET password_hash = :password_hash WHERE id = :user_id;",
+            )?;
+            let password_salt: String = password_salt.query_row(
+                named_params! {
+                    ":user_id": target_user_id,
+                },
+                |row| row.get(0),
+            )?;
+
+            let password_salt = match Salt::from_b64(&password_salt) {
+                Ok(salt) => salt,
+                Err(e) => {
+                    tracing::error!("salt decoding failure: {e:?}");
+                    return Ok((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "failed to compute password hash".to_string(),
+                    ));
+                }
+            };
+
+            let new_hash = match password.hash(password_salt) {
+                Ok(hash) => hash,
+                Err(e) => {
+                    tracing::error!("password hashing failure: {e:?}");
+                    return Ok((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "failed to compute password hash".to_string(),
+                    ));
+                }
+            };
+            let n = set_password.execute(named_params! {
+                ":password_hash": new_hash.as_str(),
+                ":user_id": target_user_id,
+            })?;
+            assert_eq!(n, 1);
+            Ok((StatusCode::OK, "successfully changed password".to_string()))
+        } else {
+            // The request is not authorized.
+            Ok((
+                StatusCode::UNAUTHORIZED,
+                "insufficient permissions to set another user's password".to_string(),
+            ))
+        }
+    });
+
+    match res {
+        Ok(s) => s,
+        Err(e) => {
+            tracing::error!("rusqlite error: {e:?}");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "database access failed".to_string(),
+            )
+        }
+    }
+}

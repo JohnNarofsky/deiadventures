@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 argon2 = "0.5.1"
-axum = "0.6.19"
+axum = { version = "0.6.19", features = ["headers"] }
 menv = "0.2.7"
 rand = "0.8.5"
 rusqlite = { version = "0.29.0", features = ["bundled"] }
