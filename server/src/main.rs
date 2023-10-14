@@ -1,6 +1,7 @@
 mod db;
 mod error;
 
+use crate::error::Error;
 use argon2::password_hash::{PasswordHashString, Salt, SaltString};
 use argon2::{password_hash, Argon2, PasswordHash, PasswordHasher};
 use axum::extract::{Path, State};
@@ -14,7 +15,6 @@ use rusqlite::{named_params, OptionalExtension, ToSql};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
-use crate::error::Error;
 
 mod env {
     use std::path::PathBuf;
@@ -281,9 +281,7 @@ impl FromSql for PermissionType {
     }
 }
 
-async fn get_users(
-    State(state): State<ArcState>,
-) -> Result<Json<Vec<UserSummary>>, Error> {
+async fn get_users(State(state): State<ArcState>) -> Result<Json<Vec<UserSummary>>, Error> {
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached("SELECT id, name FROM Adventurer;")?;
         let users = query.query_map([], |row| {
@@ -332,7 +330,7 @@ async fn get_user(
 ) -> Result<Json<UserSummary>, Error> {
     let data: Result<UserSummary, Error> = state.read_transaction(|db| {
         if !db::adventurer_exists(&db, user_id)? {
-            return Err(Error::AdventurerNotFound { id: Some(user_id) })
+            return Err(Error::AdventurerNotFound { id: Some(user_id) });
         }
         let name: String = db.query_row(
             "SELECT name FROM Adventurer WHERE id = :user_id",
@@ -631,11 +629,11 @@ async fn accept_quest(
         //  4. Return ID of new quest
 
         if !db::adventurer_exists(&db, user_id)? {
-            return Err(Error::AdventurerNotFound { id: Some(user_id) })
+            return Err(Error::AdventurerNotFound { id: Some(user_id) });
         }
 
         if !db::quest_exists(&db, quest_id)? {
-            return Err(Error::QuestNotFound { id: Some(quest_id) })
+            return Err(Error::QuestNotFound { id: Some(quest_id) });
         }
 
         let new_id = db::accept_quest(&db, user_id, quest_id)?;
@@ -756,9 +754,7 @@ struct Guild {
     leader_id: Option<UserId>,
     leader_name: Option<String>,
 }
-async fn get_guilds(
-    State(state): State<ArcState>,
-) -> Result<Json<Vec<Guild>>, Error> {
+async fn get_guilds(State(state): State<ArcState>) -> Result<Json<Vec<Guild>>, Error> {
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached("SELECT id, name FROM Guild;")?;
         let guilds = query
@@ -843,7 +839,7 @@ async fn update_guild(
     let res = state.write_transaction(|db| {
         let UpdateGuild { name, leader_id } = update;
         if !db::guild_exists(&db, guild_id)? {
-            return Err(Error::GuildNotFound { id: Some(guild_id) })
+            return Err(Error::GuildNotFound { id: Some(guild_id) });
         }
 
         let mut query = db.prepare_cached("UPDATE Guild SET name = :name WHERE id = :guild_id;")?;
@@ -857,7 +853,9 @@ async fn update_guild(
 
         if let Some(leader_id) = leader_id {
             if !db::adventurer_exists(&db, leader_id)? {
-                return Err(Error::AdventurerNotFound { id: Some(leader_id) })
+                return Err(Error::AdventurerNotFound {
+                    id: Some(leader_id),
+                });
             }
             let mut query = db.prepare_cached(
                 "INSERT INTO AdventurerRole (adventurer_id, guild_id, assigned_role)
@@ -927,10 +925,10 @@ async fn edit_guild_quest_action(
     let res = state.write_transaction(|db| {
         let EditGuildQuestAction { quest_id, name, xp } = action;
         if !db::guild_exists(&db, guild_id)? {
-            return Err(Error::GuildNotFound { id: Some(guild_id) })
+            return Err(Error::GuildNotFound { id: Some(guild_id) });
         }
         if !db::quest_exists(&db, quest_id)? {
-            return Err(Error::QuestNotFound { id: Some(quest_id) })
+            return Err(Error::QuestNotFound { id: Some(quest_id) });
         }
         let mut query = db.prepare_cached(
             "UPDATE QuestTask SET name = :name, xp = :xp WHERE quest_id = :quest_id;",
@@ -1002,7 +1000,7 @@ async fn set_guild_leader(
         //  3. Delete any existing AdventurerRole 'leaders' of the guild
         //  4. Insert a new 'leader' into AdventurerRole
         if !db::guild_exists(&db, guild_id)? {
-            return Err(Error::GuildNotFound { id: Some(guild_id) })
+            return Err(Error::GuildNotFound { id: Some(guild_id) });
         }
 
         let mut query = db.prepare_cached(
@@ -1012,7 +1010,9 @@ async fn set_guild_leader(
 
         if let Some(leader_id) = leader.id {
             if !db::adventurer_exists(&db, leader_id)? {
-                return Err(Error::AdventurerNotFound { id: Some(leader_id) })
+                return Err(Error::AdventurerNotFound {
+                    id: Some(leader_id),
+                });
             }
             let mut query = db.prepare_cached(
                 "INSERT INTO AdventurerRole (adventurer_id, guild_id, assigned_role)
@@ -1057,7 +1057,9 @@ fn set_perm_endpoint(
     perm: PermissionType,
     truth: bool,
 ) -> Result<(), Error> {
-    let res = state.write_transaction(|db| db::set_user_permission(&db, user, perm, truth).map_err(Error::DbError));
+    let res = state.write_transaction(|db| {
+        db::set_user_permission(&db, user, perm, truth).map_err(Error::DbError)
+    });
 
     res
 }
@@ -1116,11 +1118,11 @@ async fn retire_guild_quest_action(
     let res = state.write_transaction(|db| {
         let DeleteGuildQuestAction { quest_id } = delete;
         if !db::quest_exists(&db, delete.quest_id)? {
-            return Err(Error::QuestNotFound { id: Some(quest_id) })
+            return Err(Error::QuestNotFound { id: Some(quest_id) });
         }
         let mut query = db.prepare_cached("SELECT guild_id FROM Quest WHERE id = :quest_id;")?;
         if !query.exists(named_params! { ":quest_id": quest_id })? {
-            return Err(Error::QuestNotBelongToGuild { quest_id, guild_id })
+            return Err(Error::QuestNotBelongToGuild { quest_id, guild_id });
         }
         let mut query = db.prepare_cached(
             // To make recovery from mistakes possible,
@@ -1330,15 +1332,17 @@ async fn auth_login(
             "SELECT id, password_hash, password_salt FROM Adventurer
                  WHERE email_address = :email;",
         )?;
-        let Some((adventurer_id, test_hash, salt)) =
-            query.query_row(named_params! { ":email": email }, |row| {
+        let Some((adventurer_id, test_hash, salt)) = query
+            .query_row(named_params! { ":email": email }, |row| {
                 Ok((
                     row.get(0)?,
                     row.get::<_, String>(1)?,
                     row.get::<_, String>(2)?,
                 ))
-            }).optional()? else {
-            return Err(Error::AdventurerNotFoundByEmail { email })
+            })
+            .optional()?
+        else {
+            return Err(Error::AdventurerNotFoundByEmail { email });
         };
 
         let test_hash =
@@ -1417,7 +1421,7 @@ async fn auth_set_password(
             )
             .optional()?
         else {
-            return Err(Error::SessionNotFound)
+            return Err(Error::SessionNotFound);
         };
         let mut is_admin = db.prepare_cached(
             "SELECT 0 FROM Permission WHERE
@@ -1446,7 +1450,7 @@ async fn auth_set_password(
                 Ok(salt) => salt,
                 Err(e) => {
                     tracing::error!("salt decoding failure: {e:?}");
-                    return Err(Error::CannotComputePasswordHash)
+                    return Err(Error::CannotComputePasswordHash);
                 }
             };
 
@@ -1454,7 +1458,7 @@ async fn auth_set_password(
                 Ok(hash) => hash,
                 Err(e) => {
                     tracing::error!("password hashing failure: {e:?}");
-                    return Err(Error::CannotComputePasswordHash)
+                    return Err(Error::CannotComputePasswordHash);
                 }
             };
             let n = set_password.execute(named_params! {
