@@ -153,11 +153,6 @@ impl AppState {
         Self { db }
     }
 
-    // TODO: make an error type to use instead of rusqlite::Error, and refactor.
-    //       I'm pretty sure I should've done a couple rollbacks for when an adventurer
-    //       doesn't exist, but that incorrect handling is not a show stopper.
-    //       Also, generally, I believe the error handling in this server could be
-    //       made substantially less verbose. But fixing that is a problem for after GenCon.
     // These transaction wrapper methods, conveniently, prevent any async code from being passed to them,
     // which is good because performing an await while we hold a lock on the database will cause a deadlock.
     fn read_transaction<T, E, F: FnOnce(&mut rusqlite::Transaction) -> Result<T, Error<E>>>(
