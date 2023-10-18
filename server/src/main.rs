@@ -15,6 +15,7 @@ use rusqlite::{named_params, OptionalExtension, ToSql};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
+use tower_http::cors::CorsLayer;
 
 mod env {
     use std::path::PathBuf;
@@ -121,6 +122,10 @@ async fn main() {
             put(auth_set_password),
         )
         .fallback(fallback)
+        // TODO: we're going to want to narrow this,
+        //  but it's currently the least of our worries
+        //  (remember, we're not yet even authenticating API requests)
+        .layer(CorsLayer::very_permissive())
         .with_state(state.clone());
 
     let addr = SocketAddr::from(([127, 0, 0, 1], env::port()));
