@@ -22,6 +22,12 @@ export default function NavigationBar() {
     setProfile(null);
   };
 
+  useEffect(()=>{
+    if (profile === undefined){
+      setProfile(JSON.parse(localStorage.getItem("profile")));
+    }
+  }, []);
+
   const handleNavClose = () => {
     setNavExpanded(false);
   };
