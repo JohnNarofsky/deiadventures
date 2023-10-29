@@ -1,14 +1,11 @@
 import React from "react";
-import { useEffect, useCallback, useState } from 'react';
-import Decorations from "../common/decorations";
+import { useEffect, useCallback, useState, useContext } from 'react';
+import { ProfileContext } from '../common/profilecontext';
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 import _ from 'lodash';
 import './guildmanagement.css';
 import api_config from '../api_config.json'
-
-
-const user_id = 1;
 
 const GuildLeadership = () => {
   //state
@@ -16,6 +13,7 @@ const GuildLeadership = () => {
   const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: "", xp: ""});
   const [newGuildQuestActionCreation, setNewGuildQuestActionCreation] = useState(false);
   const [targetGuild, setTargetGuild] = useState({id:-1});
+  const { profile } = useContext(ProfileContext);
 
   //initializing UseEffect
   useEffect(()=>{
@@ -23,7 +21,7 @@ const GuildLeadership = () => {
     axios.get(api_config.baseURL + "/guild").then((response) => {
       let guilds = response.data;
       let promises = [];
-      guilds.filter((v) => {return v.leader_id === user_id}).map((guild) => {
+      guilds.filter((v) => {return v.leader_id === profile.id}).map((guild) => {
         let newPromise = axios.get(api_config.baseURL + "/guild/" + guild.id + "/quest-actions").then(x => {
           return {guildId: guild.id, guildTitle: guild.name, ...x};
         });
