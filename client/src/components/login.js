@@ -67,6 +67,7 @@ export default function Login() {
                         permissions: response.data.permissions
                       };
                       setProfile(data);
+                      console.log(data);
                     });
             });
         } catch (error) {
