@@ -17,6 +17,7 @@ export default function NavigationBar() {
     if (usedGoogleLogin) {
       googleLogout();
       setUsedGoogleLogin(false);
+      localStorage.removeItem("profile");
     }
     setProfile(null);
   };
@@ -24,10 +25,6 @@ export default function NavigationBar() {
   const handleNavClose = () => {
     setNavExpanded(false);
   };
-
-  useEffect(()=>{ 
-    localStorage.setItem("profile", profile);
-  }, [profile]);
 
   const NoPermsNavigation = (handleNavClose) => {
     if (profile === undefined){

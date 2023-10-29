@@ -60,14 +60,13 @@ export default function Login() {
             const login = {"email": email, "password": password};
 
             axios.post(api_config.baseURL + "/auth/login", login).then((response) => {
-                localStorage.setItem("user", response.data.id);
                 axios.get(api_config.baseURL + "/user/"+response.data.id).then((response) => {
                     const data = {
                         id: response.data.id,
                         permissions: response.data.permissions
                       };
                       setProfile(data);
-                      console.log(data);
+                      localStorage.setItem("profile", JSON.stringify(data));
                     });
             });
         } catch (error) {
