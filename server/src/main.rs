@@ -1,6 +1,8 @@
+mod add_admin;
 mod db;
 mod error;
 
+use std::convert::Infallible;
 use crate::error::Error;
 use argon2::password_hash::{PasswordHashString, Salt, SaltString};
 use argon2::{password_hash, Argon2, PasswordHash, PasswordHasher};
@@ -14,8 +16,10 @@ use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSqlOutput, ValueRe
 use rusqlite::{named_params, OptionalExtension, ToSql};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use tower_http::cors::CorsLayer;
+use crate::db::{Email, Name};
 
 mod env {
     use std::path::PathBuf;
@@ -37,6 +41,30 @@ mod env {
     }
 }
 
+mod args {
+    use crate::add_admin::AddAdmin;
+    use argh::FromArgs;
+
+    /// The DEI adventures API server.
+    #[derive(FromArgs)]
+    pub struct Args {
+        #[argh(subcommand)]
+        pub command: Subcommand,
+    }
+
+    #[derive(FromArgs)]
+    #[argh(subcommand)]
+    pub enum Subcommand {
+        Server(Server),
+        AddAdmin(AddAdmin),
+    }
+
+    /// Run the server process.
+    #[derive(FromArgs)]
+    #[argh(subcommand, name = "run-server")]
+    pub struct Server {}
+}
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
@@ -49,6 +77,25 @@ async fn main() {
 
     let state = Arc::new(AppState::new(&env::db()));
 
+    // If no arguments are provided, we default to running the server.
+    // This is primarily to avoid needing to update docs or scripts,
+    // we should remove the default at some point, but I want zero barriers
+    // to immediately merging the new utilities.
+    let args: args::Args = if std::env::args().len() > 1 {
+        argh::from_env()
+    } else {
+        args::Args {
+            command: args::Subcommand::Server(args::Server {}),
+        }
+    };
+
+    match args.command {
+        args::Subcommand::Server(args::Server {}) => run_server(state).await,
+        args::Subcommand::AddAdmin(add_admin::AddAdmin {}) => add_admin::add_admin(state),
+    }
+}
+
+async fn run_server(state: Arc<AppState>) {
     let app = Router::new()
         // TODO: verify that all information required to know the authorization requirements
         //  of a request is in the URI
@@ -1156,6 +1203,12 @@ impl core::fmt::Debug for Password {
         write!(f, "Password {{ ... }}")
     }
 }
+impl FromStr for Password {
+    type Err = Infallible;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self { text: s.to_string() })
+    }
+}
 impl Password {
     fn hash(&self, salt: Salt<'_>) -> Result<PasswordHashString, password_hash::Error> {
         // TODO: we should pick something specific and save the
@@ -1187,17 +1240,11 @@ impl Password {
 // These top two are the only ones necessary for the MVP.
 #[derive(Deserialize, Debug)]
 struct CreateAccount {
-    name: String,
-    // TODO: we should probably do email validation
-    email: String,
-    // TODO: maybe we should add a wrapper type to
-    //       ensure we don't put this anywhere we shouldn't
+    name: Name,
+    email: Email,
     password: Password,
 }
-// #[derive(Serialize, Debug)]
-// struct CreatedAccount {
-//
-// }
+
 async fn auth_create_account(
     State(state): State<ArcState>,
     Json(account): Json<CreateAccount>,
@@ -1208,31 +1255,7 @@ async fn auth_create_account(
             email,
             password,
         } = account;
-        // Steps:
-        //  1. Check if account *already* exists. Fail if so.
-        //  2. Generate password salt.
-        //  3. Compute password hash.
-        //  4. Insert name, email, password hash, and password salt, into
-        //     the Adventurer table.
-
-        let mut query = db.prepare_cached(
-            "SELECT 0 FROM Adventurer WHERE email_address = :email;"
-        )?;
-        if query.exists(named_params! { ":email": email })? {
-            return Err(Error::AccountAlreadyExists)
-        }
-
-        let Ok((hash, salt)) = password.salty_hash() else {
-            return Err(Error::CannotComputePasswordHash)
-        };
-
-        let mut query = db.prepare_cached(
-            "INSERT INTO Adventurer (name, email_address, password_hash, password_salt)
-                 VALUES (:name, :email, :hash, :salt);"
-        )?;
-        let n = query.execute(named_params! { ":name": name, ":email": email, ":hash": hash.as_str(), ":salt": salt.as_str() })?;
-        assert_eq!(n, 1);
-
+        db::create_account(db, name, email, password)?;
         Ok(())
     });
 
