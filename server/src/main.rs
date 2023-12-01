@@ -1,11 +1,11 @@
-mod add_admin;
 mod db;
 mod error;
+mod command;
 
 use std::convert::Infallible;
 use crate::error::Error;
 use argon2::password_hash::{PasswordHashString, Salt, SaltString};
-use argon2::{password_hash, Argon2, PasswordHash, PasswordHasher};
+use argon2::{Argon2, password_hash, PasswordHash, PasswordHasher};
 use axum::extract::{Path, State};
 use axum::headers::HeaderValue;
 use axum::http::{StatusCode, Uri};
@@ -41,30 +41,6 @@ mod env {
     }
 }
 
-mod args {
-    use crate::add_admin::AddAdmin;
-    use argh::FromArgs;
-
-    /// The DEI adventures API server.
-    #[derive(FromArgs)]
-    pub struct Args {
-        #[argh(subcommand)]
-        pub command: Subcommand,
-    }
-
-    #[derive(FromArgs)]
-    #[argh(subcommand)]
-    pub enum Subcommand {
-        Server(Server),
-        AddAdmin(AddAdmin),
-    }
-
-    /// Run the server process.
-    #[derive(FromArgs)]
-    #[argh(subcommand, name = "run-server")]
-    pub struct Server {}
-}
-
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
@@ -81,17 +57,18 @@ async fn main() {
     // This is primarily to avoid needing to update docs or scripts,
     // we should remove the default at some point, but I want zero barriers
     // to immediately merging the new utilities.
-    let args: args::Args = if std::env::args().len() > 1 {
+    let args: command::Args = if std::env::args().len() > 1 {
         argh::from_env()
     } else {
-        args::Args {
-            command: args::Subcommand::Server(args::Server {}),
+        command::Args {
+            command: command::Subcommand::Server(command::Server {}),
         }
     };
 
     match args.command {
-        args::Subcommand::Server(args::Server {}) => run_server(state).await,
-        args::Subcommand::AddAdmin(add_admin::AddAdmin {}) => add_admin::add_admin(state),
+        command::Subcommand::Server(command::Server {}) => run_server(state).await,
+        command::Subcommand::AddAdmin(command::add_admin::AddAdmin {}) => command::add_admin::add_admin(state),
+        command::Subcommand::HashPassword(args) => command::hash_password::hash_password(args),
     }
 }
 
