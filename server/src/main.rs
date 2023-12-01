@@ -69,6 +69,7 @@ async fn main() {
         command::Subcommand::Server(command::Server {}) => run_server(state).await,
         command::Subcommand::AddAdmin(command::add_admin::AddAdmin {}) => command::add_admin::add_admin(state),
         command::Subcommand::HashPassword(args) => command::hash_password::hash_password(args),
+        command::Subcommand::InsertDemo(args) => command::insert_demo::insert_demo(state, args),
     }
 }
 
