@@ -23,10 +23,12 @@ const MyHistory = () => {
     }, []);
 
     const FinishedQuestAction = ({questAction}) => {
+        const completedDate = new Date(questAction.completed_date).toDateString();
         return (
             <tr>
                 <td className="action-table-td left-col">{questAction.description}</td>
-                <td className="action-table-td right-col">{questAction.xp} xp</td>
+                <td className="action-table-td middle-col">{questAction.xp} xp</td>
+                <td className="action-table-td right-col">{completedDate}</td>
             </tr>
         );
       };
