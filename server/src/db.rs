@@ -1,5 +1,6 @@
-use crate::{GuildId, GuildQuestAction, PermissionType, QuestId, UserId};
+use crate::{GuildId, GuildQuestAction, Password, PermissionType, QuestId, UserId};
 use rusqlite::{named_params, Transaction};
+use serde::Deserialize;
 
 // A randomly generated number. This is hardcoded elsewhere,
 // so grep for everywhere it's used in the server before changing it.
@@ -167,7 +168,7 @@ pub(crate) fn set_user_permission(
 /// Generate what would be the next to be inserted ID.
 /// This only works on tables with AUTOINCREMENT primary keys.
 pub(crate) fn next_insert_id(
-    db: &rusqlite::Transaction,
+    db: &Transaction,
     table_name: &str,
 ) -> Result<i64, rusqlite::Error> {
     let mut query =
@@ -176,3 +177,58 @@ pub(crate) fn next_insert_id(
         row.get(0)
     })
 }
+
+
+pub(crate) fn create_account(db: &Transaction, name: Name, email: Email, password: Password) -> Result<UserId, crate::Error> {
+    // Steps:
+    //  1. Check if account *already* exists. Fail if so.
+    //  2. Generate password salt.
+    //  3. Compute password hash.
+    //  4. Insert name, email, password hash, and password salt, into
+    //     the Adventurer table.
+
+    let mut query = db.prepare_cached(
+        "SELECT 0 FROM Adventurer WHERE email_address = :email;"
+    )?;
+    if query.exists(named_params! { ":email": email })? {
+        return Err(crate::Error::AccountAlreadyExists)
+    }
+
+    let Ok((hash, salt)) = password.salty_hash() else {
+        return Err(crate::Error::CannotComputePasswordHash)
+    };
+
+    let mut query = db.prepare_cached(
+        "INSERT INTO Adventurer (name, email_address, password_hash, password_salt)
+                 VALUES (:name, :email, :hash, :salt);"
+    )?;
+    let n = query.execute(named_params! { ":name": name, ":email": email, ":hash": hash.as_str(), ":salt": salt.as_str() })?;
+    assert_eq!(n, 1);
+    Ok(UserId(db.last_insert_rowid().try_into().unwrap()))
+}
+
+macro_rules! str_wrap {
+    ($t:ty) => {
+        impl std::str::FromStr for $t {
+            type Err = std::convert::Infallible;
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                Ok(Self(s.to_string()))
+            }
+        }
+        impl rusqlite::ToSql for $t {
+            fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+                self.0.to_sql()
+            }
+        }
+    }
+}
+
+// TODO: We should do email validation.
+#[derive(Deserialize, Debug)]
+#[serde(transparent)]
+pub(crate) struct Email(pub String);
+str_wrap!(Email);
+#[derive(Deserialize, Debug)]
+#[serde(transparent)]
+pub(crate) struct Name(pub String);
+str_wrap!(Name);

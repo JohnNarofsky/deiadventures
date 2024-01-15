@@ -45,6 +45,7 @@ pub(crate) enum Error<E = Infallible> {
     InsufficientPermissions {
         msg: String,
     },
+    #[allow(dead_code)]
     Other(E),
 }
 

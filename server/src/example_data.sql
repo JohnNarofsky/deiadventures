@@ -13,10 +13,11 @@ VALUES
 -- Setup people
 INSERT INTO Adventurer (id, name, email_address, password_hash, password_salt)
 VALUES
-(1, 'Abby Dryer', 'abby@email.com', 'fiddldygrak', '123'),
-(2, 'John Narofsky', 'john@email.com', 'fiddldygrak', '456'),
-(3, 'Amelia Dryer', 'amelia@email.com', 'fiddldygrak', '786'),
-(4, 'Matthew Narofsky', 'matthew@email.com', 'fiddldygrak', '777');
+-- The password is all 'fiddldygrak'.
+(1, 'Abby Dryer', 'abby@email.com', '$argon2id$v=19$m=19456,t=2,p=1$SYxmVBOz/Dg3j0o0qR9lLg$NPQd7qoesKAeXpg9yUsPwaoEYaPikXiG4vwEJLrG6m0', 'SYxmVBOz/Dg3j0o0qR9lLg'),
+(2, 'John Narofsky', 'john@email.com', '$argon2id$v=19$m=19456,t=2,p=1$oGLhpFlG9xD9qlWvoq5jZw$pA2StIiTIH3P5x2lcubQ0QSh2N4XGHH/9d7lDljHTwk', 'oGLhpFlG9xD9qlWvoq5jZw'),
+(3, 'Amelia Dryer', 'amelia@email.com', '$argon2id$v=19$m=19456,t=2,p=1$WxD79BpDaGJUiE/vcRDurg$Q5xyBE8gXaXC9TnSU3X+aA5FzUsnbbdSB6bG1HQTL7U', 'WxD79BpDaGJUiE/vcRDurg'),
+(4, 'Matthew Narofsky', 'matthew@email.com', '$argon2id$v=19$m=19456,t=2,p=1$DFkzua2QY3SHkxrYE1/wAg$M3H+WVmVRQlc/pndMsYvYe6223G9TZKs2O549fnwvZc', 'DFkzua2QY3SHkxrYE1/wAg');
 
 INSERT INTO AdventurerRole (adventurer_id, guild_id, assigned_role)
 VALUES
