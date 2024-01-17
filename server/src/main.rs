@@ -174,10 +174,14 @@ async fn run_server(state: Arc<AppState>) {
         .unwrap();
 }
 
+/// The fallback route handler,
+/// called when the request matches no known endpoint.
 async fn fallback(uri: Uri) -> (StatusCode, String) {
     (StatusCode::NOT_FOUND, format!("No route for {uri}"))
 }
 
+/// This function waits for a shutdown signal. It is called by [`run_server`], and controls
+/// when the server begins winding down.
 async fn shutdown_signal() {
     tokio::signal::ctrl_c()
         .await
@@ -266,6 +270,7 @@ struct User {
     // TODO: I've forgotten part of what fields were requested on this object
 }
 
+/// The user data object returned by [`get_user`] and [`get_users`].
 #[derive(Serialize, Debug)]
 struct UserSummary {
     id: UserId,
@@ -324,6 +329,7 @@ impl FromSql for PermissionType {
     }
 }
 
+/// Get a list of [`UserSummary`]s describing all users.
 async fn get_users(State(state): State<ArcState>) -> Result<Json<Vec<UserSummary>>, Error> {
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached("SELECT id, name FROM Adventurer;")?;
@@ -367,6 +373,7 @@ async fn get_users(State(state): State<ArcState>) -> Result<Json<Vec<UserSummary
     data.map(Json)
 }
 
+/// Get a [`UserSummary`] describing a user.
 async fn get_user(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
@@ -593,6 +600,8 @@ async fn get_user_available_quest_actions(
 }
 
 /// An "Action" is stored as a nameless quest with one QuestTask associated with it.
+///
+/// The element type of the response body for [`get_guild_quest_actions`].
 #[derive(Serialize, Debug)]
 struct GuildQuestAction {
     id: QuestId,
@@ -601,6 +610,8 @@ struct GuildQuestAction {
     name: String,
     xp: u32,
 }
+
+/// Get all quest actions associated with a guild.
 async fn get_guild_quest_actions(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
@@ -613,6 +624,9 @@ async fn get_guild_quest_actions(
     data.map(Json)
 }
 
+/// The element type of the response body for [`get_all_guilds_quest_actions`].
+///
+/// Represents a guild, together with every quest action associated with that guild.
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct GuildQuestActionsBundle {
@@ -621,6 +635,7 @@ struct GuildQuestActionsBundle {
     guild_quest_actions: Vec<GuildQuestAction>,
 }
 
+/// Get a list of all guilds, each together with all their quest actions.
 async fn get_all_guilds_quest_actions(
     State(state): State<ArcState>,
 ) -> Result<Json<Vec<GuildQuestActionsBundle>>, Error> {
@@ -1124,6 +1139,8 @@ async fn get_guild_leader(
     data.map(Json)
 }
 
+/// Set the state of a given permission, for a user. Deals with opening a write transaction,
+/// so we can write several endpoints which do only this by making their body just a call to this.
 fn set_perm_endpoint(
     state: ArcState,
     user: UserId,
