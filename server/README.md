@@ -85,7 +85,9 @@ is not mentioned anywhere in the frontend.
   The quest which is being copied is sometimes called a "template quest".
 - "Task" / "Quest Task": A quest is structured like a to-do list.
   A "task" is an item on that list.
-- "Quest Detail": ??????????????????
+- "Quest Detail": (UNIMPLEMENTED) We have a `QuestDetail` table, which shall be used for additional notes
+  and background information on quests, but which is currently unused. A "Quest Detail" is going to be
+  one piece of such extra information, though.
 - "Action" / "Quest Action": We use this to mean a quest which has only one task.
 - "Open Date" / "Accepted Date": The date on which a quest was accepted.
 - "Close Date" / "Completed Date": The date on which a quest was completed.
