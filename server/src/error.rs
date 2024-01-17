@@ -1,3 +1,7 @@
+//! # Error Handling
+//! This module is meant to define error types of global concern,
+//! and any helper methods we might need for dealing with them.
+
 use crate::{GuildId, QuestId, UserId};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
