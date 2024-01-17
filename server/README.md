@@ -12,6 +12,16 @@ Runs the app with the debug profile.
 
 You can pass `--release` to this command to build with optimizations.
 
+You can pass arguments to the server executable after a `--`, like this:
+```
+cargo run -- arguments go here
+```
+
+You can omit the separating `--` if the first argument you're passing to the server
+executable is not interpreted by Cargo, like in `cargo run insert-demo`, but
+it is necessary in `cargo run -- --help` if you're meaning to get the server executable
+to print its own help message.
+
 ### `cargo build`
 Builds the app with the debug profile.
 
@@ -51,3 +61,52 @@ Note that, due to our use of `STRICT` tables,
 we require version 3.37.0 or later, of SQLite.
 
 SQLite can be downloaded here: <https://www.sqlite.org/download.html>
+
+# Glossary
+I wasn't sure where to put this, but we need a list of terms we're using to avoid getting too mixed up,
+and this API is in the middle of two bodies of code which don't use the *exact* same phrasing, so... I put it here.
+
+## Guilds
+- "Guild": A "guild" is a loose category for quests, based on theme.
+  Each guild has a "leader" who publishes quests for it.
+## Roles
+The term "role" is internal, in the sense that our use of it here
+is not mentioned anywhere in the frontend.
+- "Role": A tag which can be attached to an adventurer on a per-guild basis.
+- "Guild Leader": A "role" which allows an adventurer to publish quests for a guild.
+## Coalitions (UNIMPLEMENTED)
+- "Coalition": A home for cross-guild quests. (TODO: expand description)
+## Quests
+- "Quest": The focus of this whole application. A thing which an individual (an "adventurer"),
+  or group of individuals (a "party") can do to make something better for humans.
+- "Template Quest": When a quest is accepted, we create a copy of it in the database
+  to associate with the users who accepted it. This ensures we don't accidentally alter
+  our record of what people actually did, if someone decides to edit an already published quest.
+  The quest which is being copied is sometimes called a "template quest".
+- "Task" / "Quest Task": A quest is structured like a to-do list.
+  A "task" is an item on that list.
+- "Quest Detail": ??????????????????
+- "Action" / "Quest Action": We use this to mean a quest which has only one task.
+- "Open Date" / "Accepted Date": The date on which a quest was accepted.
+- "Close Date" / "Completed Date": The date on which a quest was completed.
+- "Deleted Date" / "Cancelled Date": Instead of wiping out records of quests which have been
+  unpublished from the database, we record the date they were unpublished.
+## Adventurers
+- "Adventurer" / "User": A user of this application.
+- "Party Member": Every quest which has been accepted has a list of
+  "party members" associated with it.
+  These are the people working on completing the quest.
+## Permissions
+The term "permission" is internal, in the sense that our use of it here
+is not mentioned anywhere in the frontend. This data, however, is directly
+reported on the Administration page of the Web frontend.
+There is a list of attributes associated with every user, which describes
+things they are allowed to do.
+- "Super User": A user who has this permission can do anything.
+  This is another way of saying "administrator".
+- "Eligible To Be Guild Leader": A user who has this permission can
+  be assigned as a guild leader. (But they cannot do the assigning.)
+- "Approved": A user who has this permission has been vetted to be
+  a legitimate member, and can accept and complete quests.
+- "Rejected": A user who has this permission has *failed* the vetting process,
+  and cannot do anything.
