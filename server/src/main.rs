@@ -260,7 +260,14 @@ macro_rules! decl_ids {
         )*
     }
 }
-decl_ids! { GuildId, QuestId, UserId }
+decl_ids! {
+    /// The ID number for a guild.
+    GuildId,
+    /// The ID number for a quest.
+    QuestId,
+    /// The ID number for a user.
+    UserId
+}
 
 #[derive(Serialize)]
 struct User {
