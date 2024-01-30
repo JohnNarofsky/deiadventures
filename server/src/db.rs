@@ -1,3 +1,8 @@
+//! # Database Access
+//! This module provides utilities for accessing the database.
+//! Eventually, we'd like to move all queries into here, and define API endpoints
+//! largely as just chains of methods defined here.
+
 use crate::{GuildId, GuildQuestAction, Password, PermissionType, QuestId, UserId};
 use rusqlite::{named_params, Transaction};
 use serde::Deserialize;

@@ -1,3 +1,11 @@
+//! # The Web API Server
+//! This program is the go-between the Web frontend and the database.
+//! It has these jobs:
+//! 1. Receive requests, authenticate them, and execute them.
+//! 2. Run scheduled jobs. (Cleanup of expired sessions, for example.)
+//! 3. Abstract away the particular database in use.
+
+
 mod db;
 mod error;
 mod command;
@@ -21,6 +29,7 @@ use std::sync::{Arc, Mutex};
 use tower_http::cors::CorsLayer;
 use crate::db::{Email, Name};
 
+/// This module defines all the environment variables we read in this program.
 mod env {
     use std::path::PathBuf;
     menv::require_envs! {
@@ -41,6 +50,7 @@ mod env {
     }
 }
 
+/// The program entry point.
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
@@ -73,6 +83,8 @@ async fn main() {
     }
 }
 
+/// Invoked by [`main`], this sets up the Web server and attaches
+/// every endpoint to the appropriate function.
 async fn run_server(state: Arc<AppState>) {
     let app = Router::new()
         // TODO: verify that all information required to know the authorization requirements
@@ -162,10 +174,14 @@ async fn run_server(state: Arc<AppState>) {
         .unwrap();
 }
 
+/// The fallback route handler,
+/// called when the request matches no known endpoint.
 async fn fallback(uri: Uri) -> (StatusCode, String) {
     (StatusCode::NOT_FOUND, format!("No route for {uri}"))
 }
 
+/// This function waits for a shutdown signal. It is called by [`run_server`], and controls
+/// when the server begins winding down.
 async fn shutdown_signal() {
     tokio::signal::ctrl_c()
         .await
@@ -173,6 +189,7 @@ async fn shutdown_signal() {
     tracing::info!("Received interrupt signal. Shutting down...");
 }
 
+/// The global state of this server. Contains our connection to the database.
 struct AppState {
     db: Mutex<rusqlite::Connection>,
 }
@@ -183,6 +200,7 @@ impl AppState {
         Self { db }
     }
 
+    /// Run some code inside of a SQLite read transaction.
     // These transaction wrapper methods, conveniently, prevent any async code from being passed to them,
     // which is good because performing an await while we hold a lock on the database will cause a deadlock.
     fn read_transaction<T, E, F: FnOnce(&mut rusqlite::Transaction) -> Result<T, Error<E>>>(
@@ -197,6 +215,7 @@ impl AppState {
         transaction.commit()?;
         Ok(res)
     }
+    /// Run some code inside of a SQLite write transaction.
     fn write_transaction<T, E, F: FnOnce(&mut rusqlite::Transaction) -> Result<T, Error<E>>>(
         &self,
         f: F,
@@ -212,11 +231,14 @@ impl AppState {
 
 type ArcState = Arc<AppState>;
 
+/// Single purpose macro for newtyping a 32 bit integer ID from the database.
+/// Used by [`GuildId`], [`QuestId`], and [`UserId`].
 // Just making wrapper types so we can annotate
 // what our request method parameters are.
 macro_rules! decl_ids {
-    ($($kind:ident),*) => {
+    ($($(#[$m:meta])* $kind:ident),*) => {
         $(
+            $(#[$m])*
             #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
             #[serde(transparent)]
             struct $kind (u32);
@@ -238,7 +260,14 @@ macro_rules! decl_ids {
         )*
     }
 }
-decl_ids! { GuildId, QuestId, UserId }
+decl_ids! {
+    /// The ID number for a guild.
+    GuildId,
+    /// The ID number for a quest.
+    QuestId,
+    /// The ID number for a user.
+    UserId
+}
 
 #[derive(Serialize)]
 struct User {
@@ -248,6 +277,7 @@ struct User {
     // TODO: I've forgotten part of what fields were requested on this object
 }
 
+/// The user data object returned by [`get_user`] and [`get_users`].
 #[derive(Serialize, Debug)]
 struct UserSummary {
     id: UserId,
@@ -306,6 +336,7 @@ impl FromSql for PermissionType {
     }
 }
 
+/// Get a list of [`UserSummary`]s describing all users.
 async fn get_users(State(state): State<ArcState>) -> Result<Json<Vec<UserSummary>>, Error> {
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached("SELECT id, name FROM Adventurer;")?;
@@ -349,6 +380,7 @@ async fn get_users(State(state): State<ArcState>) -> Result<Json<Vec<UserSummary
     data.map(Json)
 }
 
+/// Get a [`UserSummary`] describing a user.
 async fn get_user(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
@@ -575,6 +607,8 @@ async fn get_user_available_quest_actions(
 }
 
 /// An "Action" is stored as a nameless quest with one QuestTask associated with it.
+///
+/// The element type of the response body for [`get_guild_quest_actions`].
 #[derive(Serialize, Debug)]
 struct GuildQuestAction {
     id: QuestId,
@@ -583,6 +617,8 @@ struct GuildQuestAction {
     name: String,
     xp: u32,
 }
+
+/// Get all quest actions associated with a guild.
 async fn get_guild_quest_actions(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
@@ -595,6 +631,9 @@ async fn get_guild_quest_actions(
     data.map(Json)
 }
 
+/// The element type of the response body for [`get_all_guilds_quest_actions`].
+///
+/// Represents a guild, together with every quest action associated with that guild.
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct GuildQuestActionsBundle {
@@ -603,6 +642,7 @@ struct GuildQuestActionsBundle {
     guild_quest_actions: Vec<GuildQuestAction>,
 }
 
+/// Get a list of all guilds, each together with all their quest actions.
 async fn get_all_guilds_quest_actions(
     State(state): State<ArcState>,
 ) -> Result<Json<Vec<GuildQuestActionsBundle>>, Error> {
@@ -628,12 +668,14 @@ async fn get_all_guilds_quest_actions(
     data.map(Json)
 }
 
+/// The request body for [`accept_quest`].
 #[derive(Deserialize, Debug)]
 struct AcceptQuest {
     quest_id: QuestId,
     // TODO: idempotency key?
 }
 
+/// The response body for [`accept_quest`].
 #[derive(Serialize, Debug)]
 struct AcceptedQuest {
     quest_id: QuestId,
@@ -668,10 +710,13 @@ async fn accept_quest(
     data.map(|quest_id| Json(AcceptedQuest { quest_id }))
 }
 
+/// The request body for [`complete_quest`].
 #[derive(Deserialize, Debug)]
 struct CompleteQuest {
     quest_id: QuestId,
 }
+
+/// As an Adventurer, complete the quest with the specified ID.
 async fn complete_quest(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
@@ -705,10 +750,13 @@ async fn complete_quest(
     res
 }
 
+/// Request body for [`cancel_quest`].
 #[derive(Deserialize, Debug)]
 struct CancelQuest {
     quest_id: QuestId,
 }
+
+/// As an Adventurer, cancel the quest with the specified ID.
 async fn cancel_quest(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
@@ -742,6 +790,8 @@ async fn cancel_quest(
     res
 }
 
+/// Identification of a user who is allowed to be a guild leader.
+/// The element type of the response body of [`get_allowed_guild_leaders`].
 #[derive(Serialize, Debug)]
 struct AllowedGuildLeader {
     id: UserId,
@@ -772,6 +822,8 @@ async fn get_allowed_guild_leaders(
     data.map(Json)
 }
 
+/// Pertinent data for a guild.
+/// The element type of the response body of [`get_guilds`].
 #[derive(Serialize, Debug)]
 struct Guild {
     id: GuildId,
@@ -779,6 +831,7 @@ struct Guild {
     leader_id: Option<UserId>,
     leader_name: Option<String>,
 }
+/// Get the list of guilds.
 async fn get_guilds(State(state): State<ArcState>) -> Result<Json<Vec<Guild>>, Error> {
     let data = state.read_transaction(|db| {
         let mut query = db.prepare_cached("SELECT id, name FROM Guild;")?;
@@ -818,11 +871,13 @@ async fn get_guilds(State(state): State<ArcState>) -> Result<Json<Vec<Guild>>, E
     data.map(Json)
 }
 
+/// The request body of [`create_guild`].
 #[derive(Deserialize, Debug)]
 struct CreateGuild {
     name: String,
     leader_id: Option<UserId>,
 }
+/// As a super user, create a new guild.
 async fn create_guild(
     State(state): State<ArcState>,
     Json(guild): Json<CreateGuild>,
@@ -851,11 +906,13 @@ async fn create_guild(
     data.map(Json)
 }
 
+/// The request body for [`update_guild`].
 #[derive(Deserialize, Debug)]
 struct UpdateGuild {
     name: String,
     leader_id: Option<UserId>,
 }
+/// As a super user, edit the name and leader of a guild.
 async fn update_guild(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
@@ -897,6 +954,7 @@ async fn update_guild(
     res
 }
 
+/// The request body for [`create_guild_quest_action`].
 #[derive(Deserialize, Debug)]
 struct CreateGuildQuestAction {
     // "name" is the column name, but we're putting it in a "description" field
@@ -904,10 +962,13 @@ struct CreateGuildQuestAction {
     name: String,
     xp: u32,
 }
+
+/// The response body for [`create_guild_quest_action`].
 #[derive(Serialize, Debug)]
 struct CreatedGuildQuestAction {
     quest_id: QuestId,
 }
+/// As a guild leader, create a quest action for a guild you are the leader of.
 async fn create_guild_quest_action(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
@@ -935,6 +996,7 @@ async fn create_guild_quest_action(
     res.map(Json)
 }
 
+/// The request body for [`edit_guild_quest_action`].
 #[derive(Deserialize, Debug)]
 struct EditGuildQuestAction {
     quest_id: QuestId,
@@ -942,6 +1004,7 @@ struct EditGuildQuestAction {
     name: String,
     xp: u32,
 }
+/// As a guild leader, edit the name and xp value of a quest action.
 async fn edit_guild_quest_action(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
@@ -967,6 +1030,7 @@ async fn edit_guild_quest_action(
     res
 }
 
+/// Get the name of a guild with a specified ID.
 async fn get_guild_name(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
@@ -984,6 +1048,7 @@ async fn get_guild_name(
     data.map(Json)
 }
 
+/// As a super user, set the name of a guild with a specified ID.
 async fn set_guild_name(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
@@ -1007,10 +1072,13 @@ async fn set_guild_name(
     res
 }
 
+/// The request body for [`set_guild_leader`].
 #[derive(Deserialize, Debug)]
 struct SetGuildLeader {
     id: Option<UserId>,
 }
+
+/// As a super user, set the guild leader of a guild with a specified ID.
 // TODO: make refuse to set a guild leader when the person given
 //  isn't allowed to be a guild leader
 async fn set_guild_leader(
@@ -1054,10 +1122,12 @@ async fn set_guild_leader(
     res
 }
 
+/// The response body for [`get_guild_leader`].
 #[derive(Serialize, Debug)]
 struct GetGuildLeader {
     id: UserId,
 }
+/// Get the leader of a guild.
 async fn get_guild_leader(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
@@ -1076,6 +1146,8 @@ async fn get_guild_leader(
     data.map(Json)
 }
 
+/// Set the state of a given permission, for a user. Deals with opening a write transaction,
+/// so we can write several endpoints which do only this by making their body just a call to this.
 fn set_perm_endpoint(
     state: ArcState,
     user: UserId,
@@ -1089,11 +1161,17 @@ fn set_perm_endpoint(
     res
 }
 
+/// The request body for several methods:
+/// - [`set_user_accepted`]
+/// - [`set_user_rejected`]
+/// - [`set_user_superuser`]
+/// - [`set_user_eligible_guild_leader`]
 #[derive(Deserialize, Debug)]
 struct SetPerm {
     set: bool,
 }
 
+/// As a super user, mark whether a user is accepted or not.
 async fn set_user_accepted(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
@@ -1102,6 +1180,7 @@ async fn set_user_accepted(
     set_perm_endpoint(state, user_id, PermissionType::Approved, accepted.set)
 }
 
+/// As a super user, mark whether a user is rejected or not.
 async fn set_user_rejected(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
@@ -1110,6 +1189,7 @@ async fn set_user_rejected(
     set_perm_endpoint(state, user_id, PermissionType::Rejected, rejected.set)
 }
 
+/// As a super user, mark whether a user is a super user or not.
 async fn set_user_superuser(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
@@ -1118,6 +1198,7 @@ async fn set_user_superuser(
     set_perm_endpoint(state, user_id, PermissionType::SuperUser, superuser.set)
 }
 
+/// As a super user, mark whether a user is eligible to be a guild leader or not.
 async fn set_user_eligible_guild_leader(
     State(state): State<ArcState>,
     Path(user_id): Path<UserId>,
@@ -1131,10 +1212,14 @@ async fn set_user_eligible_guild_leader(
     )
 }
 
+/// The request body for [`retire_guild_quest_action`].
 #[derive(Deserialize, Debug)]
 struct DeleteGuildQuestAction {
     quest_id: QuestId,
 }
+
+/// As a guild leader, unpublish a quest action which is currently available
+/// for acceptance by adventurers.
 async fn retire_guild_quest_action(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
@@ -1167,7 +1252,7 @@ async fn retire_guild_quest_action(
 /// Wrapper type for consuming passwords to prevent obvious misuse
 /// and accidental logging of passwords.
 /// Doesn't avoid extra copies of passwords lingering in memory,
-/// but should be good enough in the absence memory safety bugs.
+/// but should be good enough in the absence of memory safety bugs.
 ///
 /// DO NOT put this in the database.
 #[derive(Deserialize)]
@@ -1188,6 +1273,9 @@ impl FromStr for Password {
     }
 }
 impl Password {
+    /// Compute a hash of this password, given a salt.
+    /// This is used by [`salty_hash`](Self::salty_hash) and [`check_hash`](Self::check_hash), both of which
+    /// you should see about using instead of this.
     fn hash(&self, salt: Salt<'_>) -> Result<PasswordHashString, password_hash::Error> {
         // TODO: we should pick something specific and save the
         //       particular hash alg used with a row so that, when
@@ -1199,12 +1287,18 @@ impl Password {
 
         Ok(hash.into())
     }
+
+    /// Generate a new salt and compute the hash of this password using it.
+    /// This is meant for use in saving a new password for a user.
     // I can have fun with names, right? lol
     fn salty_hash(&self) -> Result<(PasswordHashString, SaltString), password_hash::Error> {
         let salt = SaltString::generate(&mut rand::thread_rng());
         let hash = self.hash(salt.as_salt());
         Ok((hash?, salt))
     }
+
+    /// Check if this password matches a given hash and salt.
+    /// This is meant for use in validating a user's password at login.
     fn check_hash(
         &self,
         test_hash: PasswordHash,
@@ -1215,6 +1309,7 @@ impl Password {
     }
 }
 
+/// The request body for [`auth_create_account`].
 // These top two are the only ones necessary for the MVP.
 #[derive(Deserialize, Debug)]
 struct CreateAccount {
@@ -1223,6 +1318,7 @@ struct CreateAccount {
     password: Password,
 }
 
+/// As an adventurer who is not registered yet, create a new account.
 async fn auth_create_account(
     State(state): State<ArcState>,
     Json(account): Json<CreateAccount>,
@@ -1240,6 +1336,7 @@ async fn auth_create_account(
     res
 }
 
+/// The request body for [`auth_login`].
 #[derive(Deserialize, Debug)]
 struct AuthLogin {
     email: String,
@@ -1313,6 +1410,8 @@ struct AuthLoginSession {
     start_time: JsInt,
     time_to_live: JsInt,
 }
+/// As a user who wants to be able to make API calls using
+/// their account, login using your credentials and acquire a [session](AuthLoginSession).
 async fn auth_login(
     State(state): State<ArcState>,
     Json(login): Json<AuthLogin>,
@@ -1387,14 +1486,22 @@ async fn auth_login(
     data.map(Json)
 }
 
+/// As a user who currently has a valid [login session](AuthLoginSession),
+/// logout: invalidate the session. (UNIMPLEMENTED)
 // These are optional for the MVP.
 async fn auth_logout() {}
+/// As a user who currently has a valid [login session](AuthLoginSession),
+/// renew that session so it takes longer to expire. (UNIMPLEMENTED)
 async fn auth_renew_session() {}
 
+/// The request body for [`auth_set_password`].
 #[derive(Deserialize, Debug)]
 struct SetPassword {
     password: Password,
 }
+
+/// As either a user doing this for their own account, or a super user doing it for anyone's,
+/// set a new password for an account.
 async fn auth_set_password(
     State(state): State<ArcState>,
     Path(target_user_id): Path<UserId>,

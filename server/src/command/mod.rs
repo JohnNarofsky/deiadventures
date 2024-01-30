@@ -1,3 +1,7 @@
+//! # CLI Commands
+//! This module provides the CLI argument parser,
+//! as well as the utility subcommands.
+
 use argh::FromArgs;
 use crate::command::add_admin::AddAdmin;
 use crate::command::hash_password::HashPassword;
