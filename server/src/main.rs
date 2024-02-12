@@ -389,9 +389,7 @@ async fn get_user_accepted_quest_actions(
         if !db::adventurer_exists(&db, user_id)? {
             return Err(Error::AdventurerNotFound { id: Some(user_id) })
         }
-        let mut query_accepted = db.prepare_cached(
-            "UPDATE Quest SET open_date = unixepoch() WHERE id = :quest_id;"
-        )?;
+        
         let mut query = db.prepare_cached(
             "SELECT quest_id FROM PartyMember
                  JOIN Quest ON close_date IS NULL
@@ -400,8 +398,6 @@ async fn get_user_accepted_quest_actions(
         let quests = query
             .query_map(named_params! { ":adventurer_id": user_id }, |row| {
                 let quest_id = row.get(0)?;
-                let n = query_accepted.execute(named_params! { ":quest_id": quest_id })?;
-                assert_eq!(n, 1);
                 let mut query =
                     db.prepare_cached("SELECT guild_id,open_date FROM Quest WHERE id = :quest_id;")?;
                 let guild_id =
@@ -648,6 +644,11 @@ async fn accept_quest(
         }
 
         let new_id = db::accept_quest(&db, user_id, quest_id)?;
+        let mut query_accepted = db.prepare_cached(
+            "UPDATE Quest SET open_date = unixepoch() WHERE id = :quest_id;"
+        )?;
+        let n = query_accepted.execute(named_params! { ":quest_id": quest_id })?;
+        assert_eq!(n, 1);
         Ok(new_id)
     });
 
