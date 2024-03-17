@@ -5,6 +5,7 @@ import axios from 'axios';
 import { ProfileContext } from '../common/profilecontext';
 import { Navigate, Link } from 'react-router-dom';
 import api_config from '../api_config.json';
+import { AuthContext } from '../common/auth_context';
 
 export default function Login() {
 
@@ -13,6 +14,7 @@ export default function Login() {
     const [ user, setUser ] = useState(null);
     const [ errorMessage, setErrorMessage ] = useState('');
     const {profile, setProfile, setUsedGoogleLogin} = useContext(ProfileContext);
+    const { session, setSession } = useContext(AuthContext);
     const loginFailMessage = 'Login Failed! Please Try Again!';
 
     // const loginWithGoogle = useGoogleLogin({
@@ -60,6 +62,7 @@ export default function Login() {
             const login = {"email": email, "password": password};
 
             axios.post(api_config.baseURL + "/auth/login", login).then((response) => {
+                setSession(response.data);
                 axios.get(api_config.baseURL + "/user/"+response.data.id).then((response) => {
                     const data = {
                         id: response.data.id,
