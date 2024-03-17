@@ -47,7 +47,7 @@ CREATE TABLE Quest (
     open_date INTEGER,
     close_date INTEGER,
     -- TODO: schedule cleanups of deleted quests which are old enough?
-    deleted_date INTEGER
+    deleted_date INTEGER,
 ) STRICT;
 
 CREATE TABLE QuestDetail (

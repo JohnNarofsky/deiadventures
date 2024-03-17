@@ -440,6 +440,7 @@ struct AcceptedQuestAction {
     #[serde(rename = "description")]
     name: String,
     xp: u32,
+    open_date: JsInt,
 }
 async fn get_user_accepted_quest_actions(
     State(state): State<ArcState>,
@@ -449,6 +450,7 @@ async fn get_user_accepted_quest_actions(
         if !db::adventurer_exists(&db, user_id)? {
             return Err(Error::AdventurerNotFound { id: Some(user_id) })
         }
+        
         let mut query = db.prepare_cached(
             "SELECT quest_id FROM PartyMember
                  JOIN Quest ON close_date IS NULL
@@ -458,9 +460,13 @@ async fn get_user_accepted_quest_actions(
             .query_map(named_params! { ":adventurer_id": user_id }, |row| {
                 let quest_id = row.get(0)?;
                 let mut query =
-                    db.prepare_cached("SELECT guild_id FROM Quest WHERE id = :quest_id;")?;
+                    db.prepare_cached("SELECT guild_id,open_date FROM Quest WHERE id = :quest_id;")?;
                 let guild_id =
                     query.query_row(named_params! { ":quest_id": quest_id }, |row| row.get(0))?;
+                let date_accepted =
+                    query.query_row(named_params! { ":quest_id": quest_id }, |row| row.get(1))?;
+                
+                let open_date = i64::checked_mul(date_accepted, 1000).unwrap().try_into().expect("completion date exceeded the year 27000");
                 let mut query = db
                     .prepare_cached("SELECT name, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
                 query.query_row(named_params! { ":quest_id": quest_id }, |row| {
@@ -469,6 +475,7 @@ async fn get_user_accepted_quest_actions(
                         quest_id,
                         name: row.get(0)?,
                         xp: row.get(1)?,
+                        open_date,
                     })
                 })
             })?
@@ -708,6 +715,11 @@ async fn accept_quest(
         }
 
         let new_id = db::accept_quest(&db, user_id, quest_id)?;
+        let mut query_accepted = db.prepare_cached(
+            "UPDATE Quest SET open_date = unixepoch() WHERE id = :quest_id;"
+        )?;
+        let n = query_accepted.execute(named_params! { ":quest_id": quest_id })?;
+        assert_eq!(n, 1);
         Ok(new_id)
     });
 

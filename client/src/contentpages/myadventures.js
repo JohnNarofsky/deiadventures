@@ -81,10 +81,12 @@ const MyAdventures = () => {
 
     //{guild_id: 2, quest_id: 0, description: 'Schedule a DEI meeting', xp: 15}
     const AcceptedQuestAction = ({questAction}) => {
+        const acceptedDate = new Date(questAction.open_date).toDateString();
         return (
             <tr>
                 <td className="action-table-td left-col">{questAction.description}</td>
                 <td className="action-table-td right-col">{questAction.xp} xp</td>
+                <td className="action-table-td right-col">{acceptedDate}</td>
                 <td className="action-table-td right-col">
                   <Button variant="dark" onClick={() => finishQuestAction(questAction)}>Finish</Button>&nbsp;
                   <Button variant="dark" onClick={() => cancelQuestAction(questAction)}>Cancel</Button>
