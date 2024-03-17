@@ -26,6 +26,7 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
+#[cfg(feature = "cors_permissive")]
 use tower_http::cors::CorsLayer;
 use crate::db::{Email, Name};
 
@@ -158,11 +159,14 @@ async fn run_server(state: Arc<AppState>) {
             "/auth/account/:user_id/set-password",
             put(auth_set_password),
         )
-        .fallback(fallback)
+        .fallback(fallback);
+    #[cfg(feature = "cors_permissive")]
+    let app = app
         // TODO: we're going to want to narrow this,
         //  but it's currently the least of our worries
         //  (remember, we're not yet even authenticating API requests)
-        .layer(CorsLayer::very_permissive())
+        .layer(CorsLayer::very_permissive());
+    let app = app
         .with_state(state.clone());
 
     let addr = SocketAddr::from(([127, 0, 0, 1], env::port()));
