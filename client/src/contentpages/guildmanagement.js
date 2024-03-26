@@ -221,7 +221,7 @@ const GuildManagement = () => {
     return (
         <div className="listing">
           <div className="details">
-            <div>{adventurer.name}</div>
+            <div><a href={`mailto:${adventurer.email}`}>{adventurer.name}</a></div>
             <div>{permissionText}</div>
           </div>
           <div className="actions">
@@ -237,7 +237,7 @@ const GuildManagement = () => {
     return (
         <div className="listing">
           <div className="details">
-            <div>{adventurer.name}</div>
+            <div><a href={`mailto:${adventurer.email}`}>{adventurer.name}</a></div>
           </div>
           <div className="actions">
             <Button variant="dark" onClick={() => acceptAdventurer(adventurer)}>Accept</Button>&nbsp;
