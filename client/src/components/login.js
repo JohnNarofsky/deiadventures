@@ -1,7 +1,6 @@
 import { useState, useEffect, useContext} from 'react';
 //import { useGoogleLogin } from '@react-oauth/google';
 import './login.css'
-import axios from 'axios';
 import { ProfileContext } from '../common/profilecontext';
 import { Navigate, Link } from 'react-router-dom';
 import api_config from '../api_config.json';
@@ -14,7 +13,7 @@ export default function Login() {
     const [ user, setUser ] = useState(null);
     const [ errorMessage, setErrorMessage ] = useState('');
     const {profile, setProfile, setUsedGoogleLogin} = useContext(ProfileContext);
-    const { session, setSession } = useContext(AuthContext);
+    const { session, setSession, deiClient } = useContext(AuthContext);
     const loginFailMessage = 'Login Failed! Please Try Again!';
 
     // const loginWithGoogle = useGoogleLogin({
@@ -61,9 +60,9 @@ export default function Login() {
         try {
             const login = {"email": email, "password": password};
 
-            axios.post(api_config.baseURL + "/auth/login", login).then((response) => {
+            deiClient.post(api_config.baseURL + "/auth/login", login).then((response) => {
                 setSession(response.data);
-                axios.get(api_config.baseURL + "/user/"+response.data.id).then((response) => {
+                deiClient.get(api_config.baseURL + "/user/"+response.data.id).then((response) => {
                     const data = {
                         id: response.data.id,
                         permissions: response.data.permissions

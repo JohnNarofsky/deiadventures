@@ -1,8 +1,8 @@
 import React from "react";
 import { useEffect, useCallback, useState, useContext } from 'react';
+import { AuthContext } from '../common/auth_context';
 import { ProfileContext } from '../common/profilecontext';
 import Button from 'react-bootstrap/Button';
-import axios from 'axios';
 import _ from 'lodash';
 import './guildmanagement.css';
 import api_config from '../api_config.json'
@@ -13,16 +13,17 @@ const GuildLeadership = () => {
   const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: "", xp: ""});
   const [newGuildQuestActionCreation, setNewGuildQuestActionCreation] = useState(false);
   const [targetGuild, setTargetGuild] = useState({id:-1});
+  const { deiClient } = useContext(AuthContext);
   const { profile } = useContext(ProfileContext);
 
   //initializing UseEffect
   useEffect(()=>{
     let currentGuildQuestActions = [];
-    axios.get(api_config.baseURL + "/guild").then((response) => {
+    deiClient.get(api_config.baseURL + "/guild").then((response) => {
       let guilds = response.data;
       let promises = [];
       guilds.filter((v) => {return v.leader_id === profile.id}).map((guild) => {
-        let newPromise = axios.get(api_config.baseURL + "/guild/" + guild.id + "/quest-actions").then(x => {
+        let newPromise = deiClient.get(api_config.baseURL + "/guild/" + guild.id + "/quest-actions").then(x => {
           return {guildId: guild.id, guildTitle: guild.name, ...x};
         });
         promises.push(newPromise);
@@ -47,7 +48,7 @@ const GuildLeadership = () => {
 
     const data = {quest_id: guildQuestAction.id, description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp)};
     
-    axios.put(api_config.baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {});
+    deiClient.put(api_config.baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {});
 
     let currentGuildQuestActions = 
       guildQuestActions.map((e) => {
@@ -72,7 +73,7 @@ const GuildLeadership = () => {
   const retireGuildQuestAction = (guildId, questId) => {
     const data = {quest_id: questId};
     
-    axios.delete(api_config.baseURL + "/guild/" + guildId + "/quest-action", { headers: { 'Content-Type': 'application/json' }, data}).then((response) => {});
+    deiClient.delete(api_config.baseURL + "/guild/" + guildId + "/quest-action", { headers: { 'Content-Type': 'application/json' }, data}).then((response) => {});
 
     let currentGuildQuestActions = 
       guildQuestActions.map((e) => {
@@ -96,7 +97,7 @@ const GuildLeadership = () => {
 
   const saveNewGuildQuestAction  = (guildId, guildQuestAction) => {
     let data = {description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp)};
-    axios.post(api_config.baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {
+    deiClient.post(api_config.baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {
       let questId = response.data.quest_id;
 
       let currentGuildQuestActions = 

@@ -1,13 +1,14 @@
 import React from "react";
 import { useEffect, useCallback, useState, useContext } from 'react';
+import { AuthContext } from '../common/auth_context';
 import { ProfileContext } from '../common/profilecontext';
 import Button from 'react-bootstrap/Button';
-import axios from 'axios';
 import _ from 'lodash';
 import api_config from '../api_config.json'
 
 
 const MyAdventures = () => {
+    const { deiClient } = useContext(AuthContext);
     const { profile, setProfile, usedGoogleLogin, setUsedGoogleLogin } = useContext(ProfileContext);
     const [acceptedQuestActions, setAcceptedQuestActions] = useState([]);
     const [availableQuestActions, setAvailableGuildQuestActions] = useState([]);
@@ -16,16 +17,16 @@ const MyAdventures = () => {
   
     //initializing UseEffect
     useEffect(()=>{
-        axios.get(api_config.baseURL + "/guild").then((response) => {
+        deiClient.get(api_config.baseURL + "/guild").then((response) => {
             setGuilds(response.data);
           });
 
         //TODO: GET profile.id FROM CONTEXT THAT IS UPDATED UPON LOGIN
-          axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
+          deiClient.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
             setAcceptedQuestActions(response.data);
           });
       
-          axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
+          deiClient.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
           });
 
@@ -35,12 +36,12 @@ const MyAdventures = () => {
         const data = {quest_id: questAction.quest_id};
         //TODO: Give them a little modal happiness telling them where this went
         
-        axios.put(api_config.baseURL + "/user/" + profile.id + "/complete-quest", data).then((response) => {
-            axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
+        deiClient.put(api_config.baseURL + "/user/" + profile.id + "/complete-quest", data).then((response) => {
+            deiClient.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
                 setAcceptedQuestActions(response.data);
             });
           
-            axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
+            deiClient.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
             });
     
@@ -51,12 +52,12 @@ const MyAdventures = () => {
         const data = {quest_id: questAction.quest_id};
         //TODO: Give them a little modal happiness telling them where this went
         
-        axios.delete(api_config.baseURL + "/user/" + profile.id + "/cancel-quest", { headers: { 'Content-Type': 'application/json' }, data }).then((response) => {
-            axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
+        deiClient.delete(api_config.baseURL + "/user/" + profile.id + "/cancel-quest", { headers: { 'Content-Type': 'application/json' }, data }).then((response) => {
+            deiClient.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
                 setAcceptedQuestActions(response.data);
             });
           
-            axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
+            deiClient.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
             });
     
@@ -67,12 +68,12 @@ const MyAdventures = () => {
     const acceptQuestAction = (questAction) => {
         const data = {quest_id: questAction.quest_id};
 
-        axios.put(api_config.baseURL + "/user/" + profile.id + "/accept-quest", data).then((response) => {
-            axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
+        deiClient.put(api_config.baseURL + "/user/" + profile.id + "/accept-quest", data).then((response) => {
+            deiClient.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
                 setAcceptedQuestActions(response.data);
             });
           
-            axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
+            deiClient.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
             });
     
