@@ -440,6 +440,7 @@ struct AcceptedQuestAction {
     #[serde(rename = "description")]
     name: String,
     xp: u32,
+    open_date: Option<JsTimestamp>,
 }
 async fn get_user_accepted_quest_actions(
     State(state): State<ArcState>,
@@ -458,9 +459,9 @@ async fn get_user_accepted_quest_actions(
             .query_map(named_params! { ":adventurer_id": user_id }, |row| {
                 let quest_id = row.get(0)?;
                 let mut query =
-                    db.prepare_cached("SELECT guild_id FROM Quest WHERE id = :quest_id;")?;
-                let guild_id =
-                    query.query_row(named_params! { ":quest_id": quest_id }, |row| row.get(0))?;
+                    db.prepare_cached("SELECT guild_id, open_date FROM Quest WHERE id = :quest_id;")?;
+                let (guild_id, open_date) =
+                    query.query_row(named_params! { ":quest_id": quest_id }, |row| Ok((row.get(0)?, row.get(1)?)))?;
                 let mut query = db
                     .prepare_cached("SELECT name, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
                 query.query_row(named_params! { ":quest_id": quest_id }, |row| {
@@ -469,6 +470,7 @@ async fn get_user_accepted_quest_actions(
                         quest_id,
                         name: row.get(0)?,
                         xp: row.get(1)?,
+                        open_date,
                     })
                 })
             })?
@@ -507,6 +509,20 @@ impl FromSql for JsInt {
 }
 
 #[derive(Serialize, Debug)]
+struct JsTimestamp(JsInt);
+
+impl FromSql for JsTimestamp {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        // Note: To exceed the range of a JS timestamp,
+        // we'd need to reach past the year 27000.
+        i64::column_result(value)
+            .and_then(|x| i64::checked_mul(x, 1000).ok_or(FromSqlError::OutOfRange(x)))
+            .and_then(|x| JsInt::try_from(x).map_err(|()| FromSqlError::OutOfRange(x)))
+            .map(|x| Self(x))
+    }
+}
+
+#[derive(Serialize, Debug)]
 struct CompletedQuestAction {
     guild_id: GuildId,
     quest_id: QuestId,
@@ -514,6 +530,7 @@ struct CompletedQuestAction {
     #[serde(rename = "description")]
     name: String,
     xp: u32,
+    accepted_date: Option<JsTimestamp>,
     // To avoid the 2038 problem, we make sure to use the maximum possible
     // integer width supported by JS, which resembles a 53 bit integer.
     completed_date: JsInt,
@@ -527,7 +544,7 @@ async fn get_user_completed_quest_actions(
             return Err(Error::AdventurerNotFound { id: Some(user_id) })
         }
         let mut query = db.prepare_cached(
-            "SELECT quest_id, close_date FROM PartyMember
+            "SELECT quest_id, close_date, open_date FROM PartyMember
                  JOIN Quest ON close_date IS NOT NULL
                  WHERE adventurer_id = :adventurer_id AND Quest.id = quest_id AND Quest.deleted_date IS NULL;",
         )?;
@@ -536,6 +553,7 @@ async fn get_user_completed_quest_actions(
                 let quest_id = row.get(0)?;
                 let close_date = i64::checked_mul(row.get(1)?, 1000).unwrap();
                 let completed_date = close_date.try_into().expect("completion date exceeded the year 27000");
+                let accepted_date = row.get(2)?;
                 let mut query =
                     db.prepare_cached("SELECT guild_id FROM Quest WHERE id = :quest_id;")?;
                 let guild_id =
@@ -548,6 +566,7 @@ async fn get_user_completed_quest_actions(
                         quest_id,
                         name: row.get(0)?,
                         xp: row.get(1)?,
+                        accepted_date,
                         completed_date,
                     })
                 })

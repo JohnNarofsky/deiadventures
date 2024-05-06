@@ -45,7 +45,6 @@ pub(crate) fn guild_exists(db: &Transaction, quest: GuildId) -> Result<bool, rus
     query.exists(named_params! { ":id": quest })
 }
 
-// TODO: make accept_quest set Quest.open_date
 pub(crate) fn accept_quest(
     db: &Transaction,
     user: UserId,
@@ -60,8 +59,8 @@ pub(crate) fn accept_quest(
 
     // Step 1
     let mut query = db.prepare_cached(
-        "INSERT INTO Quest (guild_id, parent_quest_id, name, quest_type)
-             SELECT guild_id, :quest_id, name, 1 FROM Quest WHERE id = :quest_id;",
+        "INSERT INTO Quest (guild_id, parent_quest_id, name, quest_type, open_date)
+             SELECT guild_id, :quest_id, name, 1, unixepoch() FROM Quest WHERE id = :quest_id;",
     )?;
     query.execute(named_params! { ":quest_id": quest })?;
     let new_id = db.last_insert_rowid();
