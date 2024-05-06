@@ -81,7 +81,13 @@ const MyAdventures = () => {
 
     //{guild_id: 2, quest_id: 0, description: 'Schedule a DEI meeting', xp: 15}
     const AcceptedQuestAction = ({questAction}) => {
-        const acceptedDate = new Date(questAction.open_date).toDateString();
+        // If a Quest.open_date is missing for an accepted quest,
+        // it's because it was accepted before we started recording
+        // that field. We implemented that on May 6th, 2024, and got the
+        // change deployed by May 10th.
+        const acceptedDate = questAction.open_date != null ?
+            new Date(questAction.open_date).toDateString() :
+            "Before May 10th, 2024";
         return (
             <tr>
                 <td className="action-table-td left-col">{questAction.description}</td>
