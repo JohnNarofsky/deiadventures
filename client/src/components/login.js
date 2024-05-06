@@ -1,9 +1,8 @@
-import { useState, useEffect, useContext} from 'react';
+import { useState, useContext} from 'react';
 //import { useGoogleLogin } from '@react-oauth/google';
 import './login.css'
 import { ProfileContext } from '../common/profilecontext';
 import { Navigate, Link } from 'react-router-dom';
-import api_config from '../api_config.json';
 import { AuthContext } from '../common/auth_context';
 
 export default function Login() {
@@ -60,9 +59,9 @@ export default function Login() {
         try {
             const login = {"email": email, "password": password};
 
-            deiClient.post(api_config.baseURL + "/auth/login", login).then((response) => {
+            deiClient.post("/auth/login", login).then((response) => {
                 setSession(response.data);
-                deiClient.get(api_config.baseURL + "/user/"+response.data.id).then((response) => {
+                deiClient.get("/user/"+response.data.id).then((response) => {
                     const data = {
                         id: response.data.id,
                         permissions: response.data.permissions

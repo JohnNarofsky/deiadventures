@@ -1,8 +1,7 @@
 import React from "react";
-import { useEffect, useCallback, useState, useContext } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../common/auth_context';
 import { ProfileContext } from '../common/profilecontext';
-import api_config from '../api_config.json'
 
 
 const MyHistory = () => {
@@ -14,14 +13,14 @@ const MyHistory = () => {
   
     //initializing UseEffect
     useEffect(()=>{
-        deiClient.get(api_config.baseURL + "/guild").then((response) => {
+        deiClient.get("/guild").then((response) => {
             setGuilds(response.data);
           });
 
-          deiClient.get(api_config.baseURL + "/user/" + profile.id + "/completed-quest-actions").then((response) => {
+          deiClient.get("/user/" + profile.id + "/completed-quest-actions").then((response) => {
             setCompletedQuestActions(response.data);
           });
-    }, []);
+    }, [deiClient, profile]);
 
     const FinishedQuestAction = ({questAction}) => {
         return (

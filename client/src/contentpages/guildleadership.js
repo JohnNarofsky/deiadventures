@@ -5,7 +5,6 @@ import { ProfileContext } from '../common/profilecontext';
 import Button from 'react-bootstrap/Button';
 import _ from 'lodash';
 import './guildmanagement.css';
-import api_config from '../api_config.json'
 
 const GuildLeadership = () => {
   //state
@@ -19,17 +18,17 @@ const GuildLeadership = () => {
   //initializing UseEffect
   useEffect(()=>{
     let currentGuildQuestActions = [];
-    deiClient.get(api_config.baseURL + "/guild").then((response) => {
+    deiClient.get("/guild").then((response) => {
       let guilds = response.data;
       let promises = [];
-      guilds.filter((v) => {return v.leader_id === profile.id}).map((guild) => {
-        let newPromise = deiClient.get(api_config.baseURL + "/guild/" + guild.id + "/quest-actions").then(x => {
+      guilds.filter((v) => {return v.leader_id === profile.id}).forEach((guild) => {
+        let newPromise = deiClient.get("/guild/" + guild.id + "/quest-actions").then(x => {
           return {guildId: guild.id, guildTitle: guild.name, ...x};
         });
         promises.push(newPromise);
       });
       Promise.all(promises).then((values)=>{
-        values.map((p) => {
+        values.forEach((p) => {
           let newActions = {
             guildId: p.guildId,
             guildTitle: p.guildTitle,
@@ -41,14 +40,14 @@ const GuildLeadership = () => {
       });
     });
 
-  }, []);
+  }, [deiClient, profile]);
 
   //function components
   const editGuildQuestAction = (guildId, guildQuestAction) => {
 
     const data = {quest_id: guildQuestAction.id, description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp)};
     
-    deiClient.put(api_config.baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {});
+    deiClient.put("/guild/" + guildId + "/quest-action", data).then((response) => {});
 
     let currentGuildQuestActions = 
       guildQuestActions.map((e) => {
@@ -73,7 +72,7 @@ const GuildLeadership = () => {
   const retireGuildQuestAction = (guildId, questId) => {
     const data = {quest_id: questId};
     
-    deiClient.delete(api_config.baseURL + "/guild/" + guildId + "/quest-action", { headers: { 'Content-Type': 'application/json' }, data}).then((response) => {});
+    deiClient.delete("/guild/" + guildId + "/quest-action", { headers: { 'Content-Type': 'application/json' }, data}).then((response) => {});
 
     let currentGuildQuestActions = 
       guildQuestActions.map((e) => {
@@ -97,7 +96,7 @@ const GuildLeadership = () => {
 
   const saveNewGuildQuestAction  = (guildId, guildQuestAction) => {
     let data = {description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp)};
-    deiClient.post(api_config.baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {
+    deiClient.post("/guild/" + guildId + "/quest-action", data).then((response) => {
       let questId = response.data.quest_id;
 
       let currentGuildQuestActions = 
