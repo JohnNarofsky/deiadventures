@@ -1,0 +1,15 @@
+[Unit]
+Description=DEI Game Server
+After=network.target
+
+[Service]
+Type=simple
+User=dei_api
+Group=dei_api
+WorkingDirectory=/home/dei_api
+ExecStart=/bin/sh /home/dei_api/run.sh run-server
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target
+
