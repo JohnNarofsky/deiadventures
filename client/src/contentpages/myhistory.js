@@ -1,11 +1,11 @@
 import React from "react";
 import { useEffect, useState, useContext } from 'react';
-import { AuthContext } from '../common/auth_context';
 import { ProfileContext } from '../common/profilecontext';
+import { DeiApiContext } from "../common/dei_api_context";
 
 
 const MyHistory = () => {
-    const { deiClient } = useContext(AuthContext);
+    const { deiClient } = useContext(DeiApiContext);
     const { profile } = useContext(ProfileContext);
     const [completedQuestActions, setCompletedQuestActions] = useState([]);
     const [guilds, setGuilds] = useState([]);

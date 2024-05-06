@@ -12,13 +12,13 @@ import Login from './components/login';
 import SignUp from './components/signup';
 import { ProfileProvider } from './common/profilecontext';
 import ProtectedRoute from './components/protectedroute';
-import { AuthProvider } from './common/auth_context';
+import { DeiApiProvider } from './common/dei_api_context';
 
 
 function App() {
   return (
     <>
-    <AuthProvider>
+    <DeiApiProvider>
       <ProfileProvider>
         <NavigationBar />
         <Routes>
@@ -34,7 +34,7 @@ function App() {
             <Route path="signup" element={<SignUp />} />
         </Routes>
       </ProfileProvider>
-    </AuthProvider>
+    </DeiApiProvider>
     </>
   );
 }

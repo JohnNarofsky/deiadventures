@@ -1,9 +1,9 @@
 import React from "react";
 import { useEffect, useState, useContext } from 'react';
-import { AuthContext } from '../common/auth_context';
 // import { ProfileContext } from '../common/profilecontext';
 import Button from 'react-bootstrap/Button';
 import './guildmanagement.css';
+import { DeiApiContext } from "../common/dei_api_context";
 
 const GuildManagement = () => {
 
@@ -12,7 +12,7 @@ const GuildManagement = () => {
   const [availableGuildLeaders, setAvailableGuildLeaders] = useState([]);
   const [targetGuild, setTargetGuild] = useState({id:-1, name:"", leader_id:-1, leader_name: ""});
   const [newGuildCreation, setNewGuildCreation] = useState(false);
-  const { deiClient } = useContext(AuthContext);
+  const { deiClient } = useContext(DeiApiContext);
   // const { profile } = useContext(ProfileContext);
 
   useEffect(()=>{

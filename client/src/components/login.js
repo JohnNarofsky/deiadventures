@@ -3,7 +3,7 @@ import { useState, useContext} from 'react';
 import './login.css'
 import { ProfileContext } from '../common/profilecontext';
 import { Navigate, Link } from 'react-router-dom';
-import { AuthContext } from '../common/auth_context';
+import { DeiApiContext } from '../common/dei_api_context';
 
 export default function Login() {
 
@@ -12,7 +12,7 @@ export default function Login() {
     const [ user, setUser ] = useState(null);
     const [ errorMessage, setErrorMessage ] = useState('');
     const {profile, setProfile, setUsedGoogleLogin} = useContext(ProfileContext);
-    const { session, setSession, deiClient } = useContext(AuthContext);
+    const { session, setSession, deiClient } = useContext(DeiApiContext);
     const loginFailMessage = 'Login Failed! Please Try Again!';
 
     // const loginWithGoogle = useGoogleLogin({

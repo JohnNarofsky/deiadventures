@@ -17,9 +17,9 @@ function set_auth_session(session) {
     }
 }
 
-const AuthContext = createContext();
+const DeiApiContext = createContext();
 
-const AuthProvider = ({ children }) => {
+const DeiApiProvider = ({ children }) => {
     const old_session_text = localStorage.getItem("login_session");
     const old_session = old_session_text !== null ? JSON.parse(old_session_text) : null;
     set_auth_session(old_session);
@@ -33,10 +33,10 @@ const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ session, setSession, deiClient }}>
+        <DeiApiContext.Provider value={{ session, setSession, deiClient }}>
             {children}
-        </AuthContext.Provider>
+        </DeiApiContext.Provider>
     );
 };
 
-export { AuthContext, AuthProvider };
+export { DeiApiContext, DeiApiProvider };

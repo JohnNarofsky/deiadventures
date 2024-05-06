@@ -1,10 +1,10 @@
 import React from "react";
 import { useEffect, useCallback, useState, useContext } from 'react';
-import { AuthContext } from '../common/auth_context';
 import { ProfileContext } from '../common/profilecontext';
 import Button from 'react-bootstrap/Button';
 import _ from 'lodash';
 import './guildmanagement.css';
+import { DeiApiContext } from "../common/dei_api_context";
 
 const GuildLeadership = () => {
   //state
@@ -12,7 +12,7 @@ const GuildLeadership = () => {
   const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: "", xp: ""});
   const [newGuildQuestActionCreation, setNewGuildQuestActionCreation] = useState(false);
   const [targetGuild, setTargetGuild] = useState({id:-1});
-  const { deiClient } = useContext(AuthContext);
+  const { deiClient } = useContext(DeiApiContext);
   const { profile } = useContext(ProfileContext);
 
   //initializing UseEffect
