@@ -3,6 +3,8 @@
 //! Eventually, we'd like to move all queries into here, and define API endpoints
 //! largely as just chains of methods defined here.
 
+mod migrate;
+
 use crate::{GuildId, GuildQuestAction, Password, PermissionType, QuestId, UserId};
 use rusqlite::{named_params, Transaction};
 use serde::Deserialize;
@@ -24,6 +26,7 @@ pub(crate) fn open(path: &std::path::Path) -> Result<rusqlite::Connection, rusql
     } else {
         assert_eq!(app_id, APPLICATION_ID);
     }
+    migrate::ensure_updated(&db)?;
 
     Ok(db)
 }

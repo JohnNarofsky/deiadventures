@@ -587,6 +587,7 @@ struct AvailableQuestAction {
     #[serde(rename = "description")]
     name: String,
     xp: u32,
+    repeatable: bool,
 }
 async fn get_user_available_quest_actions(
     State(state): State<ArcState>,
@@ -599,17 +600,20 @@ async fn get_user_available_quest_actions(
 
         let mut query = db.prepare_cached(
             "WITH
+                    -- This is the body of quests which have been accepted by the current adventurer.
+                    -- They may be out of date on whether their parent quest is repeatable.
                     wa AS (SELECT parent_quest_id FROM Quest
                            JOIN PartyMember ON Quest.id = quest_id
                            WHERE adventurer_id = :adventurer_id AND deleted_date IS NULL)
-                 SELECT id, guild_id FROM Quest
-                 LEFT OUTER JOIN wa ON Quest.id = wa.parent_quest_id
+                 SELECT id, guild_id, repeatable FROM Quest
+                 LEFT OUTER JOIN wa ON Quest.id = wa.parent_quest_id AND Quest.repeatable = 0
                  WHERE wa.parent_quest_id IS NULL AND quest_type = 0 AND Quest.deleted_date IS NULL;",
         )?;
         let quests = query
             .query_map(named_params! { ":adventurer_id": user_id }, |row| {
                 let quest_id: QuestId = row.get(0)?;
                 let guild_id: GuildId = row.get(1)?;
+                let repeatable: bool = row.get(2)?;
                 let mut query = db
                     .prepare_cached("SELECT name, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
                 query.query_row(named_params! { ":quest_id": quest_id }, |row| {
@@ -618,6 +622,7 @@ async fn get_user_available_quest_actions(
                         quest_id,
                         name: row.get(0)?,
                         xp: row.get(1)?,
+                        repeatable,
                     })
                 })
             })?
@@ -984,6 +989,10 @@ struct CreateGuildQuestAction {
     #[serde(rename = "description")]
     name: String,
     xp: u32,
+    // This field is defaulted to be backward compatible with the frontend,
+    // which is not yet passing this field.
+    #[serde(default)]
+    repeatable: bool,
 }
 
 /// The response body for [`create_guild_quest_action`].
@@ -998,10 +1007,13 @@ async fn create_guild_quest_action(
     Json(action): Json<CreateGuildQuestAction>,
 ) -> Result<Json<CreatedGuildQuestAction>, Error> {
     let res = state.write_transaction(|db| {
-        let CreateGuildQuestAction { name, xp } = action;
+        let CreateGuildQuestAction { name, xp, repeatable } = action;
         let mut query =
-            db.prepare_cached("INSERT INTO Quest (guild_id, quest_type) VALUES (:guild_id, 0);")?;
-        let n = query.execute(named_params! { ":guild_id": guild_id })?;
+            db.prepare_cached("INSERT INTO Quest (guild_id, quest_type, repeatable) VALUES (:guild_id, 0, :repeatable);")?;
+        let n = query.execute(named_params! {
+            ":guild_id": guild_id,
+            ":repeatable": repeatable,
+        })?;
         assert_eq!(n, 1);
         let quest_id = db.last_insert_rowid();
 
@@ -1026,6 +1038,8 @@ struct EditGuildQuestAction {
     #[serde(rename = "description")]
     name: String,
     xp: u32,
+    #[serde(default)]
+    repeatable: bool,
 }
 /// As a guild leader, edit the name and xp value of a quest action.
 async fn edit_guild_quest_action(
@@ -1034,13 +1048,17 @@ async fn edit_guild_quest_action(
     Json(action): Json<EditGuildQuestAction>,
 ) -> Result<(), Error> {
     let res = state.write_transaction(|db| {
-        let EditGuildQuestAction { quest_id, name, xp } = action;
+        let EditGuildQuestAction { quest_id, name, xp, repeatable } = action;
         if !db::guild_exists(&db, guild_id)? {
             return Err(Error::GuildNotFound { id: Some(guild_id) });
         }
         if !db::quest_exists(&db, quest_id)? {
             return Err(Error::QuestNotFound { id: Some(quest_id) });
         }
+
+        let mut query = db.prepare_cached("UPDATE Quest SET repeatable = :repeatable WHERE quest_id = :quest_id;")?;
+        let _n = query.execute(named_params! { ":repeatable": repeatable, ":quest_id": quest_id })?;
+
         let mut query = db.prepare_cached(
             "UPDATE QuestTask SET name = :name, xp = :xp WHERE quest_id = :quest_id;",
         )?;
