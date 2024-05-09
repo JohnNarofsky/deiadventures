@@ -1,3 +1,9 @@
+-- This is a copy of the original SQLite database initialization script,
+-- reproduced exactly in order to enable us to later make tests that automatically
+-- compare the result of running the latest `init.sql` with running
+-- the original one in combination with the full sequence of migrations.
+-- These should always produce identical schema.
+
 -- This file creates all the tables we need in the database.
 -- It is written with SQLite in mind.
 
@@ -14,7 +20,7 @@
 -- A randomly generated number. This is hardcoded elsewhere,
 -- so grep for everywhere it's used in the server before changing it.
 PRAGMA application_id = 249251854;
-PRAGMA user_version = 1;
+PRAGMA user_version = 0;
 
 -- Unlike other journaling modes, WAL mode needs only to be set once,
 -- instead of upon each connection to the database.
@@ -47,11 +53,7 @@ CREATE TABLE Quest (
     open_date INTEGER,
     close_date INTEGER,
     -- TODO: schedule cleanups of deleted quests which are old enough?
-    deleted_date INTEGER,
-    -- Available values:
-    --  - Not Repeatable (0) (false)
-    --  - Repeatable     (1) (true)
-    repeatable INTEGER NOT NULL DEFAULT 0
+    deleted_date INTEGER
 ) STRICT;
 
 CREATE TABLE QuestDetail (
