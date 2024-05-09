@@ -81,10 +81,18 @@ const MyAdventures = () => {
 
     //{guild_id: 2, quest_id: 0, description: 'Schedule a DEI meeting', xp: 15}
     const AcceptedQuestAction = ({questAction}) => {
+        // If a Quest.open_date is missing for an accepted quest,
+        // it's because it was accepted before we started recording
+        // that field. We implemented that on May 6th, 2024, and got the
+        // change deployed by May 10th.
+        const acceptedDate = questAction.open_date != null ?
+            new Date(questAction.open_date).toDateString() :
+            "Before May 10th, 2024";
         return (
             <tr>
                 <td className="action-table-td left-col">{questAction.description}</td>
                 <td className="action-table-td right-col">{questAction.xp} xp</td>
+                <td className="action-table-td right-col">{acceptedDate}</td>
                 <td className="action-table-td right-col">
                   <Button variant="dark" onClick={() => finishQuestAction(questAction)}>Finish</Button>&nbsp;
                   <Button variant="dark" onClick={() => cancelQuestAction(questAction)}>Cancel</Button>
@@ -118,7 +126,12 @@ const MyAdventures = () => {
                             <td>
                                 <div className="action-table-container quest-examples">
                                     <h3>Your Accepted Guild Actions</h3>
-                                    <table className="action-table"><tbody>
+                                    <table className="action-table"><thead><tr>
+                                        <th className="action-table-td left-col"></th>
+                                        <th className="action-table-td right-col"></th>
+                                        <th className="action-table-td right-col">Date Accepted</th>
+                                        <th className="action-table-td right-col"></th>
+                                    </tr></thead><tbody>
                                         {acceptedQuestActions.filter((v)=>v.guild_id===guild.id).map((questAction)=>{
                                             return <AcceptedQuestAction key={questAction.quest_id} questAction={questAction} />
                                             })
