@@ -40,7 +40,11 @@ const MyHistory = () => {
                     <h2>{guild.name} Actions</h2>
                 </div>
                 <div className="action-table-container quest-examples">
-                    <table className="action-table"><tbody>
+                    <table className="action-table"><thead><tr>
+                        <th className="action-table-td left-col"></th>
+                        <th className="action-table-td middle-col"></th>
+                        <th className="action-table-td right-col">Date Completed</th>
+                    </tr></thead><tbody>
                         {
                         completedQuestActions.filter((v)=>v.guild_id===guild.id).map((questAction)=>{
                             return <FinishedQuestAction key={questAction.quest_id} questAction={questAction} />

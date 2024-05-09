@@ -126,7 +126,12 @@ const MyAdventures = () => {
                             <td>
                                 <div className="action-table-container quest-examples">
                                     <h3>Your Accepted Guild Actions</h3>
-                                    <table className="action-table"><tbody>
+                                    <table className="action-table"><thead><tr>
+                                        <th className="action-table-td left-col"></th>
+                                        <th className="action-table-td right-col"></th>
+                                        <th className="action-table-td right-col">Date Accepted</th>
+                                        <th className="action-table-td right-col"></th>
+                                    </tr></thead><tbody>
                                         {acceptedQuestActions.filter((v)=>v.guild_id===guild.id).map((questAction)=>{
                                             return <AcceptedQuestAction key={questAction.quest_id} questAction={questAction} />
                                             })
