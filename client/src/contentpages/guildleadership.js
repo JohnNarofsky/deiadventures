@@ -96,7 +96,6 @@ const GuildLeadership = () => {
 
   const saveNewGuildQuestAction  = (guildId, guildQuestAction) => {
     let data = {description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp), repeatable: guildQuestAction.repeatable};
-    console.log(data);
     axios.post(api_config.baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {
       let questId = response.data.quest_id;
 
@@ -159,10 +158,7 @@ const GuildLeadership = () => {
           <div>
             <input onChange={(event) => setXp(event.target.value)} value={xp} /> xp
             &nbsp;
-            <input onChange={(event) => {
-              console.log(event.target.checked);
-              return setRepeatable(event.target.checked);
-            }} value={repeatable} type="checkbox"/> repeatable
+            <input onChange={(event) => setRepeatable(event.target.checked)} checked={repeatable} type="checkbox"/> repeatable
           </div>
         </div>
           <div className="actions">
@@ -179,7 +175,11 @@ const GuildLeadership = () => {
         <div className="listing">
           <div className="details">
             <div>{guildQuestAction.description}</div>
-            <div>{guildQuestAction.xp} xp</div>
+            <div>
+              {guildQuestAction.xp} xp
+              &nbsp;
+              <input type="checkbox" checked={guildQuestAction.repeatable} readOnly /> repeatable
+            </div>
           </div>
             <div className="actions">
               <Button variant="dark" onClick={() => setTargetGuildQuestAction(guildQuestAction)}>Edit</Button>&nbsp;

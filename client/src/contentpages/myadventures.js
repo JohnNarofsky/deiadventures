@@ -103,7 +103,6 @@ const MyAdventures = () => {
 
       
       const AvailableQuestAction = ({questAction}) => {
-        console.log(questAction);
         return (
             <tr>
                 <td className="action-table-td left-col">{questAction.description}</td>

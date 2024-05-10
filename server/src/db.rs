@@ -104,17 +104,18 @@ pub(crate) fn lookup_guild_quest_actions(
     }
 
     let mut query = db.prepare_cached(
-        "SELECT id FROM Quest WHERE guild_id = :guild_id AND deleted_date IS NULL AND quest_type = 0;",
+        "SELECT id, repeatable FROM Quest WHERE guild_id = :guild_id AND deleted_date IS NULL AND quest_type = 0;",
     )?;
     let quests = query
         .query_map(named_params! { ":guild_id": guild }, |row| {
             let mut query =
                 db.prepare_cached("SELECT name, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
             let id = row.get(0)?;
+            let repeatable = row.get(1)?;
             let (name, xp) = query.query_row(named_params! { ":quest_id": id }, |row| {
                 Ok((row.get(0)?, row.get(1)?))
             })?;
-            Ok(GuildQuestAction { id, name, xp })
+            Ok(GuildQuestAction { id, name, xp, repeatable })
         })?
         .collect::<Result<Vec<_>, _>>()?;
     Ok(Some(quests))
