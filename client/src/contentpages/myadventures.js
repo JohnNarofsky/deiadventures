@@ -103,9 +103,12 @@ const MyAdventures = () => {
 
       
       const AvailableQuestAction = ({questAction}) => {
+        console.log(questAction);
         return (
             <tr>
                 <td className="action-table-td left-col">{questAction.description}</td>
+                {/* todo: figure out the right way to display whether a quest is repeatable here */}
+                {/* <td className="action-table-td left-col">{questAction.repeatable.toString()}</td> */}
                 <td className="action-table-td right-col">{questAction.xp} xp</td>
                 <td className="action-table-td right-col">
                   <Button variant="dark" onClick={() => acceptQuestAction(questAction)}>Accept</Button>
