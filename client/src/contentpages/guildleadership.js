@@ -10,7 +10,7 @@ import api_config from '../api_config.json'
 const GuildLeadership = () => {
   //state
   const [guildQuestActions, setGuildQuestActions] = useState([]);
-  const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: "", xp: ""});
+  const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: "", xp: "", repeatable: false });
   const [newGuildQuestActionCreation, setNewGuildQuestActionCreation] = useState(false);
   const [targetGuild, setTargetGuild] = useState({id:-1});
   const { profile } = useContext(ProfileContext);
@@ -45,7 +45,7 @@ const GuildLeadership = () => {
   //function components
   const editGuildQuestAction = (guildId, guildQuestAction) => {
 
-    const data = {quest_id: guildQuestAction.id, description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp)};
+    const data = {quest_id: guildQuestAction.id, description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp), repeatable: guildQuestAction.repeatable};
     
     axios.put(api_config.baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {});
 
@@ -56,7 +56,7 @@ const GuildLeadership = () => {
             guildQuestActions: 
               e.guildQuestActions.map((f) => {
                 if (f.id === guildQuestAction.id){
-                  return {...f, description: guildQuestAction.description, xp: guildQuestAction.xp};
+                  return {...f, description: guildQuestAction.description, xp: guildQuestAction.xp, repeatable: guildQuestAction.repeatable};
                 }
                 return {...f};
               })
@@ -65,7 +65,7 @@ const GuildLeadership = () => {
         return _.cloneDeep(e);
       });
     setGuildQuestActions(currentGuildQuestActions);
-    setTargetGuildQuestAction({id:-1, description: null, xp: null});
+    setTargetGuildQuestAction({id:-1, description: null, xp: null, repeatable: false});
     setTargetGuild({id:-1});
   };
 
@@ -85,7 +85,7 @@ const GuildLeadership = () => {
       });
 
     setGuildQuestActions(currentGuildQuestActions);
-    setTargetGuildQuestAction({id:-1, description: null, xp: null});
+    setTargetGuildQuestAction({id:-1, description: null, xp: null, repeatable: false});
     setTargetGuild({id:-1});
 
   };
@@ -95,7 +95,7 @@ const GuildLeadership = () => {
   }  
 
   const saveNewGuildQuestAction  = (guildId, guildQuestAction) => {
-    let data = {description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp)};
+    let data = {description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp), repeatable: guildQuestAction.repeatable};
     axios.post(api_config.baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {
       let questId = response.data.quest_id;
 
@@ -129,7 +129,7 @@ const GuildLeadership = () => {
 
             <TargetQuestAction 
                 guildId = {guildId}
-                guildQuestAction={{id:-2, description: "", xp: ""}}
+                guildQuestAction={{id:-2, description: "", xp: "", repeatable: false }}
                 editGuildQuestAction={saveNewGuildQuestAction}
                 cancelEditGuildQuestAction={cancelNewGuildQuestAction}
               />
@@ -149,15 +149,20 @@ const GuildLeadership = () => {
   const TargetQuestAction = ({guildId, guildQuestAction, editGuildQuestAction, cancelEditGuildQuestAction}) => {
     const [description, setDescription] = useState(guildQuestAction.description);
     const [xp, setXp] = useState(guildQuestAction.xp);
+    const [repeatable, setRepeatable] = useState(guildQuestAction.repeatable);
 
     return (
       <div className="listing">
         <div className="details">
           <div>Description:&nbsp;<input className="wide-input" onChange={(event) => setDescription(event.target.value)} value={description} /></div>
-          <div><input onChange={(event) => setXp(event.target.value)} value={xp} /> xp</div>
+          <div>
+            <input onChange={(event) => setXp(event.target.value)} value={xp} /> xp
+            &nbsp;
+            <input onChange={(event) => setRepeatable(event.target.checked)} checked={repeatable} type="checkbox"/> repeatable
+          </div>
         </div>
           <div className="actions">
-            <Button variant="dark" onClick={() => editGuildQuestAction(guildId, {...guildQuestAction, xp: Number.isSafeInteger(Number.parseInt(xp)) ? xp : -1, description: description})}>Done</Button>&nbsp;
+            <Button variant="dark" onClick={() => editGuildQuestAction(guildId, {...guildQuestAction, xp: Number.isSafeInteger(Number.parseInt(xp)) ? xp : -1, description: description, repeatable: repeatable})}>Done</Button>&nbsp;
             <Button variant="dark" onClick={() => cancelEditGuildQuestAction()}>Cancel</Button>
           </div>
       </div>
@@ -170,7 +175,11 @@ const GuildLeadership = () => {
         <div className="listing">
           <div className="details">
             <div>{guildQuestAction.description}</div>
-            <div>{guildQuestAction.xp} xp</div>
+            <div>
+              {guildQuestAction.xp} xp
+              &nbsp;
+              <input type="checkbox" checked={guildQuestAction.repeatable} readOnly /> repeatable
+            </div>
           </div>
             <div className="actions">
               <Button variant="dark" onClick={() => setTargetGuildQuestAction(guildQuestAction)}>Edit</Button>&nbsp;

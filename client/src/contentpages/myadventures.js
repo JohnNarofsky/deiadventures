@@ -105,7 +105,7 @@ const MyAdventures = () => {
       const AvailableQuestAction = ({questAction}) => {
         return (
             <tr>
-                <td className="action-table-td left-col">{questAction.description}</td>
+                <td className="action-table-td left-col">{questAction.repeatable ? "(repeatable) ":""}{questAction.description}</td>
                 <td className="action-table-td right-col">{questAction.xp} xp</td>
                 <td className="action-table-td right-col">
                   <Button variant="dark" onClick={() => acceptQuestAction(questAction)}>Accept</Button>

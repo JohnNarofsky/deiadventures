@@ -644,6 +644,7 @@ struct GuildQuestAction {
     #[serde(rename = "description")]
     name: String,
     xp: u32,
+    repeatable: bool,
 }
 
 /// Get all quest actions associated with a guild.
