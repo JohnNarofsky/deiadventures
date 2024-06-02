@@ -1,11 +1,11 @@
 import React from "react";
-import { useEffect, useCallback, useState, useContext } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { ProfileContext } from '../common/profilecontext';
-import axios from 'axios';
-import api_config from '../api_config.json'
+import { DeiApiContext } from "../common/dei_api_context";
 
 
 const MyHistory = () => {
+    const { deiClient } = useContext(DeiApiContext);
     const { profile } = useContext(ProfileContext);
     const [completedQuestActions, setCompletedQuestActions] = useState([]);
     const [guilds, setGuilds] = useState([]);
@@ -13,14 +13,14 @@ const MyHistory = () => {
   
     //initializing UseEffect
     useEffect(()=>{
-        axios.get(api_config.baseURL + "/guild").then((response) => {
+        deiClient.get("/guild").then((response) => {
             setGuilds(response.data);
           });
 
-          axios.get(api_config.baseURL + "/user/" + profile.id + "/completed-quest-actions").then((response) => {
+          deiClient.get("/user/" + profile.id + "/completed-quest-actions").then((response) => {
             setCompletedQuestActions(response.data);
           });
-    }, []);
+    }, [deiClient, profile]);
 
     const FinishedQuestAction = ({questAction}) => {
         const completedDate = new Date(questAction.completed_date).toDateString();

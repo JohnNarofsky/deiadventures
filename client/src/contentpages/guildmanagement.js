@@ -1,10 +1,9 @@
 import React from "react";
-import { useEffect, useCallback, useState, useContext } from 'react';
-import { ProfileContext } from '../common/profilecontext';
+import { useEffect, useState, useContext } from 'react';
+// import { ProfileContext } from '../common/profilecontext';
 import Button from 'react-bootstrap/Button';
-import axios from 'axios';
 import './guildmanagement.css';
-import api_config from '../api_config.json'
+import { DeiApiContext } from "../common/dei_api_context";
 
 const GuildManagement = () => {
 
@@ -13,23 +12,24 @@ const GuildManagement = () => {
   const [availableGuildLeaders, setAvailableGuildLeaders] = useState([]);
   const [targetGuild, setTargetGuild] = useState({id:-1, name:"", leader_id:-1, leader_name: ""});
   const [newGuildCreation, setNewGuildCreation] = useState(false);
-  const { profile } = useContext(ProfileContext);
+  const { deiClient } = useContext(DeiApiContext);
+  // const { profile } = useContext(ProfileContext);
 
   useEffect(()=>{
 
-    axios.get(api_config.baseURL + "/guild").then((response) => {
+    deiClient.get("/guild").then((response) => {
       setGuilds(response.data);
     });
 
-    axios.get(api_config.baseURL + "/perm/allowed-leaders").then((response) => {
+    deiClient.get("/perm/allowed-leaders").then((response) => {
       setAvailableGuildLeaders(response.data);
     });
 
-    axios.get(api_config.baseURL + "/user").then((response) => {
+    deiClient.get("/user").then((response) => {
       setAdventurers(response.data);
     });
 
-  }, []);
+  }, [deiClient]);
 
   useEffect(()=>{
     setTargetGuild({id:-1, title:"", leader_id: -1, leader: ""});
@@ -41,7 +41,7 @@ const GuildManagement = () => {
       leaderName = null;
     }
     const data = {name: targetGuild.name, leader_id: targetGuild.leader_id !== -1? targetGuild.leader_id : null};
-    axios.put(api_config.baseURL + "/guild/" + targetGuild.id, data).then((response) => {});
+    deiClient.put("/guild/" + targetGuild.id, data).then((response) => {});
 
     let newGuilds = guilds.map((e) => {
       if (e.id === targetGuild.id){
@@ -76,7 +76,7 @@ const GuildManagement = () => {
     };
 
     let data = {name: targetGuild.name, leader_id: targetGuild.leader_id};
-    axios.post(api_config.baseURL + "/guild", data).then((response) => {
+    deiClient.post("/guild", data).then((response) => {
       newGuild.id = response.data;
       let newGuilds = [...guilds];
       newGuilds.push(newGuild);
@@ -149,12 +149,12 @@ const GuildManagement = () => {
 
   const acceptAdventurer = (adventurer) => {
     const data = {set: true};
-    axios.put(api_config.baseURL + "/perm/" + adventurer.id + "/accepted", data).then((response) => {
-      axios.get(api_config.baseURL + "/perm/allowed-leaders").then((response) => {
+    deiClient.put("/perm/" + adventurer.id + "/accepted", data).then((response) => {
+      deiClient.get("/perm/allowed-leaders").then((response) => {
         setAvailableGuildLeaders(response.data);
       });
   
-      axios.get(api_config.baseURL + "/user").then((response) => {
+      deiClient.get("/user").then((response) => {
         setAdventurers(response.data);
       });
     });
@@ -163,12 +163,12 @@ const GuildManagement = () => {
   const rejectAdventurer = (adventurer) => {
     // .route("/perm/:user_id/rejected", put(set_user_rejected))
     const data = {set: true};
-    axios.put(api_config.baseURL + "/perm/" + adventurer.id + "/rejected", data).then((response) => {
-      axios.get(api_config.baseURL + "/perm/allowed-leaders").then((response) => {
+    deiClient.put("/perm/" + adventurer.id + "/rejected", data).then((response) => {
+      deiClient.get("/perm/allowed-leaders").then((response) => {
         setAvailableGuildLeaders(response.data);
       });
   
-      axios.get(api_config.baseURL + "/user").then((response) => {
+      deiClient.get("/user").then((response) => {
         setAdventurers(response.data);
       });
     });
@@ -178,12 +178,12 @@ const GuildManagement = () => {
 
   const toggleSuperUser = (adventurer) => {
     const data = adventurer.permissions.filter((p) => p.type === "SuperUser").length !== 0 ? {set: false} : {set: true};
-    axios.put(api_config.baseURL + "/perm/" + adventurer.id + "/superuser", data).then((response) => {
-      axios.get(api_config.baseURL + "/perm/allowed-leaders").then((response) => {
+    deiClient.put("/perm/" + adventurer.id + "/superuser", data).then((response) => {
+      deiClient.get("/perm/allowed-leaders").then((response) => {
         setAvailableGuildLeaders(response.data);
       });
   
-      axios.get(api_config.baseURL + "/user").then((response) => {
+      deiClient.get("/user").then((response) => {
         setAdventurers(response.data);
       });
     });
@@ -192,12 +192,12 @@ const GuildManagement = () => {
   const toggleAvailableGuildLeader = (adventurer) => {
     // .route("/perm/:user_id/eligible-guild-leader", put(set_user_eligible_guild_leader))
     const data = adventurer.permissions.filter((p) => p.type === "GuildLeaderEligible").length !== 0 ? {set: false} : {set: true};
-    axios.put(api_config.baseURL + "/perm/" + adventurer.id + "/eligible-guild-leader", data).then((response) => {
-      axios.get(api_config.baseURL + "/perm/allowed-leaders").then((response) => {
+    deiClient.put("/perm/" + adventurer.id + "/eligible-guild-leader", data).then((response) => {
+      deiClient.get("/perm/allowed-leaders").then((response) => {
         setAvailableGuildLeaders(response.data);
       });
   
-      axios.get(api_config.baseURL + "/user").then((response) => {
+      deiClient.get("/user").then((response) => {
         setAdventurers(response.data);
       });
     });
@@ -205,12 +205,12 @@ const GuildManagement = () => {
 
   const toggleApprovedAdventurer = (adventurer) => {
     const data = adventurer.permissions.filter((p) => p.type === "Approved").length !== 0 ? {set: false} : {set: true};
-    axios.put(api_config.baseURL + "/perm/" + adventurer.id + "/accepted", data).then((response) => {
-      axios.get(api_config.baseURL + "/perm/allowed-leaders").then((response) => {
+    deiClient.put("/perm/" + adventurer.id + "/accepted", data).then((response) => {
+      deiClient.get("/perm/allowed-leaders").then((response) => {
         setAvailableGuildLeaders(response.data);
       });
   
-      axios.get(api_config.baseURL + "/user").then((response) => {
+      deiClient.get("/user").then((response) => {
         setAdventurers(response.data);
       });
     });

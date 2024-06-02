@@ -12,26 +12,29 @@ import Login from './components/login';
 import SignUp from './components/signup';
 import { ProfileProvider } from './common/profilecontext';
 import ProtectedRoute from './components/protectedroute';
+import { DeiApiProvider } from './common/dei_api_context';
 
 
 function App() {
   return (
     <>
-    <ProfileProvider>
-      <NavigationBar />
-      <Routes>
-          <Route index element={<Home />} />
-          <Route path="gmguide" element={<GMGuide />} />
-          <Route element={<ProtectedRoute/>}>
-            <Route path="guildmanagement" element={<GuildManagement />} />
-            <Route path="myadventures" element={<MyAdventures />} />
-            <Route path="myhistory" element={<MyHistory />} />
-            <Route path="guildleadership" element={<GuildLeadership />} />
-          </Route>
-          <Route path="login" element={<Login />} />
-          <Route path="signup" element={<SignUp />} />
-      </Routes>
-    </ProfileProvider>
+    <DeiApiProvider>
+      <ProfileProvider>
+        <NavigationBar />
+        <Routes>
+            <Route index element={<Home />} />
+            <Route path="gmguide" element={<GMGuide />} />
+            <Route element={<ProtectedRoute/>}>
+              <Route path="guildmanagement" element={<GuildManagement />} />
+              <Route path="myadventures" element={<MyAdventures />} />
+              <Route path="myhistory" element={<MyHistory />} />
+              <Route path="guildleadership" element={<GuildLeadership />} />
+            </Route>
+            <Route path="login" element={<Login />} />
+            <Route path="signup" element={<SignUp />} />
+        </Routes>
+      </ProfileProvider>
+    </DeiApiProvider>
     </>
   );
 }
