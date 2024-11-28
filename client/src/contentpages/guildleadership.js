@@ -1,4 +1,5 @@
 import React from "react";
+import ReactMarkdown from 'react-markdown';
 import { useEffect, useCallback, useState, useContext } from 'react';
 import { ProfileContext } from '../common/profilecontext';
 import Button from 'react-bootstrap/Button';
@@ -18,6 +19,7 @@ import {
   CreateLink,
   linkDialogPlugin,
 } from '@mdxeditor/editor';
+import remarkGfm from 'remark-gfm'; 
 
 import '@mdxeditor/editor/style.css';
 
@@ -198,7 +200,7 @@ const GuildLeadership = () => {
                 linkAutocompleteSuggestions: ['https://virtuoso.dev', 'https://mdxeditor.dev']
               }),
             ]}
-            onChange={(event) => console.log(event)}
+            onChange={(event) => setDescription(event)}
             />
           </div>
           <div>
@@ -220,7 +222,9 @@ const GuildLeadership = () => {
     return (
         <div className="listing">
           <div className="details">
-            <div>{guildQuestAction.description}</div>
+            <div>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} >{guildQuestAction.description}</ReactMarkdown>
+            </div>
             <div>
               {guildQuestAction.xp} xp
               &nbsp;
