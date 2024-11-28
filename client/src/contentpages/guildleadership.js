@@ -5,7 +5,22 @@ import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 import _ from 'lodash';
 import './guildmanagement.css';
-import api_config from '../api_config.json'
+import api_config from '../api_config.json';
+import { 
+  MDXEditor, 
+  headingsPlugin, 
+  quotePlugin, 
+  listsPlugin, 
+  UndoRedo, 
+  BoldItalicUnderlineToggles, 
+  toolbarPlugin,
+  linkPlugin,
+  CreateLink,
+  linkDialogPlugin,
+} from '@mdxeditor/editor';
+
+import '@mdxeditor/editor/style.css';
+
 
 const GuildLeadership = () => {
   //state
@@ -154,7 +169,38 @@ const GuildLeadership = () => {
     return (
       <div className="listing">
         <div className="details">
-          <div>Description:&nbsp;<input className="wide-input" onChange={(event) => setDescription(event.target.value)} value={description} /></div>
+          <div>Description:&nbsp;
+            <input 
+              className="wide-input" 
+              onChange={(event) => setDescription(event.target.value)} 
+              value={description} />
+          </div>
+          <div>
+            <MDXEditor 
+            markdown={description}
+            plugins={[
+              headingsPlugin(),   
+              quotePlugin(), 
+              listsPlugin(),
+              toolbarPlugin({
+                toolbarClassName: 'my-classname',
+                toolbarContents: () => (
+                  <>
+                    {' '}
+                    <UndoRedo />
+                    <BoldItalicUnderlineToggles />
+                    <CreateLink />
+                  </>
+                )
+              }),
+              linkPlugin(), 
+              linkDialogPlugin({
+                linkAutocompleteSuggestions: ['https://virtuoso.dev', 'https://mdxeditor.dev']
+              }),
+            ]}
+            onChange={(event) => console.log(event)}
+            />
+          </div>
           <div>
             <input onChange={(event) => setXp(event.target.value)} value={xp} /> xp
             &nbsp;
