@@ -1,11 +1,28 @@
 import React from "react";
+import ReactMarkdown from 'react-markdown';
 import { useEffect, useCallback, useState, useContext } from 'react';
 import { ProfileContext } from '../common/profilecontext';
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 import _ from 'lodash';
 import './guildmanagement.css';
-import api_config from '../api_config.json'
+import api_config from '../api_config.json';
+import { 
+  MDXEditor, 
+  headingsPlugin, 
+  quotePlugin, 
+  listsPlugin, 
+  UndoRedo, 
+  BoldItalicUnderlineToggles, 
+  toolbarPlugin,
+  linkPlugin,
+  CreateLink,
+  linkDialogPlugin,
+} from '@mdxeditor/editor';
+import remarkGfm from 'remark-gfm'; 
+
+import '@mdxeditor/editor/style.css';
+
 
 const GuildLeadership = () => {
   //state
@@ -154,7 +171,34 @@ const GuildLeadership = () => {
     return (
       <div className="listing">
         <div className="details">
-          <div>Description:&nbsp;<input className="wide-input" onChange={(event) => setDescription(event.target.value)} value={description} /></div>
+          <h5>Description:&nbsp;
+          </h5>
+          <div className="editor">
+            <MDXEditor 
+            markdown={description}
+            plugins={[
+              headingsPlugin(),   
+              quotePlugin(), 
+              listsPlugin(),
+              toolbarPlugin({
+                toolbarClassName: 'my-classname',
+                toolbarContents: () => (
+                  <>
+                    {' '}
+                    <UndoRedo />
+                    <BoldItalicUnderlineToggles />
+                    <CreateLink />
+                  </>
+                )
+              }),
+              linkPlugin(), 
+              linkDialogPlugin({
+                linkAutocompleteSuggestions: ['https://virtuoso.dev', 'https://mdxeditor.dev']
+              }),
+            ]}
+            onChange={(event) => setDescription(event)}
+            />
+          </div>
           <div>
             <input onChange={(event) => setXp(event.target.value)} value={xp} /> xp
             &nbsp;
@@ -174,7 +218,9 @@ const GuildLeadership = () => {
     return (
         <div className="listing">
           <div className="details">
-            <div>{guildQuestAction.description}</div>
+            <div>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} >{guildQuestAction.description}</ReactMarkdown>
+            </div>
             <div>
               {guildQuestAction.xp} xp
               &nbsp;

@@ -56,14 +56,14 @@ export default function NavigationBar() {
           <Nav className="me-auto">
             <Nav.Link as={Link} to="/gmguide" onClick={handleNavClose}>Guild Master's Guide</Nav.Link>
 
-            {(profile?.permissions?.filter((v)=>v.type === "Approved").length === 0 && profile !== undefined) ? (
+            {(profile?.permissions?.filter((v)=>v.type === "Approved").length === 0 && profile !== null) ? (
               <NoPermsNavigation onClick={handleNavClose} />
             ) : (
               <>
               </>
             ) }
 
-            {(profile?.permissions?.filter((v)=>v.type === "Approved").length !== 0 && profile !== undefined) ? (
+            {(profile?.permissions?.filter((v)=>v.type === "Approved").length !== 0 && profile !== null) ? (
               <>
                 <Nav.Link as={Link} to="/myadventures" onClick={handleNavClose}>My Adventures</Nav.Link>
                 <Nav.Link as={Link} to="/myhistory" onClick={handleNavClose}>My History</Nav.Link>
@@ -72,14 +72,14 @@ export default function NavigationBar() {
               <></>
             ) }
 
-            {(profile?.permissions?.filter((v)=>v.type === "GuildLeaderEligible").length !== 0 && profile !== undefined) ? (
+            {(profile?.permissions?.filter((v)=>v.type === "GuildLeaderEligible").length !== 0 && profile !== null) ? (
                 <Nav.Link as={Link} to="/guildleadership" onClick={handleNavClose}>Leadership</Nav.Link>
               ) : (
               <>
               </>
             ) }
 
-            {(profile?.permissions?.filter((v)=>v.type === "SuperUser").length !== 0 && profile !== undefined) ? (
+            {(profile?.permissions?.filter((v)=>v.type === "SuperUser").length !== 0 && profile !== null) ? (
                 <Nav.Link as={Link} to="/guildmanagement" onClick={handleNavClose}>Administration</Nav.Link>
               ) : (
               <>

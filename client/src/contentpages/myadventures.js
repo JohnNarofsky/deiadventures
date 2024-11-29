@@ -1,4 +1,6 @@
 import React from "react";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm'; 
 import { useEffect, useCallback, useState, useContext } from 'react';
 import { ProfileContext } from '../common/profilecontext';
 import Button from 'react-bootstrap/Button';
@@ -90,7 +92,9 @@ const MyAdventures = () => {
             "Before May 10th, 2024";
         return (
             <tr>
-                <td className="action-table-td left-col">{questAction.description}</td>
+                <td className="action-table-td left-col">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} >{questAction.description}</ReactMarkdown>
+                </td>
                 <td className="action-table-td right-col">{questAction.xp} xp</td>
                 <td className="action-table-td right-col">{acceptedDate}</td>
                 <td className="action-table-td right-col">
@@ -105,7 +109,10 @@ const MyAdventures = () => {
       const AvailableQuestAction = ({questAction}) => {
         return (
             <tr>
-                <td className="action-table-td left-col">{questAction.repeatable ? "(repeatable) ":""}{questAction.description}</td>
+                <td className="action-table-td left-col">
+                    {questAction.repeatable ? "(repeatable)":""}
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} >{questAction.description}</ReactMarkdown>
+                    </td>
                 <td className="action-table-td right-col">{questAction.xp} xp</td>
                 <td className="action-table-td right-col">
                   <Button variant="dark" onClick={() => acceptQuestAction(questAction)}>Accept</Button>

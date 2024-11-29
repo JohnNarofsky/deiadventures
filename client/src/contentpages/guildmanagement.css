@@ -42,7 +42,7 @@
     box-shadow: 3px 5px 60px 0px rgba(65, 75, 79, 0.20);
     border-radius: 15px;
     background: #F1F8F8;
-    min-width: 200px;
+    min-width: 400px;
     flex: 1;
 }
 
@@ -91,4 +91,9 @@
 .listing > .actions {
     margin: 5px;
     margin-left: auto;
+}
+
+.editor {
+    background-color: #FFF;
+    margin-bottom: 5px;
 }
