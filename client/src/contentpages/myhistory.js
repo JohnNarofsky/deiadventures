@@ -1,4 +1,6 @@
 import React from "react";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm'; 
 import { useEffect, useCallback, useState, useContext } from 'react';
 import { ProfileContext } from '../common/profilecontext';
 import axios from 'axios';
@@ -26,7 +28,9 @@ const MyHistory = () => {
         const completedDate = new Date(questAction.completed_date).toDateString();
         return (
             <tr>
-                <td className="action-table-td left-col">{questAction.description}</td>
+                <td className="action-table-td left-col">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} >{questAction.description}</ReactMarkdown>
+                </td>
                 <td className="action-table-td middle-col">{questAction.xp} xp</td>
                 <td className="action-table-td right-col">{completedDate}</td>
             </tr>

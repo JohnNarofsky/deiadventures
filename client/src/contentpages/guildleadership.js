@@ -171,13 +171,9 @@ const GuildLeadership = () => {
     return (
       <div className="listing">
         <div className="details">
-          <div>Description:&nbsp;
-            <input 
-              className="wide-input" 
-              onChange={(event) => setDescription(event.target.value)} 
-              value={description} />
-          </div>
-          <div>
+          <h5>Description:&nbsp;
+          </h5>
+          <div className="editor">
             <MDXEditor 
             markdown={description}
             plugins={[
