@@ -1057,7 +1057,7 @@ async fn edit_guild_quest_action(
             return Err(Error::QuestNotFound { id: Some(quest_id) });
         }
 
-        let mut query = db.prepare_cached("UPDATE Quest SET repeatable = :repeatable WHERE quest_id = :quest_id;")?;
+        let mut query = db.prepare_cached("UPDATE Quest SET repeatable = :repeatable WHERE id = :quest_id;")?;
         let _n = query.execute(named_params! { ":repeatable": repeatable, ":quest_id": quest_id })?;
 
         let mut query = db.prepare_cached(
