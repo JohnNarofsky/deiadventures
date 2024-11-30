@@ -159,6 +159,10 @@ async fn run_server(state: Arc<AppState>) {
             "/auth/account/:user_id/set-password",
             put(auth_set_password),
         )
+        .route(
+            "/auth/account/forgot-password",
+            post(auth_forgot_password)
+        )
         .fallback(fallback);
     #[cfg(feature = "cors_permissive")]
     let app = app
@@ -1626,4 +1630,95 @@ async fn auth_set_password(
     });
 
     res
+}
+
+#[derive(Debug, Deserialize)]
+struct ForgotPassword {
+    email: String,
+}
+/// This is an unauthenticated endpoint for initiating a password reset.
+///
+/// Currently, if a user initiates a password reset,
+/// we generate a new password for them and send it to them in an email.
+async fn auth_forgot_password(State(state): State<ArcState>, Json(ForgotPassword { email }): Json<ForgotPassword>) -> Result<(), Error> {
+    // Since the requirements for a secure password and
+    // a secure session token are identical, we're just reusing that here to make a password.
+    let new_pass = Password { text: AuthToken::generate().token };
+    let aws_cfg = aws_config::load_defaults(aws_config::BehaviorVersion::v2024_03_28()).await;
+    let ses = aws_sdk_ses::Client::new(&aws_cfg);
+    let res: Result<(), Error<()>> = state.write_transaction(|db| {
+        let mut password_salt =
+            db.prepare_cached("SELECT id, password_salt FROM Adventurer WHERE email_address = :user_email;")?;
+        let mut set_password = db.prepare_cached(
+            "UPDATE Adventurer SET password_hash = :password_hash WHERE id = :user_id;",
+        )?;
+        
+        let (user_id, password_salt): (UserId, String) = password_salt.query_row(
+            named_params! {
+                ":user_email": email,
+            },
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        ).optional()?.ok_or(Error::AdventurerNotFound { id: None })?;
+        let password_salt = match Salt::from_b64(&password_salt) {
+            Ok(salt) => salt,
+            Err(e) => {
+                tracing::error!("salt decoding failure: {e:?}");
+                return Err(Error::CannotComputePasswordHash);
+            }
+        };
+        
+        let new_hash = match new_pass.hash(password_salt) {
+            Ok(hash) => hash,
+            Err(e) => {
+                tracing::error!("password hashing failure: {e:?}");
+                return Err(Error::CannotComputePasswordHash);
+            }
+        };
+        let n = set_password.execute(named_params! {
+            ":password_hash": new_hash.as_str(),
+            ":user_id": user_id,
+        })?;
+        if n == 1 {
+            Ok(())
+        } else {
+            assert_eq!(n, 0);
+            Err(Error::AdventurerNotFound { id: Some(user_id) })
+        }
+    });
+    match res {
+        Ok(()) => {
+            let target = aws_sdk_ses::types::Destination::builder()
+                .set_to_addresses(Some(vec![]))
+                .build();
+            let body_text = aws_sdk_ses::types::Content::builder()
+                .data("this is a test text message, have a new password: ".to_string() + &new_pass.text)
+                .build()
+                .unwrap();
+            let body = aws_sdk_ses::types::Body::builder()
+                .text(body_text)
+                .build();
+            let message = aws_sdk_ses::types::Message::builder()
+                .body(body)
+                .build();
+            let res = ses.send_email()
+                .destination(target)
+                .message(message)
+                .send()
+                .await;
+            match res {
+                Ok(output) => {
+                    println!("successful output: {output:?}");
+                    Ok(())
+                },
+                Err(e) => {
+                    tracing::warn!("failed to send email: {e:?}");
+                    Ok(())
+                }
+            }
+        }
+        Err(e) => {
+            tracing::warn!("failed to do password reset: {e:?}");
+            Ok(())
+        },
+    }
 }
