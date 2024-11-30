@@ -20,9 +20,10 @@ import {
   linkDialogPlugin,
 } from '@mdxeditor/editor';
 import remarkGfm from 'remark-gfm'; 
-
+import ReactModal from 'react-modal';
 import '@mdxeditor/editor/style.css';
 
+ReactModal.setAppElement('#root');
 
 const GuildLeadership = () => {
   //state
@@ -30,7 +31,9 @@ const GuildLeadership = () => {
   const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: "", xp: "", repeatable: false });
   const [newGuildQuestActionCreation, setNewGuildQuestActionCreation] = useState(false);
   const [targetGuild, setTargetGuild] = useState({id:-1});
+  const [targetQuestActionUsage,setTargetQuestActionUsage] = useState({id:-1});
   const { profile } = useContext(ProfileContext);
+  const [actionUsageIsOpen, setActionUsageIsOpen] = useState(false);
 
   //initializing UseEffect
   useEffect(()=>{
@@ -137,6 +140,17 @@ const GuildLeadership = () => {
     setTargetGuild({id:-1});
   }
 
+  const showTargetQuestUsage = (questId) => {
+    console.log('HEY', questId);
+    setTargetQuestActionUsage(questId);
+    setActionUsageIsOpen(true);
+  }
+
+  const hideTargetQuestUsage = () => {
+    setTargetQuestActionUsage({id:-1});
+    setActionUsageIsOpen(false);
+  }
+
   const NewQuestAction = ({guildId, targetGuild, setTargetGuild, saveNewGuildQuestAction, cancelNewGuildQuestAction, setNewQuestActionCreation}) => {
     if (newGuildQuestActionCreation && targetGuild.id === guildId){
       return (
@@ -228,6 +242,7 @@ const GuildLeadership = () => {
             </div>
           </div>
             <div className="actions">
+              <Button variant="dark" onClick={() => showTargetQuestUsage(questId)}>Usage</Button>&nbsp;
               <Button variant="dark" onClick={() => setTargetGuildQuestAction(guildQuestAction)}>Edit</Button>&nbsp;
               <Button variant="dark" onClick={() => retireGuildQuestAction(guildId, questId)}>Retire</Button>
             </div>
@@ -274,6 +289,16 @@ const GuildLeadership = () => {
 
   return (
     <div className="main">
+        <ReactModal 
+          isOpen={actionUsageIsOpen}
+          contentLabel="onRequestClose Example"
+          onRequestClose={hideTargetQuestUsage}
+          className="Modal"
+          overlayClassName="Overlay"
+        >
+          <p>Modal text!</p>
+          <button onClick={hideTargetQuestUsage}>Close Modal</button>
+        </ReactModal>
       <div className="main-title">Guild Leadership</div>
       <div className="main-description">As a leader of a guild, it's your task to open and close actions for players to complete.</div>
       <div className="main-description">Additionally, from time to time you may run quests that groups of players can sign up for as a party. This is an upcoming feature.</div>
