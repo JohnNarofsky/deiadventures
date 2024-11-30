@@ -112,9 +112,9 @@ export default function Login() {
                                 Submit
                                 </button>
                             </div>
-                            {/* <p className="forgot-password text-center mt-2">
-                                Forgot <a href="#">password?</a>
-                            </p> */}
+                            <p className="forgot-password text-center mt-2">
+                                Forgot Password? <Link to="/forgotpass">Click Here</Link>
+                            </p>
                             {/* <h4 className="Auth-form-title text-center">OR</h4> */}
                         </div>
                     </form>

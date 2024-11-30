@@ -12,6 +12,7 @@ import Login from './components/login';
 import SignUp from './components/signup';
 import { ProfileProvider } from './common/profilecontext';
 import ProtectedRoute from './components/protectedroute';
+import ForgotPass from './components/forgotpass';
 
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
           </Route>
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<SignUp />} />
+          <Route path="forgotpass" element={<ForgotPass />} />
       </Routes>
     </ProfileProvider>
     </>
