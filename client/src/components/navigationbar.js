@@ -54,8 +54,6 @@ export default function NavigationBar() {
         <Navbar.Toggle aria-controls="responsive-navbar-nav" />
         <Navbar.Collapse id="responsive-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link as={Link} to="/gmguide" onClick={handleNavClose}>Guild Master's Guide</Nav.Link>
-
             {(profile?.permissions?.filter((v)=>v.type === "Approved").length === 0 && profile !== null) ? (
               <NoPermsNavigation onClick={handleNavClose} />
             ) : (
