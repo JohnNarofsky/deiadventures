@@ -41,6 +41,19 @@ mod env {
 
         db, "DEI_DB", PathBuf,
         "DEI_DB should be set to the path to the database";
+        
+        site_url, "DEI_SITE_URL", String,
+        "DEI_SITE_URL should be set to the URL for the frontend of this instance";
+        
+        pw_reset_email_from, "DEI_RESET_EMAIL_FROM", String,
+        "DEI_RESET_EMAIL_FROM should be set to the FROM email for password resets sent from this instance (example: noreply@auto.deiadventures.quest)";
+        
+        _aws_access_key_id, "AWS_ACCESS_KEY_ID", String,
+        "AWS_ACCESS_KEY_ID should be set to the AWS access key ID (used for email sending)";
+        _aws_secret_access_key, "AWS_SECRET_ACCESS_KEY", String,
+        "AWS_ACCESS_KEY_ID should be set to the AWS secret access key (used for email sending)";
+        _aws_region, "AWS_REGION", String,
+        "AWS_REGION should be set to the AWS region (used for email sending)";
 
         // Note: We're currently omitting OAuth functionality in the interest of time,
         // but this is one way we could incorporate this information.
@@ -1691,7 +1704,12 @@ async fn auth_forgot_password(State(state): State<ArcState>, Json(ForgotPassword
                 .to_addresses(email)
                 .build();
             let body_text = aws_sdk_ses::types::Content::builder()
-                .data("this is a test text message, have a new password: ".to_string() + &new_pass.text)
+                .data(format!(
+                    "This is your new password for DEI Adventures!\n\n{}\n\nLogin at {}",
+                    &new_pass.text,
+                    env::site_url(),
+                ))
+                    // "this is a test text message, have a new password: ".to_string() + &new_pass.text)
                 .build()
                 .unwrap();
             let body = aws_sdk_ses::types::Body::builder()
@@ -1706,7 +1724,7 @@ async fn auth_forgot_password(State(state): State<ArcState>, Json(ForgotPassword
                 .body(body)
                 .build();
             let res = ses.send_email()
-                .source("noreply@auto.deiadventures.quest")
+                .source(env::pw_reset_email_from())
                 .destination(target)
                 .message(message)
                 .send()
