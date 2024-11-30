@@ -1688,7 +1688,7 @@ async fn auth_forgot_password(State(state): State<ArcState>, Json(ForgotPassword
     match res {
         Ok(()) => {
             let target = aws_sdk_ses::types::Destination::builder()
-                .set_to_addresses(Some(vec![]))
+                .to_addresses(email)
                 .build();
             let body_text = aws_sdk_ses::types::Content::builder()
                 .data("this is a test text message, have a new password: ".to_string() + &new_pass.text)
@@ -1697,10 +1697,16 @@ async fn auth_forgot_password(State(state): State<ArcState>, Json(ForgotPassword
             let body = aws_sdk_ses::types::Body::builder()
                 .text(body_text)
                 .build();
+            let subject_text = aws_sdk_ses::types::Content::builder()
+                .data("DEI Adventures Password Reset")
+                .build()
+                .unwrap();
             let message = aws_sdk_ses::types::Message::builder()
+                .subject(subject_text)
                 .body(body)
                 .build();
             let res = ses.send_email()
+                .source("noreply@auto.deiadventures.quest")
                 .destination(target)
                 .message(message)
                 .send()
