@@ -87,6 +87,10 @@ export default function Login() {
                                 Haven't registered?{" "}
                                 <Link to="/signup">Sign Up</Link>
                             </div>
+                            <div className="text-center m-4">
+                                Forgot password?{" "}
+                                <Link to="/forgotpassword">Yes, Please let me reset it</Link>
+                            </div>
                             <div className="form-group m-4">
                                 <label>Email address</label>
                                 <input
