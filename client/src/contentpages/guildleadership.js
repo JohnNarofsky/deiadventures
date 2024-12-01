@@ -144,10 +144,10 @@ const GuildLeadership = () => {
   const showTargetQuestUsage = (questAction) => {
     axios.get(api_config.baseURL + "/quest-action/" + questAction.id + "/participation").then((response) => {
       setRetrievedUsage(response.data);
-      });
+      setTargetQuestActionUsage(questAction);
+      setActionUsageIsOpen(true);
+        });
 
-    setTargetQuestActionUsage(questAction);
-    setActionUsageIsOpen(true);
   }
 
   const hideTargetQuestUsage = () => {
@@ -156,25 +156,34 @@ const GuildLeadership = () => {
   }
 
   const TargetQuestActionUsageContent = ({actionUsage, retrievedUsage}) => {
-    console.log(actionUsage);
     console.log(retrievedUsage);
     return (
       <div className='sub-content'>
         <div className="sub-title">
           {actionUsage.description}
+        </div>
+        <div className="modal-content-container">
+        <Button className="sub-action" variant="dark" 
+            onClick={hideTargetQuestUsage}
+          >Export</Button>
+
+          <div className="modal-content">
+          {retrievedUsage.adventurers.map((usage) => {
+              return <div className="sub-content">
+                <div
+                  key={usage.accepted_date + " " + usage.user.id}
+                >
+                  <div>Adventurer Name: {usage.user.name}</div>
+                  <div>Accepted Date: {new Date(usage.accepted_date).toDateString()}</div>
+                  <div>Completed Date: {usage.completed_date !== null ? new Date(usage.completed_date).toDateString() : ""}</div>
+                </div>
+              </div>
+          })}
+          </div>
           <Button className="sub-action" variant="dark" 
             onClick={hideTargetQuestUsage}
-          >Export</Button><br/>
-
+            >Exit</Button><br/>
         </div>
-        <div className="sub-content">
-            <div></div>
-            <p>Modal text!</p>
-            <br/>
-        </div>
-        <Button className="sub-action" variant="dark" 
-          onClick={hideTargetQuestUsage}
-          >Exit</Button><br/>
       </div>
     );
   };
