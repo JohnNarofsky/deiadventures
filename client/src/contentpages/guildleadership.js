@@ -31,7 +31,7 @@ const GuildLeadership = () => {
   const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: "", xp: "", repeatable: false });
   const [newGuildQuestActionCreation, setNewGuildQuestActionCreation] = useState(false);
   const [targetGuild, setTargetGuild] = useState({id:-1});
-  const [targetQuestActionUsage,setTargetQuestActionUsage] = useState({id:-1});
+  const [targetQuestActionUsage,setTargetQuestActionUsage] = useState({id:-1, description: "", xp: "", repeatable: false });
   const { profile } = useContext(ProfileContext);
   const [actionUsageIsOpen, setActionUsageIsOpen] = useState(false);
 
@@ -140,16 +140,38 @@ const GuildLeadership = () => {
     setTargetGuild({id:-1});
   }
 
-  const showTargetQuestUsage = (questId) => {
-    console.log('HEY', questId);
-    setTargetQuestActionUsage(questId);
+  const showTargetQuestUsage = (questAction) => {
+    setTargetQuestActionUsage(questAction);
     setActionUsageIsOpen(true);
   }
 
   const hideTargetQuestUsage = () => {
-    setTargetQuestActionUsage({id:-1});
+    setTargetQuestActionUsage({id:-1, description: "", xp: "", repeatable: false });
     setActionUsageIsOpen(false);
   }
+
+  const TargetQuestActionUsageContent = ({actionUsage}) => {
+    console.log(actionUsage);
+    return (
+      <div className='sub-content'>
+        <div className="sub-title">
+          {actionUsage.description}
+          <Button className="sub-action" variant="dark" 
+            onClick={hideTargetQuestUsage}
+          >Export</Button><br/>
+
+        </div>
+        <div className="sub-content">
+            <div></div>
+            <p>Modal text!</p>
+            <br/>
+        </div>
+        <Button className="sub-action" variant="dark" 
+          onClick={hideTargetQuestUsage}
+          >Exit</Button><br/>
+      </div>
+    );
+  };
 
   const NewQuestAction = ({guildId, targetGuild, setTargetGuild, saveNewGuildQuestAction, cancelNewGuildQuestAction, setNewQuestActionCreation}) => {
     if (newGuildQuestActionCreation && targetGuild.id === guildId){
@@ -242,7 +264,7 @@ const GuildLeadership = () => {
             </div>
           </div>
             <div className="actions">
-              <Button variant="dark" onClick={() => showTargetQuestUsage(questId)}>Usage</Button>&nbsp;
+              <Button variant="dark" onClick={() => showTargetQuestUsage(guildQuestAction)}>Usage</Button>&nbsp;
               <Button variant="dark" onClick={() => setTargetGuildQuestAction(guildQuestAction)}>Edit</Button>&nbsp;
               <Button variant="dark" onClick={() => retireGuildQuestAction(guildId, questId)}>Retire</Button>
             </div>
@@ -296,8 +318,7 @@ const GuildLeadership = () => {
           className="Modal"
           overlayClassName="Overlay"
         >
-          <p>Modal text!</p>
-          <button onClick={hideTargetQuestUsage}>Close Modal</button>
+          <TargetQuestActionUsageContent actionUsage={targetQuestActionUsage}/>
         </ReactModal>
       <div className="main-title">Guild Leadership</div>
       <div className="main-description">As a leader of a guild, it's your task to open and close actions for players to complete.</div>

@@ -104,7 +104,12 @@
     left: 40px;
     right: 40px;
     bottom: 40px;
-    background-color: papayawhip;
+    padding: 5px;
+    margin: 20px 5px;
+    box-shadow: 3px 5px 60px 0px rgba(65, 75, 79, 0.20);
+    border-radius: 15px;
+    background: #F1F8F8;
+    flex: 1;
   }
 
   .Overlay {
