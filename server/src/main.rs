@@ -1731,7 +1731,7 @@ async fn auth_forgot_password(State(state): State<ArcState>, Json(ForgotPassword
                 .await;
             match res {
                 Ok(output) => {
-                    println!("successful output: {output:?}");
+                    tracing::info!("successfully sent email: {output:?}");
                     Ok(())
                 },
                 Err(e) => {
