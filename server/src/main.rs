@@ -141,6 +141,7 @@ async fn run_server(state: Arc<AppState>) {
             "/guild/:guild_id/quest-action",
             put(edit_guild_quest_action),
         )
+        .route("/quest-action/:quest_action_id/participation", get(get_quest_action_participation))
         .route("/perm/allowed-leaders", get(get_allowed_guild_leaders))
         .route("/perm/:user_id/accepted", put(set_user_accepted))
         .route("/perm/:user_id/rejected", put(set_user_rejected))
@@ -1306,6 +1307,63 @@ async fn retire_guild_quest_action(
     });
 
     res
+}
+
+
+#[derive(Debug, Serialize)]
+struct QuestActionParticipation {
+    adventurers: Vec<QuestActionIndividualParticipation>,
+    quest_id: QuestId,
+}
+#[derive(Debug, Serialize)]
+struct QuestActionParticipant {
+    id: UserId,
+    name: String,
+}
+#[derive(Debug, Serialize)]
+struct QuestActionIndividualParticipation {
+    user: QuestActionParticipant,
+    quest_name: String,
+    accepted_date: Option<JsTimestamp>,
+    completed_date: Option<JsTimestamp>,
+    /// This is a note that an adventurer has attached to a quest action,
+    /// which is meant to describe how they participated in the quest.
+    adventurer_note: Option<String>,
+}
+/// Get the list of other adventurers who've participated in this quest action, and available details about how they've done so.
+/// 
+/// Note that this omits adventurers who *canceled* their participation in the specified quest action.
+async fn get_quest_action_participation(State(state): State<ArcState>, Path(quest_action_id): Path<QuestId>) -> Result<Json<QuestActionParticipation>, Error> {
+    let res = state.read_transaction(|db| {
+        let mut participation = db.prepare_cached("
+            SELECT Adventurer.id, Adventurer.name, QuestTask.name, Quest.open_date, Quest.close_date
+            FROM PartyMember
+                INNER JOIN Quest ON Quest.parent_quest_id = :quest_action_id AND Quest.id = PartyMember.quest_id
+                INNER JOIN Adventurer ON Adventurer.id = PartyMember.adventurer_id
+                INNER JOIN QuestTask ON QuestTask.quest_id = PartyMember.quest_id
+                LEFT OUTER JOIN Permission ON Permission.adventurer_id = PartyMember.adventurer_id AND Permission.permission_type = 3
+            WHERE Quest.deleted_date IS NULL;
+")?;
+        let adventurers = participation.query_map(named_params! {
+            ":quest_action_id": quest_action_id,
+        }, |row| {
+            Ok(QuestActionIndividualParticipation {
+                user: QuestActionParticipant {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                },
+                quest_name: row.get(2)?,
+                accepted_date: row.get(3)?,
+                completed_date: row.get(4)?,
+                adventurer_note: None,
+            })
+        })?.collect::<Result<Vec<_>, _>>()?;
+        Ok(QuestActionParticipation {
+            adventurers,
+            quest_id: quest_action_id,
+        })
+    });
+    res.map(Json)
 }
 
 /// Wrapper type for consuming passwords to prevent obvious misuse
