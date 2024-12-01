@@ -34,6 +34,7 @@ const GuildLeadership = () => {
   const [targetQuestActionUsage,setTargetQuestActionUsage] = useState({id:-1, description: "", xp: "", repeatable: false });
   const { profile } = useContext(ProfileContext);
   const [actionUsageIsOpen, setActionUsageIsOpen] = useState(false);
+  const [retrievedUsage, setRetrievedUsage] = useState([]);
 
   //initializing UseEffect
   useEffect(()=>{
@@ -141,6 +142,10 @@ const GuildLeadership = () => {
   }
 
   const showTargetQuestUsage = (questAction) => {
+    axios.get(api_config.baseURL + "/quest-action/" + questAction.id + "/participation").then((response) => {
+      setRetrievedUsage(response.data);
+      });
+
     setTargetQuestActionUsage(questAction);
     setActionUsageIsOpen(true);
   }
@@ -150,8 +155,9 @@ const GuildLeadership = () => {
     setActionUsageIsOpen(false);
   }
 
-  const TargetQuestActionUsageContent = ({actionUsage}) => {
+  const TargetQuestActionUsageContent = ({actionUsage, retrievedUsage}) => {
     console.log(actionUsage);
+    console.log(retrievedUsage);
     return (
       <div className='sub-content'>
         <div className="sub-title">
@@ -318,7 +324,7 @@ const GuildLeadership = () => {
           className="Modal"
           overlayClassName="Overlay"
         >
-          <TargetQuestActionUsageContent actionUsage={targetQuestActionUsage}/>
+          <TargetQuestActionUsageContent actionUsage={targetQuestActionUsage} retrievedUsage={retrievedUsage}/>
         </ReactModal>
       <div className="main-title">Guild Leadership</div>
       <div className="main-description">As a leader of a guild, it's your task to open and close actions for players to complete.</div>
