@@ -141,6 +141,7 @@ async fn run_server(state: Arc<AppState>) {
             "/guild/:guild_id/quest-action",
             put(edit_guild_quest_action),
         )
+        .route("/guild/:guild_id/participation", get(get_guild_participation))
         .route("/quest-action/:quest_action_id/participation", get(get_quest_action_participation))
         .route("/perm/allowed-leaders", get(get_allowed_guild_leaders))
         .route("/perm/:user_id/accepted", put(set_user_accepted))
@@ -1203,6 +1204,50 @@ async fn get_guild_leader(
         Ok(id.map(|id| GetGuildLeader { id }))
     });
 
+    data.map(Json)
+}
+
+#[derive(Debug, Serialize)]
+struct GuildParticipation {
+    quest_actions: Vec<QuestActionParticipation>,
+}
+async fn get_guild_participation(State(state): State<ArcState>, Path(guild_id): Path<GuildId>) -> Result<Json<GuildParticipation>, Error> {
+    let data = state.read_transaction(|db| {
+        let actions = db::lookup_guild_quest_actions(&db, guild_id)?
+            .ok_or(Error::GuildNotFound { id: Some(guild_id) })?;
+        
+        let mut participation = db.prepare_cached("
+            SELECT Adventurer.id, Adventurer.name, QuestTask.name, Quest.open_date, Quest.close_date
+            FROM PartyMember
+                INNER JOIN Quest ON Quest.parent_quest_id = :quest_action_id AND Quest.id = PartyMember.quest_id
+                INNER JOIN Adventurer ON Adventurer.id = PartyMember.adventurer_id
+                INNER JOIN QuestTask ON QuestTask.quest_id = PartyMember.quest_id
+                LEFT OUTER JOIN Permission ON Permission.adventurer_id = PartyMember.adventurer_id AND Permission.permission_type = 3
+            WHERE Quest.deleted_date IS NULL;
+")?;
+        let mut quest_actions = Vec::with_capacity(actions.len());
+        for action in actions {
+            let adventurers = participation.query_map(named_params! {
+                ":quest_action_id": action.id,
+            }, |row| {
+                Ok(QuestActionIndividualParticipation {
+                    user: QuestActionParticipant {
+                        id: row.get(0)?,
+                        name: row.get(1)?,
+                    },
+                    quest_name: row.get(2)?,
+                    accepted_date: row.get(3)?,
+                    completed_date: row.get(4)?,
+                    adventurer_note: None,
+                })
+            })?.collect::<Result<Vec<_>, _>>()?;
+            quest_actions.push(QuestActionParticipation {
+                adventurers,
+                quest_id: action.id,
+            });
+        }
+        Ok(GuildParticipation { quest_actions })
+    });
     data.map(Json)
 }
 
