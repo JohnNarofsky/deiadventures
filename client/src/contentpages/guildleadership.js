@@ -155,8 +155,33 @@ const GuildLeadership = () => {
     setActionUsageIsOpen(false);
   }
 
+  const downloadUsage = (retrievedUsage) => {
+    var a = window.document.createElement('a');
+    var fileName = "usage - " + retrievedUsage.quest_id + ".txt";
+    
+    var retval = retrievedUsage.adventurers.map((v, index) => {
+      const completed = v.completed_date !== null ? new Date(v.completed_date).toISOString() : "";
+      const accepted = new Date(v.accepted_date).toISOString();
+      const userId = v.user.id;
+      const userName = v.user.name;
+      const questName = v.quest_name;
+
+      return {"completed":completed, "accepted":accepted, "userId":userId, "userName":userName, "questName":questName};
+
+    });
+
+    a.href = window.URL.createObjectURL(new Blob([JSON.stringify(retval)], {type: 'text'}));
+    a.download = fileName;
+
+    // Append anchor to body.
+    document.body.appendChild(a);
+    a.click();
+
+    // Remove anchor from body
+    document.body.removeChild(a);
+  }
+
   const TargetQuestActionUsageContent = ({actionUsage, retrievedUsage}) => {
-    console.log(retrievedUsage);
     return (
       <div className='sub-content'>
         <div className="sub-title">
@@ -164,7 +189,7 @@ const GuildLeadership = () => {
         </div>
         <div className="modal-content-container">
         <Button className="sub-action" variant="dark" 
-            onClick={hideTargetQuestUsage}
+            onClick={() => downloadUsage(retrievedUsage)}
           >Export</Button>
 
           <div className="modal-content">
