@@ -1368,6 +1368,7 @@ struct QuestActionParticipant {
 #[derive(Debug, Serialize)]
 struct QuestActionIndividualParticipation {
     user: QuestActionParticipant,
+    #[serde(rename = "quest_description")]
     quest_name: String,
     accepted_date: Option<JsTimestamp>,
     completed_date: Option<JsTimestamp>,
