@@ -109,13 +109,13 @@ pub(crate) fn lookup_guild_quest_actions(
     let quests = query
         .query_map(named_params! { ":guild_id": guild }, |row| {
             let mut query =
-                db.prepare_cached("SELECT name, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
+                db.prepare_cached("SELECT name, description, adventurer_note, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
             let id = row.get(0)?;
             let repeatable = row.get(1)?;
-            let (name, xp) = query.query_row(named_params! { ":quest_id": id }, |row| {
-                Ok((row.get(0)?, row.get(1)?))
+            let (name, description, adventurer_note, xp) = query.query_row(named_params! { ":quest_id": id }, |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
             })?;
-            Ok(GuildQuestAction { id, name, xp, repeatable })
+            Ok(GuildQuestAction { id, name, description, adventurer_note, xp, repeatable })
         })?
         .collect::<Result<Vec<_>, _>>()?;
     Ok(Some(quests))

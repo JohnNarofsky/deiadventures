@@ -69,6 +69,7 @@ CREATE TABLE QuestTask (
     order_index INTEGER NOT NULL DEFAULT 0,
     name TEXT NOT NULL,
     description TEXT,
+    adventurer_note TEXT,
     xp INTEGER NOT NULL
 ) STRICT;
 
