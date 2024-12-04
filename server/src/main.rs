@@ -459,7 +459,7 @@ struct AcceptedQuestAction {
     #[serde(rename = "description")]
     name: String,
     #[serde(rename = "name")]
-    description: String,
+    description: Option<String>,
     xp: u32,
     open_date: Option<JsTimestamp>,
 }
@@ -552,7 +552,7 @@ struct CompletedQuestAction {
     #[serde(rename = "description")]
     name: String,
     #[serde(rename = "name")]
-    description: String,
+    description: Option<String>,
     xp: u32,
     accepted_date: Option<JsTimestamp>,
     // To avoid the 2038 problem, we make sure to use the maximum possible
@@ -612,7 +612,7 @@ struct AvailableQuestAction {
     #[serde(rename = "description")]
     name: String,
     #[serde(rename = "name")]
-    description: String,
+    description: Option<String>,
     xp: u32,
     repeatable: bool,
 }
@@ -672,7 +672,7 @@ struct GuildQuestAction {
     #[serde(rename = "description")]
     name: String,
     #[serde(rename = "name")]
-    description: String,
+    description: Option<String>,
     xp: u32,
     repeatable: bool,
 }
@@ -1020,7 +1020,7 @@ struct CreateGuildQuestAction {
     #[serde(rename = "description")]
     name: String,
     #[serde(rename = "name")]
-    description: String,
+    description: Option<String>,
     xp: u32,
     // This field is defaulted to be backward compatible with the frontend,
     // which is not yet passing this field.
@@ -1071,7 +1071,7 @@ struct EditGuildQuestAction {
     #[serde(rename = "description")]
     name: String,
     #[serde(rename = "name")]
-    description: String,
+    description: Option<String>,
     xp: u32,
     #[serde(default)]
     repeatable: bool,
@@ -1387,7 +1387,7 @@ struct QuestActionIndividualParticipation {
     #[serde(rename = "quest_description")]
     quest_name: String,
     #[serde(rename = "quest_name")]
-    quest_description: String,
+    quest_description: Option<String>,
     accepted_date: Option<JsTimestamp>,
     completed_date: Option<JsTimestamp>,
     /// This is a note that an adventurer has attached to a quest action,
