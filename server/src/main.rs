@@ -1397,11 +1397,11 @@ struct QuestActionIndividualParticipation {
     quest_name: String,
     #[serde(rename = "quest_name")]
     quest_description: Option<String>,
-    accepted_date: Option<JsTimestamp>,
-    completed_date: Option<JsTimestamp>,
     /// This is a note that an adventurer has attached to a quest action,
     /// which is meant to describe how they participated in the quest.
     adventurer_note: Option<String>,
+    accepted_date: Option<JsTimestamp>,
+    completed_date: Option<JsTimestamp>,
 }
 /// Get the list of other adventurers who've participated in this quest action, and available details about how they've done so.
 /// 
@@ -1409,7 +1409,7 @@ struct QuestActionIndividualParticipation {
 async fn get_quest_action_participation(State(state): State<ArcState>, Path(quest_action_id): Path<QuestId>) -> Result<Json<QuestActionParticipation>, Error> {
     let res = state.read_transaction(|db| {
         let mut participation = db.prepare_cached("
-            SELECT Adventurer.id, Adventurer.name, QuestTask.name, QuestTask.description, Quest.open_date, Quest.close_date
+            SELECT Adventurer.id, Adventurer.name, QuestTask.name, QuestTask.description, QuestTask.adventurer_note, Quest.open_date, Quest.close_date
             FROM PartyMember
                 INNER JOIN Quest ON Quest.parent_quest_id = :quest_action_id AND Quest.id = PartyMember.quest_id
                 INNER JOIN Adventurer ON Adventurer.id = PartyMember.adventurer_id
@@ -1427,9 +1427,9 @@ async fn get_quest_action_participation(State(state): State<ArcState>, Path(ques
                 },
                 quest_name: row.get(2)?,
                 quest_description: row.get(3)?,
-                accepted_date: row.get(4)?,
-                completed_date: row.get(5)?,
-                adventurer_note: None,
+                adventurer_note: row.get(4)?,
+                accepted_date: row.get(5)?,
+                completed_date: row.get(6)?,
             })
         })?.collect::<Result<Vec<_>, _>>()?;
         Ok(QuestActionParticipation {
