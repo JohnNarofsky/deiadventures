@@ -97,3 +97,41 @@
     background-color: #FFF;
     margin-bottom: 5px;
 }
+
+.Modal {
+    position: absolute;
+    top: 140px;
+    left: 40px;
+    right: 40px;
+    bottom: 40px;
+    padding: 10px;
+    margin: 20px 5px;
+    box-shadow: 3px 5px 60px 0px rgba(65, 75, 79, 0.20);
+    border-radius: 15px;
+    background: #F1F8F8;
+    flex: 1;
+  }
+
+.Overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rebeccapurple;
+}
+
+.modal-content {
+    display: absolute;
+    overflow-y: scroll;
+    flex: 1;
+    height: 100%;
+}
+
+.modal-content-container {
+    position: absolute;
+    top: 100px;
+    left: 10px;
+    right: 10px;
+    bottom: 100px;
+}

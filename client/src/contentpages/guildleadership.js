@@ -20,9 +20,10 @@ import {
   linkDialogPlugin,
 } from '@mdxeditor/editor';
 import remarkGfm from 'remark-gfm'; 
-
+import ReactModal from 'react-modal';
 import '@mdxeditor/editor/style.css';
 
+ReactModal.setAppElement('#root');
 
 const GuildLeadership = () => {
   //state
@@ -30,7 +31,10 @@ const GuildLeadership = () => {
   const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: "", xp: "", repeatable: false });
   const [newGuildQuestActionCreation, setNewGuildQuestActionCreation] = useState(false);
   const [targetGuild, setTargetGuild] = useState({id:-1});
+  const [targetQuestActionUsage,setTargetQuestActionUsage] = useState({id:-1, description: "", xp: "", repeatable: false });
   const { profile } = useContext(ProfileContext);
+  const [actionUsageIsOpen, setActionUsageIsOpen] = useState(false);
+  const [retrievedUsage, setRetrievedUsage] = useState([]);
 
   //initializing UseEffect
   useEffect(()=>{
@@ -137,6 +141,78 @@ const GuildLeadership = () => {
     setTargetGuild({id:-1});
   }
 
+  const showTargetQuestUsage = (questAction) => {
+    axios.get(api_config.baseURL + "/quest-action/" + questAction.id + "/participation").then((response) => {
+      setRetrievedUsage(response.data);
+      setTargetQuestActionUsage(questAction);
+      setActionUsageIsOpen(true);
+        });
+
+  }
+
+  const hideTargetQuestUsage = () => {
+    setTargetQuestActionUsage({id:-1, description: "", xp: "", repeatable: false });
+    setActionUsageIsOpen(false);
+  }
+
+  const downloadUsage = (retrievedUsage) => {
+    var a = window.document.createElement('a');
+    var fileName = "usage - " + retrievedUsage.quest_id + ".txt";
+    
+    var retval = retrievedUsage.adventurers.map((v, index) => {
+      const completed = v.completed_date !== null ? new Date(v.completed_date).toISOString() : "";
+      const accepted = new Date(v.accepted_date).toISOString();
+      const userId = v.user.id;
+      const userName = v.user.name;
+      const questName = v.quest_name;
+
+      return {"completed":completed, "accepted":accepted, "userId":userId, "userName":userName, "questName":questName};
+
+    });
+
+    a.href = window.URL.createObjectURL(new Blob([JSON.stringify(retval)], {type: 'text'}));
+    a.download = fileName;
+
+    // Append anchor to body.
+    document.body.appendChild(a);
+    a.click();
+
+    // Remove anchor from body
+    document.body.removeChild(a);
+  }
+
+  const TargetQuestActionUsageContent = ({actionUsage, retrievedUsage}) => {
+    return (
+      <div className='sub-content'>
+        <div className="sub-title">
+          {actionUsage.description}
+        </div>
+        <div className="modal-content-container">
+        <Button className="sub-action" variant="dark" 
+            onClick={() => downloadUsage(retrievedUsage)}
+          >Export</Button>
+
+          <div className="modal-content">
+          {retrievedUsage.adventurers.map((usage) => {
+              return <div className="sub-content">
+                <div
+                  key={usage.accepted_date + " " + usage.user.id}
+                >
+                  <div>Adventurer Name: {usage.user.name}</div>
+                  <div>Accepted Date: {new Date(usage.accepted_date).toDateString()}</div>
+                  <div>Completed Date: {usage.completed_date !== null ? new Date(usage.completed_date).toDateString() : ""}</div>
+                </div>
+              </div>
+          })}
+          </div>
+          <Button className="sub-action" variant="dark" 
+            onClick={hideTargetQuestUsage}
+            >Exit</Button><br/>
+        </div>
+      </div>
+    );
+  };
+
   const NewQuestAction = ({guildId, targetGuild, setTargetGuild, saveNewGuildQuestAction, cancelNewGuildQuestAction, setNewQuestActionCreation}) => {
     if (newGuildQuestActionCreation && targetGuild.id === guildId){
       return (
@@ -228,6 +304,7 @@ const GuildLeadership = () => {
             </div>
           </div>
             <div className="actions">
+              <Button variant="dark" onClick={() => showTargetQuestUsage(guildQuestAction)}>Usage</Button>&nbsp;
               <Button variant="dark" onClick={() => setTargetGuildQuestAction(guildQuestAction)}>Edit</Button>&nbsp;
               <Button variant="dark" onClick={() => retireGuildQuestAction(guildId, questId)}>Retire</Button>
             </div>
@@ -274,6 +351,15 @@ const GuildLeadership = () => {
 
   return (
     <div className="main">
+        <ReactModal 
+          isOpen={actionUsageIsOpen}
+          contentLabel="onRequestClose Example"
+          onRequestClose={hideTargetQuestUsage}
+          className="Modal"
+          overlayClassName="Overlay"
+        >
+          <TargetQuestActionUsageContent actionUsage={targetQuestActionUsage} retrievedUsage={retrievedUsage}/>
+        </ReactModal>
       <div className="main-title">Guild Leadership</div>
       <div className="main-description">As a leader of a guild, it's your task to open and close actions for players to complete.</div>
       <div className="main-description">Additionally, from time to time you may run quests that groups of players can sign up for as a party. This is an upcoming feature.</div>
