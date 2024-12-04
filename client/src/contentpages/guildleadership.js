@@ -143,6 +143,7 @@ const GuildLeadership = () => {
 
   const showTargetQuestUsage = (questAction) => {
     axios.get(api_config.baseURL + "/quest-action/" + questAction.id + "/participation").then((response) => {
+      console.log(response.data);
       setRetrievedUsage(response.data);
       setTargetQuestActionUsage(questAction);
       setActionUsageIsOpen(true);
@@ -164,9 +165,9 @@ const GuildLeadership = () => {
       const accepted = new Date(v.accepted_date).toISOString();
       const userId = v.user.id;
       const userName = v.user.name;
-      const questName = v.quest_name;
+      const questDescription = v.quest_description;
 
-      return {"completed":completed, "accepted":accepted, "userId":userId, "userName":userName, "questName":questName};
+      return {"completed":completed, "accepted":accepted, "userId":userId, "userName":userName, "questDescription":questDescription};
 
     });
 
