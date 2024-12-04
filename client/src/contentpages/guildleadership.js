@@ -44,7 +44,7 @@ const GuildLeadership = () => {
       let promises = [];
       guilds.filter((v) => {return v.leader_id === profile.id}).map((guild) => {
         let newPromise = axios.get(api_config.baseURL + "/guild/" + guild.id + "/quest-actions").then(x => {
-          return {guildId: guild.id, guildTitle: guild.name, ...x};
+          return {guildId: guild.id, guildName: guild.name, ...x};
         });
         promises.push(newPromise);
       });
@@ -52,7 +52,7 @@ const GuildLeadership = () => {
         values.map((p) => {
           let newActions = {
             guildId: p.guildId,
-            guildTitle: p.guildTitle,
+            guildName: p.guildName,
             guildQuestActions: p.data
           };
           currentGuildQuestActions.push(newActions);
@@ -317,7 +317,7 @@ const GuildLeadership = () => {
 
     return (
       <div className="sub-content">
-        <div className="sub-title">{questActionSet.guildTitle}</div>
+        <div className="sub-title">{questActionSet.guildName}</div>
         <div className="sub-content">
           <NewQuestAction
             guildId = {questActionSet.guildId}
