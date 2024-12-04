@@ -460,6 +460,7 @@ struct AcceptedQuestAction {
     name: String,
     #[serde(rename = "name")]
     description: Option<String>,
+    adventurer_note: Option<String>,
     xp: u32,
     open_date: Option<JsTimestamp>,
 }
@@ -484,14 +485,15 @@ async fn get_user_accepted_quest_actions(
                 let (guild_id, open_date) =
                     query.query_row(named_params! { ":quest_id": quest_id }, |row| Ok((row.get(0)?, row.get(1)?)))?;
                 let mut query = db
-                    .prepare_cached("SELECT name, description, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
+                    .prepare_cached("SELECT name, description, adventurer_note, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
                 query.query_row(named_params! { ":quest_id": quest_id }, |row| {
                     Ok(AcceptedQuestAction {
                         guild_id,
                         quest_id,
                         name: row.get(0)?,
                         description: row.get(1)?,
-                        xp: row.get(2)?,
+                        adventurer_note: row.get(2)?,
+                        xp: row.get(3)?,
                         open_date,
                     })
                 })
@@ -553,6 +555,7 @@ struct CompletedQuestAction {
     name: String,
     #[serde(rename = "name")]
     description: Option<String>,
+    adventurer_note: Option<String>,
     xp: u32,
     accepted_date: Option<JsTimestamp>,
     // To avoid the 2038 problem, we make sure to use the maximum possible
@@ -583,14 +586,15 @@ async fn get_user_completed_quest_actions(
                 let guild_id =
                     query.query_row(named_params! { ":quest_id": quest_id }, |row| row.get(0))?;
                 let mut query = db
-                    .prepare_cached("SELECT name, description, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
+                    .prepare_cached("SELECT name, description, adventurer_note, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
                 query.query_row(named_params! { ":quest_id": quest_id }, |row| {
                     Ok(CompletedQuestAction {
                         guild_id,
                         quest_id,
                         name: row.get(0)?,
                         description: row.get(1)?,
-                        xp: row.get(2)?,
+                        adventurer_note: row.get(2)?,
+                        xp: row.get(3)?,
                         accepted_date,
                         completed_date,
                     })
@@ -613,6 +617,7 @@ struct AvailableQuestAction {
     name: String,
     #[serde(rename = "name")]
     description: Option<String>,
+    adventurer_note: Option<String>,
     xp: u32,
     repeatable: bool,
 }
@@ -642,14 +647,15 @@ async fn get_user_available_quest_actions(
                 let guild_id: GuildId = row.get(1)?;
                 let repeatable: bool = row.get(2)?;
                 let mut query = db
-                    .prepare_cached("SELECT name, description, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
+                    .prepare_cached("SELECT name, description, adventurer_note, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
                 query.query_row(named_params! { ":quest_id": quest_id }, |row| {
                     Ok(AvailableQuestAction {
                         guild_id,
                         quest_id,
                         name: row.get(0)?,
                         description: row.get(1)?,
-                        xp: row.get(2)?,
+                        adventurer_note: row.get(2)?,
+                        xp: row.get(3)?,
                         repeatable,
                     })
                 })
@@ -673,6 +679,7 @@ struct GuildQuestAction {
     name: String,
     #[serde(rename = "name")]
     description: Option<String>,
+    adventurer_note: Option<String>,
     xp: u32,
     repeatable: bool,
 }
@@ -1021,6 +1028,7 @@ struct CreateGuildQuestAction {
     name: String,
     #[serde(rename = "name")]
     description: Option<String>,
+    adventurer_note: Option<String>,
     xp: u32,
     // This field is defaulted to be backward compatible with the frontend,
     // which is not yet passing this field.
@@ -1040,7 +1048,7 @@ async fn create_guild_quest_action(
     Json(action): Json<CreateGuildQuestAction>,
 ) -> Result<Json<CreatedGuildQuestAction>, Error> {
     let res = state.write_transaction(|db| {
-        let CreateGuildQuestAction { name, description, xp, repeatable } = action;
+        let CreateGuildQuestAction { name, description, adventurer_note, xp, repeatable } = action;
         let mut query =
             db.prepare_cached("INSERT INTO Quest (guild_id, quest_type, repeatable) VALUES (:guild_id, 0, :repeatable);")?;
         let n = query.execute(named_params! {
@@ -1051,10 +1059,10 @@ async fn create_guild_quest_action(
         let quest_id = db.last_insert_rowid();
 
         let mut query = db.prepare_cached(
-            "INSERT INTO QuestTask (quest_id, order_index, name, description, xp)
-                 VALUES (:quest_id, 0, :name, :description, :xp);",
+            "INSERT INTO QuestTask (quest_id, order_index, name, description, adventurer_note, xp)
+                 VALUES (:quest_id, 0, :name, :description, :adventurer_note, :xp);",
         )?;
-        let n = query.execute(named_params! { ":quest_id": quest_id, ":name": name, ":description": description, ":xp": xp })?;
+        let n = query.execute(named_params! { ":quest_id": quest_id, ":name": name, ":description": description, ":adventurer_note": adventurer_note, ":xp": xp })?;
         assert_eq!(n, 1);
         Ok(CreatedGuildQuestAction {
             quest_id: QuestId(quest_id.try_into().unwrap()),
@@ -1072,6 +1080,7 @@ struct EditGuildQuestAction {
     name: String,
     #[serde(rename = "name")]
     description: Option<String>,
+    adventurer_note: Option<String>,
     xp: u32,
     #[serde(default)]
     repeatable: bool,
@@ -1083,7 +1092,7 @@ async fn edit_guild_quest_action(
     Json(action): Json<EditGuildQuestAction>,
 ) -> Result<(), Error> {
     let res = state.write_transaction(|db| {
-        let EditGuildQuestAction { quest_id, name, description, xp, repeatable } = action;
+        let EditGuildQuestAction { quest_id, name, description, adventurer_note, xp, repeatable } = action;
         if !db::guild_exists(&db, guild_id)? {
             return Err(Error::GuildNotFound { id: Some(guild_id) });
         }
@@ -1095,9 +1104,9 @@ async fn edit_guild_quest_action(
         let _n = query.execute(named_params! { ":repeatable": repeatable, ":quest_id": quest_id })?;
 
         let mut query = db.prepare_cached(
-            "UPDATE QuestTask SET name = :name, description = :description, xp = :xp WHERE quest_id = :quest_id;",
+            "UPDATE QuestTask SET name = :name, description = :description, adventurer_note = :adventurer_note, xp = :xp WHERE quest_id = :quest_id;",
         )?;
-        let n = query.execute(named_params! { ":name": name, ":description": description, ":xp": xp, ":quest_id": quest_id })?;
+        let n = query.execute(named_params! { ":name": name, ":description": description, ":adventurer_note": adventurer_note, ":xp": xp, ":quest_id": quest_id })?;
         assert_eq!(n, 1);
 
         Ok(())
