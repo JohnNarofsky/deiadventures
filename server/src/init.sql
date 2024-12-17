@@ -14,7 +14,7 @@
 -- A randomly generated number. This is hardcoded elsewhere,
 -- so grep for everywhere it's used in the server before changing it.
 PRAGMA application_id = 249251854;
-PRAGMA user_version = 1;
+PRAGMA user_version = 2;
 
 -- Unlike other journaling modes, WAL mode needs only to be set once,
 -- instead of upon each connection to the database.
