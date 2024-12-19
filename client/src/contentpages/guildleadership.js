@@ -28,10 +28,10 @@ ReactModal.setAppElement('#root');
 const GuildLeadership = () => {
   //state
   const [guildQuestActions, setGuildQuestActions] = useState([]);
-  const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: "", xp: "", repeatable: false });
+  const [targetGuildQuestAction, setTargetGuildQuestAction] = useState({id:-1, description: "", name: "", xp: "", repeatable: false });
   const [newGuildQuestActionCreation, setNewGuildQuestActionCreation] = useState(false);
   const [targetGuild, setTargetGuild] = useState({id:-1});
-  const [targetQuestActionUsage,setTargetQuestActionUsage] = useState({id:-1, description: "", xp: "", repeatable: false });
+  const [targetQuestActionUsage,setTargetQuestActionUsage] = useState({id:-1, description: "", name:"", xp: "", repeatable: false });
   const { profile } = useContext(ProfileContext);
   const [actionUsageIsOpen, setActionUsageIsOpen] = useState(false);
   const [retrievedUsage, setRetrievedUsage] = useState([]);
@@ -66,7 +66,7 @@ const GuildLeadership = () => {
   //function components
   const editGuildQuestAction = (guildId, guildQuestAction) => {
 
-    const data = {quest_id: guildQuestAction.id, description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp), repeatable: guildQuestAction.repeatable};
+    const data = {quest_id: guildQuestAction.id, name: guildQuestAction.name, description: guildQuestAction.description, xp: parseInt(guildQuestAction.xp), repeatable: guildQuestAction.repeatable};
     
     axios.put(api_config.baseURL + "/guild/" + guildId + "/quest-action", data).then((response) => {});
 
@@ -77,7 +77,7 @@ const GuildLeadership = () => {
             guildQuestActions: 
               e.guildQuestActions.map((f) => {
                 if (f.id === guildQuestAction.id){
-                  return {...f, description: guildQuestAction.description, xp: guildQuestAction.xp, repeatable: guildQuestAction.repeatable};
+                  return {...f, description: guildQuestAction.description, name: guildQuestAction.name, xp: guildQuestAction.xp, repeatable: guildQuestAction.repeatable};
                 }
                 return {...f};
               })
@@ -86,7 +86,7 @@ const GuildLeadership = () => {
         return _.cloneDeep(e);
       });
     setGuildQuestActions(currentGuildQuestActions);
-    setTargetGuildQuestAction({id:-1, description: null, xp: null, repeatable: false});
+    setTargetGuildQuestAction({id:-1, description: null, name: null, xp: null, repeatable: false});
     setTargetGuild({id:-1});
   };
 
@@ -152,7 +152,7 @@ const GuildLeadership = () => {
   }
 
   const hideTargetQuestUsage = () => {
-    setTargetQuestActionUsage({id:-1, description: "", xp: "", repeatable: false });
+    setTargetQuestActionUsage({id:-1, description: "", xp: "", name: "", repeatable: false });
     setActionUsageIsOpen(false);
   }
 
@@ -186,7 +186,7 @@ const GuildLeadership = () => {
     return (
       <div className='sub-content'>
         <div className="sub-title">
-          {actionUsage.description}
+          {actionUsage.name}
         </div>
         <div className="modal-content-container">
         <Button className="sub-action" variant="dark" 
@@ -223,7 +223,7 @@ const GuildLeadership = () => {
 
             <TargetQuestAction 
                 guildId = {guildId}
-                guildQuestAction={{id:-2, description: "", xp: "", repeatable: false }}
+                guildQuestAction={{id:-2, name:"", adventure_notes:"", description: "", xp: "", repeatable: false }}
                 editGuildQuestAction={saveNewGuildQuestAction}
                 cancelEditGuildQuestAction={cancelNewGuildQuestAction}
               />
@@ -241,6 +241,7 @@ const GuildLeadership = () => {
   };
 
   const TargetQuestAction = ({guildId, guildQuestAction, editGuildQuestAction, cancelEditGuildQuestAction}) => {
+    const [name, setName] = useState(guildQuestAction.name);
     const [description, setDescription] = useState(guildQuestAction.description);
     const [xp, setXp] = useState(guildQuestAction.xp);
     const [repeatable, setRepeatable] = useState(guildQuestAction.repeatable);
@@ -248,6 +249,8 @@ const GuildLeadership = () => {
     return (
       <div className="listing">
         <div className="details">
+          <h5>Name:</h5>
+          <div><input value={name} onChange={(event) => setName(event.target.value)}/></div>
           <h5>Description:&nbsp;
           </h5>
           <div className="editor">
@@ -283,7 +286,7 @@ const GuildLeadership = () => {
           </div>
         </div>
           <div className="actions">
-            <Button variant="dark" onClick={() => editGuildQuestAction(guildId, {...guildQuestAction, xp: Number.isSafeInteger(Number.parseInt(xp)) ? xp : -1, description: description, repeatable: repeatable})}>Done</Button>&nbsp;
+            <Button variant="dark" onClick={() => editGuildQuestAction(guildId, {...guildQuestAction, xp: Number.isSafeInteger(Number.parseInt(xp)) ? xp : -1, description: description, name: name, repeatable: repeatable})}>Done</Button>&nbsp;
             <Button variant="dark" onClick={() => cancelEditGuildQuestAction()}>Cancel</Button>
           </div>
       </div>
@@ -295,6 +298,7 @@ const GuildLeadership = () => {
     return (
         <div className="listing">
           <div className="details">
+            <div>{guildQuestAction.name}</div>
             <div>
               <ReactMarkdown remarkPlugins={[remarkGfm]} >{guildQuestAction.description}</ReactMarkdown>
             </div>
