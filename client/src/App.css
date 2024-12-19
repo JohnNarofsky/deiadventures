@@ -271,6 +271,27 @@ position:static;
     font-weight: 600;
 }
 
+.action-table-td.center-col {
+    text-align:center;
+    white-space: nowrap;
+}
+
+.action-table-td.xp {
+    width: 100px;
+}
+
+.action-table-td.data {
+  width: 150px;
+}
+
+.action-table-td.description {
+    width: 80px;
+}
+
+.action-table-td.actions {
+    width: 150px;
+}
+
 .action-table-td.bttm-row {
     padding-bottom: 18px !important;
     border-bottom: none !important;
