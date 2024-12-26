@@ -220,14 +220,11 @@ const MyAdventures = () => {
         if (isAccepted){
             return (
                 <div className='sub-content'>
-                    <div className="sub-title">
-                        {action.name}
-                    </div>
+                    <h5>{action.name}</h5>
                     <div className="modal-content-container">    
                         <div className="modal-content">
                             <div
                                 className="sub-content">
-                                <div className="sub-title">Adventure Notes & Description</div>
                                 <div className="editor">
                                     <MDXEditor 
                                         markdown={""}
@@ -266,9 +263,7 @@ const MyAdventures = () => {
         } else {
             return (
                 <div className='sub-content'>
-                    <div className="sub-title">
-                        {action.name}
-                    </div>
+                    <h5>{action.name}</h5>
                     <div className="modal-content-container">    
                         <div className="modal-content">
                             <ReactMarkdown remarkPlugins={[remarkGfm]} >{action.description}</ReactMarkdown>
