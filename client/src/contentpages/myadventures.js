@@ -8,6 +8,22 @@ import axios from 'axios';
 import _ from 'lodash';
 import api_config from '../api_config.json'
 import ReactModal from 'react-modal';
+import { 
+    MDXEditor, 
+    headingsPlugin, 
+    quotePlugin, 
+    listsPlugin, 
+    UndoRedo, 
+    BoldItalicUnderlineToggles, 
+    toolbarPlugin,
+    linkPlugin,
+    CreateLink,
+    linkDialogPlugin,
+} from '@mdxeditor/editor';
+import '@mdxeditor/editor/style.css';
+
+ReactModal.setAppElement('#root');
+
 
 const MyAdventures = () => {
     const { profile, setProfile, usedGoogleLogin, setUsedGoogleLogin } = useContext(ProfileContext);
@@ -21,23 +37,23 @@ const MyAdventures = () => {
     useEffect(()=>{
         axios.get(api_config.baseURL + "/guild").then((response) => {
             setGuilds(response.data);
-          });
+        });
 
         //TODO: GET profile.id FROM CONTEXT THAT IS UPDATED UPON LOGIN
-          axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
+        axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
             setAcceptedQuestActions(response.data);
-          });
-      
-          axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
+        });
+    
+        axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
-          });
+        });
 
     }, []);
 
     const showTargetQuestUsage = (questAction) => {
         setTargetQuestActionDescription(questAction);
         setActionDescriptionIsOpen(true);
-      }
+    }
     
 
     const hideTargetQuestActionDescription = () => {
@@ -53,7 +69,7 @@ const MyAdventures = () => {
             axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
                 setAcceptedQuestActions(response.data);
             });
-          
+        
             axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
             });
@@ -69,12 +85,16 @@ const MyAdventures = () => {
             axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
                 setAcceptedQuestActions(response.data);
             });
-          
+        
             axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
             });
     
         });
+
+    };
+
+    const saveNotes = (questAction, notes) => {
 
     };
 
@@ -105,7 +125,7 @@ const MyAdventures = () => {
             <tr>
                 <td className="action-table-td left-col ">{questAction.name}</td>
                 <td className="action-table-td right-col description">
-                    <Button onClick={(event) => showTargetQuestUsage(questAction)}>description</Button>
+                    <Button onClick={(event) => showTargetQuestUsage(questAction)}>Notes & Description</Button>
                 </td>
                 <td className="action-table-td right-col">
                     {acceptedDate}
@@ -127,7 +147,7 @@ const MyAdventures = () => {
                     <h6>{questAction.name}</h6>
                 </td>
                 <td className="action-table-td right-col">
-                    <Button onClick={(event) => showTargetQuestUsage(questAction)}>description</Button>
+                    <Button onClick={(event) => showTargetQuestUsage(questAction)}>Description</Button>
                 </td>
                 <td className="action-table-td right-col">
                     {questAction.repeatable ? "(repeatable)":""}
@@ -195,20 +215,69 @@ const MyAdventures = () => {
         );
     };
 
-    const TargetQuestActionUsageContent = ({action}) => {
-        return (
-            <div className='sub-content'>
-                <div className="sub-title">
-                    {action.name}
+    const TargetQuestActionContent = ({action}) => {
+        const isAccepted = action.open_date !== undefined;
+        if (isAccepted){
+            return (
+                <div className='sub-content'>
+                    <div className="sub-title">
+                        {action.name}
+                    </div>
+                    <div className="modal-content-container">    
+                        <div className="modal-content">
+                            <div
+                                className="sub-content">
+                                <div className="sub-title">Adventure Notes & Description</div>
+                                <div className="editor">
+                                    <MDXEditor 
+                                        markdown={""}
+                                        plugins={[
+                                                headingsPlugin(),   
+                                                quotePlugin(), 
+                                                listsPlugin(),
+                                                toolbarPlugin({
+                                                    toolbarClassName: 'my-classname',
+                                                    toolbarContents: () => (
+                                                        <>
+                                                            {' '}
+                                                            <UndoRedo />
+                                                            <BoldItalicUnderlineToggles />
+                                                            <CreateLink />
+                                                        </>
+                                                    )
+                                                }),
+                                            linkPlugin(), 
+                                            linkDialogPlugin({
+                                            linkAutocompleteSuggestions: ['https://virtuoso.dev', 'https://mdxeditor.dev']
+                                        }),
+                                        ]}
+                                        onChange={(event) => saveNotes(action, event)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="sub-content">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]} >{action.description}</ReactMarkdown>
+                            </div>
+                        </div>
+                        <Button className="sub-action" variant="dark" onClick={hideTargetQuestActionDescription}>Exit</Button><br/>
+                    </div>
                 </div>
-            <div className="modal-content-container">    
-                <div className="modal-content">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} >{action.description}</ReactMarkdown>
+            );
+        } else {
+            return (
+                <div className='sub-content'>
+                    <div className="sub-title">
+                        {action.name}
+                    </div>
+                    <div className="modal-content-container">    
+                        <div className="modal-content">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} >{action.description}</ReactMarkdown>
+                        </div>
+                        <Button className="sub-action" variant="dark" onClick={hideTargetQuestActionDescription}>Exit</Button><br/>
+                    </div>
                 </div>
-                <Button className="sub-action" variant="dark" onClick={hideTargetQuestActionDescription}>Exit</Button><br/>
-            </div>
-            </div>
-        );
+            );            
+        }
     };
 
     return (
@@ -220,7 +289,7 @@ const MyAdventures = () => {
                 className="Modal"
                 overlayClassName="Overlay"
             >
-                <TargetQuestActionUsageContent action={targetQuestActionDescription} />
+                <TargetQuestActionContent action={targetQuestActionDescription} />
             </ReactModal>
         
             <div className="cover-div">
