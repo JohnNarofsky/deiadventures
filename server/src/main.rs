@@ -115,6 +115,7 @@ async fn run_server(state: Arc<AppState>) {
         .route("/user/:user_id/accept-quest", put(accept_quest))
         .route("/user/:user_id/complete-quest", put(complete_quest))
         .route("/user/:user_id/cancel-quest", delete(cancel_quest))
+        .route("/user/:user_id/edit-quest-task", put(edit_user_quest_task))
         .route(
             "/user/:user_id/accepted-quest-actions",
             get(get_user_accepted_quest_actions),
@@ -255,7 +256,7 @@ impl AppState {
 type ArcState = Arc<AppState>;
 
 /// Single purpose macro for newtyping a 32 bit integer ID from the database.
-/// Used by [`GuildId`], [`QuestId`], and [`UserId`].
+/// Used by [`GuildId`], [`QuestId`], [`UserId`], and [`QuestTaskId`].
 // Just making wrapper types so we can annotate
 // what our request method parameters are.
 macro_rules! decl_ids {
@@ -289,7 +290,9 @@ decl_ids! {
     /// The ID number for a quest.
     QuestId,
     /// The ID number for a user.
-    UserId
+    UserId,
+    /// The ID number for a specific task in a quest.
+    QuestTaskId
 }
 
 #[derive(Serialize)]
@@ -455,6 +458,7 @@ async fn get_user(
 struct AcceptedQuestAction {
     guild_id: GuildId,
     quest_id: QuestId,
+    task_id: QuestTaskId,
     // "name" is the column name, but we're putting it in a "description" field
     #[serde(rename = "description")]
     name: String,
@@ -485,7 +489,7 @@ async fn get_user_accepted_quest_actions(
                 let (guild_id, open_date) =
                     query.query_row(named_params! { ":quest_id": quest_id }, |row| Ok((row.get(0)?, row.get(1)?)))?;
                 let mut query = db
-                    .prepare_cached("SELECT name, description, adventurer_note, xp FROM QuestTask WHERE quest_id = :quest_id;")?;
+                    .prepare_cached("SELECT name, description, adventurer_note, xp, id FROM QuestTask WHERE quest_id = :quest_id;")?;
                 query.query_row(named_params! { ":quest_id": quest_id }, |row| {
                     Ok(AcceptedQuestAction {
                         guild_id,
@@ -494,6 +498,7 @@ async fn get_user_accepted_quest_actions(
                         description: row.get(1)?,
                         adventurer_note: row.get(2)?,
                         xp: row.get(3)?,
+                        task_id: row.get(4)?,
                         open_date,
                     })
                 })
@@ -854,6 +859,68 @@ async fn cancel_quest(
     });
 
     res
+}
+
+/// The request body for [`edit_user_quest_task`].
+#[derive(Deserialize, Debug)]
+struct EditUserQuestTask {
+    task_id: QuestTaskId,
+    adventurer_note: Option<String>,
+}
+/// As a normal user, edit the fields of a quest which belongs to you,
+/// which you are normally allowed to edit.
+async fn edit_user_quest_task(
+    State(state): State<ArcState>,
+    Path(user_id): Path<UserId>,
+    Json(edit): Json<EditUserQuestTask>
+) -> Result<(), Error> {
+    state.write_transaction(|db| {
+        let EditUserQuestTask { task_id, adventurer_note } = edit;
+        let mut is_party_member = db.prepare_cached(
+            "SELECT 0 FROM PartyMember
+            INNER JOIN QuestTask ON QuestTask.quest_id = PartyMember.quest_id
+            WHERE adventurer_id = :user_id AND QuestTask.id = :task_id;"
+        )?;
+        let is_party_member = is_party_member.query_row(named_params! {
+            ":user_id": user_id,
+            ":task_id": task_id,
+        }, |_row| Ok(())).optional()?.is_some();
+        if !is_party_member {
+            let mut task_exists = db.prepare_cached(
+                "SELECT 0 FROM QuestTask WHERE id = :task_id;"
+            )?;
+            let task_exists = task_exists.query_row(named_params! {
+                ":task_id": task_id,
+            }, |_row| Ok(())).optional()?.is_some();
+            if !task_exists {
+                let mut is_superuser = db.prepare_cached(
+                    "SELECT 0 FROM Permission WHERE adventurer_id = :user_id AND permission_type = 0;"
+                )?;
+                let is_superuser = is_superuser.query_row(named_params! {
+                    ":user_id": user_id,
+                }, |_row| Ok(())).optional()?.is_some();
+                if !is_superuser {
+                    return Err(Error::InsufficientPermissions { msg: String::from("insufficient permissions to edit task notes for a task you're not a party member for") })
+                }
+            } else {
+                return Err(Error::QuestTaskNotFound { id: Some(task_id) })
+            }
+        }
+        let mut update = db.prepare_cached(
+            "UPDATE QuestTask
+            SET adventurer_note = :adventurer_note
+            WHERE id = :task_id;"
+        )?;
+        let n = update.execute(named_params! {
+            ":adventurer_note": adventurer_note,
+            ":task_id": task_id,
+        })?;
+        match n {
+            0 => Err(Error::QuestTaskNotFound { id: Some(task_id) }),
+            1 => Ok(()),
+            _ => unreachable!("more than one quest action with the same ID: {task_id:?}"),
+        }
+    })
 }
 
 /// Identification of a user who is allowed to be a guild leader.
