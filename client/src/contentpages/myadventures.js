@@ -7,6 +7,23 @@ import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 import _ from 'lodash';
 import api_config from '../api_config.json'
+import ReactModal from 'react-modal';
+
+import { 
+    MDXEditor, 
+    headingsPlugin, 
+    quotePlugin, 
+    listsPlugin, 
+    UndoRedo, 
+    BoldItalicUnderlineToggles, 
+    toolbarPlugin,
+    linkPlugin,
+    CreateLink,
+    linkDialogPlugin,
+} from '@mdxeditor/editor';
+import '@mdxeditor/editor/style.css';
+
+ReactModal.setAppElement('#root');
 
 
 const MyAdventures = () => {
@@ -14,25 +31,40 @@ const MyAdventures = () => {
     const [acceptedQuestActions, setAcceptedQuestActions] = useState([]);
     const [availableQuestActions, setAvailableGuildQuestActions] = useState([]);
     const [guilds, setGuilds] = useState([]);
- 
-  
+    const [actionDescriptionIsOpen, setActionDescriptionIsOpen] = useState(false);
+    const [targetQuestActionDescription, setTargetQuestActionDescription] = useState([]);
+
     //initializing UseEffect
     useEffect(()=>{
         axios.get(api_config.baseURL + "/guild").then((response) => {
             setGuilds(response.data);
-          });
+        });
 
         //TODO: GET profile.id FROM CONTEXT THAT IS UPDATED UPON LOGIN
-          axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
+        axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
             setAcceptedQuestActions(response.data);
-          });
-      
-          axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
+        });
+    
+        axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
-          });
+        });
 
     }, []);
 
+    const showTargetQuestUsage = (questAction) => {
+        setTargetQuestActionDescription(questAction);
+        setActionDescriptionIsOpen(true);
+    }
+    
+    const hideTargetQuestActionDescription = () => {
+        setTargetQuestActionDescription({id:-1, description: "", xp: "", name: "", repeatable: false });
+        setActionDescriptionIsOpen(false);
+        axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
+            setAcceptedQuestActions(response.data);
+        });
+
+    }
+    
     const finishQuestAction = (questAction) => {
         const data = {quest_id: questAction.quest_id};
         //TODO: Give them a little modal happiness telling them where this went
@@ -41,7 +73,7 @@ const MyAdventures = () => {
             axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
                 setAcceptedQuestActions(response.data);
             });
-          
+        
             axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
             });
@@ -57,13 +89,19 @@ const MyAdventures = () => {
             axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
                 setAcceptedQuestActions(response.data);
             });
-          
+        
             axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
             });
-    
         });
 
+    };
+
+    const saveNotes = (questAction, notes) => {
+        const data = {task_id: questAction.task_id, adventurer_note: notes};
+
+        axios.put(api_config.baseURL + "/user/" + profile.id + "/edit-quest-task", data).then((response) => {
+        });
     };
 
     const acceptQuestAction = (questAction) => {
@@ -73,11 +111,9 @@ const MyAdventures = () => {
             axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
                 setAcceptedQuestActions(response.data);
             });
-          
             axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
-            });
-    
+            });    
         });
     };
 
@@ -92,34 +128,42 @@ const MyAdventures = () => {
             "Before May 10th, 2024";
         return (
             <tr>
-                <td className="action-table-td left-col">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} >{questAction.description}</ReactMarkdown>
+                <td className="action-table-td left-col ">{questAction.name}</td>
+                <td className="action-table-td right-col description">
+                    <Button onClick={(event) => showTargetQuestUsage(questAction)}>Notes & Description</Button>
                 </td>
-                <td className="action-table-td right-col">{questAction.xp} xp</td>
-                <td className="action-table-td right-col">{acceptedDate}</td>
                 <td className="action-table-td right-col">
-                  <Button variant="dark" onClick={() => finishQuestAction(questAction)}>Finish</Button>&nbsp;
-                  <Button variant="dark" onClick={() => cancelQuestAction(questAction)}>Cancel</Button>
+                    {acceptedDate}
+                </td>
+                <td className="action-table-td center-col">{questAction.xp} xp</td>
+                <td className="action-table-td right-col">
+                    <Button variant="dark" onClick={() => finishQuestAction(questAction)}>Finish</Button>&nbsp;
+                    <Button variant="dark" onClick={() => cancelQuestAction(questAction)}>Cancel</Button>
                 </td>
             </tr>
         );
-      };
+    };
 
-      
-      const AvailableQuestAction = ({questAction}) => {
+
+    const AvailableQuestAction = ({questAction}) => {
         return (
             <tr>
                 <td className="action-table-td left-col">
-                    {questAction.repeatable ? "(repeatable)":""}
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} >{questAction.description}</ReactMarkdown>
-                    </td>
-                <td className="action-table-td right-col">{questAction.xp} xp</td>
+                    <h6>{questAction.name}</h6>
+                </td>
                 <td className="action-table-td right-col">
-                  <Button variant="dark" onClick={() => acceptQuestAction(questAction)}>Accept</Button>
+                    <Button onClick={(event) => showTargetQuestUsage(questAction)}>Description</Button>
+                </td>
+                <td className="action-table-td right-col">
+                    {questAction.repeatable ? "(repeatable)":""}
+                </td>
+                <td className="action-table-td center-col">{questAction.xp} xp</td>
+                <td className="action-table-td right-col">
+                    <Button variant="dark" onClick={() => acceptQuestAction(questAction)}>Accept</Button>
                 </td>
             </tr>
         );
-      };
+    };
 
     const Guild = ({guild}) => {
         return (
@@ -134,10 +178,11 @@ const MyAdventures = () => {
                                 <div className="action-table-container quest-examples">
                                     <h3>Your Accepted Guild Actions</h3>
                                     <table className="action-table"><thead><tr>
-                                        <th className="action-table-td left-col"></th>
+                                        <th className="action-table-td left-col name"></th>
                                         <th className="action-table-td right-col"></th>
-                                        <th className="action-table-td right-col">Date Accepted</th>
-                                        <th className="action-table-td right-col"></th>
+                                        <th className="action-table-td right-col data">Date Accepted</th>
+                                        <th className="action-table-td right-col xp"></th>
+                                        <th className="action-table-td right-col actions"></th>
                                     </tr></thead><tbody>
                                         {acceptedQuestActions.filter((v)=>v.guild_id===guild.id).map((questAction)=>{
                                             return <AcceptedQuestAction key={questAction.quest_id} questAction={questAction} />
@@ -152,7 +197,15 @@ const MyAdventures = () => {
                                 <br/>
                                 <div className="action-table-container quest-examples">
                                     <h3>Available Guild Actions</h3>
-                                    <table className="action-table"><tbody>
+                                    <table className="action-table">
+                                    <thead><tr>
+                                        <th className="action-table-td left-col name"></th>
+                                        <th className="action-table-td right-col"></th>
+                                        <th className="action-table-td right-col data"></th>
+                                        <th className="action-table-td right-col xp"></th>
+                                        <th className="action-table-td right-col actions"></th>
+
+                                    </tr></thead><tbody>
                                         {availableQuestActions.filter((v)=>v.guild_id===guild.id).map((questAction)=>{
                                             return <AvailableQuestAction key={questAction.quest_id} questAction={questAction} />
                                             })
@@ -167,8 +220,80 @@ const MyAdventures = () => {
         );
     };
 
+    const TargetQuestActionContent = ({action}) => {
+        const isAccepted = action.open_date !== undefined;
+        console.log(action);
+        const adventurer_note = action.adventurer_note === null ? "" : action.adventurer_note;
+        if (isAccepted){
+            return (
+                <div className='sub-content'>
+                    <h5>{action.name}</h5>
+                    <div className="modal-content-container">    
+                        <div className="modal-content">
+                            <div
+                                className="sub-content">
+                                <div className="editor">
+                                    <MDXEditor 
+                                        markdown={adventurer_note}
+                                        plugins={[
+                                                headingsPlugin(),   
+                                                quotePlugin(), 
+                                                listsPlugin(),
+                                                toolbarPlugin({
+                                                    toolbarClassName: 'my-classname',
+                                                    toolbarContents: () => (
+                                                        <>
+                                                            {' '}
+                                                            <UndoRedo />
+                                                            <BoldItalicUnderlineToggles />
+                                                            <CreateLink />
+                                                        </>
+                                                    )
+                                                }),
+                                            linkPlugin(), 
+                                            linkDialogPlugin({
+                                            linkAutocompleteSuggestions: ['https://virtuoso.dev', 'https://mdxeditor.dev']
+                                        }),
+                                        ]}
+                                        onChange={(event) => saveNotes(action, event)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="sub-content">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]} >{action.description}</ReactMarkdown>
+                            </div>
+                        </div>
+                        <Button className="sub-action" variant="dark" onClick={hideTargetQuestActionDescription}>Exit</Button><br/>
+                    </div>
+                </div>
+            );
+        } else {
+            return (
+                <div className='sub-content'>
+                    <h5>{action.name}</h5>
+                    <div className="modal-content-container">    
+                        <div className="modal-content">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} >{action.description}</ReactMarkdown>
+                        </div>
+                        <Button className="sub-action" variant="dark" onClick={hideTargetQuestActionDescription}>Exit</Button><br/>
+                    </div>
+                </div>
+            );            
+        }
+    };
+
     return (
         <>
+            <ReactModal 
+                isOpen={actionDescriptionIsOpen}
+                contentLabel="onRequestClose Example"
+                onRequestClose={hideTargetQuestActionDescription}
+                className="Modal"
+                overlayClassName="Overlay"
+            >
+                <TargetQuestActionContent action={targetQuestActionDescription} />
+            </ReactModal>
+        
             <div className="cover-div">
                 <img src="./images/dei_site_layer_trees_div_lt.png" alt="More Trees" />
             </div>
