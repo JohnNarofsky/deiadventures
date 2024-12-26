@@ -2,7 +2,7 @@
 //! This module is meant to define error types of global concern,
 //! and any helper methods we might need for dealing with them.
 
-use crate::{GuildId, QuestId, UserId};
+use crate::{GuildId, QuestId, QuestTaskId, UserId};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use std::convert::Infallible;
@@ -32,6 +32,9 @@ pub(crate) enum Error<E = Infallible> {
     },
     QuestNotFound {
         id: Option<QuestId>,
+    },
+    QuestTaskNotFound {
+        id: Option<QuestTaskId>,
     },
     NotQuestMember {
         user_id: UserId,
@@ -102,6 +105,17 @@ impl<E: IntoResponse> IntoResponse for Error<E> {
                         .into_response()
                 } else {
                     (StatusCode::NOT_FOUND, "specified quest not found").into_response()
+                }
+            }
+            Self::QuestTaskNotFound { id } => {
+                if let Some(id) = id {
+                    (
+                        StatusCode::NOT_FOUND,
+                        format!("no quest task with id = {id} exists"),
+                    )
+                        .into_response()
+                } else {
+                    (StatusCode::NOT_FOUND, "specified quest task not found").into_response()
                 }
             }
             Self::NotQuestMember { user_id, quest_id } => (
