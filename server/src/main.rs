@@ -112,6 +112,7 @@ async fn run_server(state: Arc<AppState>) {
         // .route("/user/:user_id", get(get_user))
         .route("/user", get(get_users))
         .route("/user/:user_id", get(get_user))
+        .route("/user/:user_id/set-name", put(set_user_name))
         .route("/user/:user_id/accept-quest", put(accept_quest))
         .route("/user/:user_id/complete-quest", put(complete_quest))
         .route("/user/:user_id/cancel-quest", delete(cancel_quest))
@@ -449,6 +450,28 @@ async fn get_user(
     });
 
     data.map(Json)
+}
+
+#[derive(Deserialize, Debug)]
+struct SetUserName {
+    name: String,
+}
+/// As a user, set your own name.
+async fn set_user_name(State(state): State<ArcState>, Path(user_id): Path<UserId>, Json(set_name): Json<SetUserName>) -> Result<(), Error> {
+    state.write_transaction(|db| {
+        let mut update = db.prepare_cached(
+            "UPDATE Adventurer SET name = :name WHERE id = :user_id;"
+        )?;
+        let n = update.execute(named_params! {
+            ":name": set_name.name,
+            ":user_id": user_id,
+        })?;
+        match n {
+            0 => Err(Error::AdventurerNotFound { id: Some(user_id) }),
+            1 => Ok(()),
+            _ => unreachable!("more than one adventurer with the same id: {user_id:?}")
+        }
+    })
 }
 
 #[derive(Serialize, Debug)]
