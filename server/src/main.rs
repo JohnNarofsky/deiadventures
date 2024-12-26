@@ -1085,7 +1085,7 @@ struct EditGuildQuestAction {
     #[serde(default)]
     repeatable: bool,
 }
-/// As a guild leader, edit the name and xp value of a quest action.
+/// As a guild leader, edit the name and other properties of a quest action.
 async fn edit_guild_quest_action(
     State(state): State<ArcState>,
     Path(guild_id): Path<GuildId>,
