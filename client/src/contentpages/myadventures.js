@@ -8,6 +8,7 @@ import axios from 'axios';
 import _ from 'lodash';
 import api_config from '../api_config.json'
 import ReactModal from 'react-modal';
+
 import { 
     MDXEditor, 
     headingsPlugin, 
@@ -55,10 +56,13 @@ const MyAdventures = () => {
         setActionDescriptionIsOpen(true);
     }
     
-
     const hideTargetQuestActionDescription = () => {
         setTargetQuestActionDescription({id:-1, description: "", xp: "", name: "", repeatable: false });
         setActionDescriptionIsOpen(false);
+        axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
+            setAcceptedQuestActions(response.data);
+        });
+
     }
     
     const finishQuestAction = (questAction) => {
@@ -89,13 +93,15 @@ const MyAdventures = () => {
             axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
             });
-    
         });
 
     };
 
     const saveNotes = (questAction, notes) => {
+        const data = {task_id: questAction.task_id, adventurer_note: notes};
 
+        axios.put(api_config.baseURL + "/user/" + profile.id + "/edit-quest-task", data).then((response) => {
+        });
     };
 
     const acceptQuestAction = (questAction) => {
@@ -107,8 +113,7 @@ const MyAdventures = () => {
             });
             axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
-            });
-    
+            });    
         });
     };
 
@@ -217,6 +222,8 @@ const MyAdventures = () => {
 
     const TargetQuestActionContent = ({action}) => {
         const isAccepted = action.open_date !== undefined;
+        console.log(action);
+        const adventurer_note = action.adventurer_note === null ? "" : action.adventurer_note;
         if (isAccepted){
             return (
                 <div className='sub-content'>
@@ -227,7 +234,7 @@ const MyAdventures = () => {
                                 className="sub-content">
                                 <div className="editor">
                                     <MDXEditor 
-                                        markdown={""}
+                                        markdown={adventurer_note}
                                         plugins={[
                                                 headingsPlugin(),   
                                                 quotePlugin(), 
