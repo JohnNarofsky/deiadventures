@@ -131,94 +131,55 @@ const MyAdventures = () => {
             new Date(questAction.open_date).toDateString() :
             "Before May 10th, 2024";
         return (
-            <tr>
-                <td className="action-table-td left-col ">{questAction.name}</td>
-                <td className="action-table-td right-col description">
+            <div className="my-adventures-action">
+                <div className="accepted-action-name">{questAction.name}</div>
+                <div className="accepted-action-description">
                     <Button onClick={(event) => showTargetQuestUsage(questAction)}>Notes & Description</Button>
-                </td>
-                <td className="action-table-td right-col">
-                    {acceptedDate}
-                </td>
-                <td className="action-table-td center-col">{questAction.xp} xp</td>
-                <td className="action-table-td right-col">
+                </div>
+                <div className="accepted-action-accepted-date">accepted: {acceptedDate}</div>
+                <div className="accepted-action-experience-points">{questAction.xp} xp</div>
+                <div className="accepted-action-actions">
                     <Button variant="dark" onClick={() => finishQuestAction(questAction)}>Finish</Button>&nbsp;
                     <Button variant="dark" onClick={() => cancelQuestAction(questAction)}>Cancel</Button>
-                </td>
-            </tr>
+                </div>
+            </div>
         );
     };
 
 
     const AvailableQuestAction = ({questAction}) => {
         return (
-            <tr>
-                <td className="action-table-td left-col">
-                    <h6>{questAction.name}</h6>
-                </td>
-                <td className="action-table-td right-col">
+            <div className="my-adventures-action">
+                <div className="available-action-name">{questAction.name}</div>
+                <div className="available-action-description">
                     <Button onClick={(event) => showTargetQuestUsage(questAction)}>Description</Button>
-                </td>
-                <td className="action-table-td right-col">
-                    {questAction.repeatable ? "(repeatable)":""}
-                </td>
-                <td className="action-table-td center-col">{questAction.xp} xp</td>
-                <td className="action-table-td right-col">
+                </div>
+                <div className="available-action-repeatable">{questAction.repeatable ? "(repeatable)":""}</div>
+                <div className="available-action-experience-points">{questAction.xp} xp</div>
+                <div className="available-action-actions">
                     <Button variant="dark" onClick={() => acceptQuestAction(questAction)}>Accept</Button>
-                </td>
-            </tr>
+                </div>
+            </div>
         );
     };
 
     const Guild = ({guild}) => {
         return (
             <div>
-                <div className="action-table-header">
-                    <h2>{guild.name} Actions</h2>
-                </div>
-                <div className="action-table-container quest-examples">
-                    <table className="action-table"><tbody>
-                        <tr>
-                            <td>
-                                <div className="action-table-container quest-examples">
-                                    <h3>Your Accepted Guild Actions</h3>
-                                    <table className="action-table"><thead><tr>
-                                        <th className="action-table-td left-col name"></th>
-                                        <th className="action-table-td right-col"></th>
-                                        <th className="action-table-td right-col data">Date Accepted</th>
-                                        <th className="action-table-td right-col xp"></th>
-                                        <th className="action-table-td right-col actions"></th>
-                                    </tr></thead><tbody>
-                                        {acceptedQuestActions.filter((v)=>v.guild_id===guild.id).map((questAction)=>{
-                                            return <AcceptedQuestAction key={questAction.quest_id} questAction={questAction} />
-                                            })
-                                        }
-                                    </tbody></table>
-                                </div>
-                            </td>
-                        </tr>                        
-                        <tr>
-                            <td>
-                                <br/>
-                                <div className="action-table-container quest-examples">
-                                    <h3>Available Guild Actions</h3>
-                                    <table className="action-table">
-                                    <thead><tr>
-                                        <th className="action-table-td left-col name"></th>
-                                        <th className="action-table-td right-col"></th>
-                                        <th className="action-table-td right-col data"></th>
-                                        <th className="action-table-td right-col xp"></th>
-                                        <th className="action-table-td right-col actions"></th>
-
-                                    </tr></thead><tbody>
-                                        {availableQuestActions.filter((v)=>v.guild_id===guild.id).map((questAction)=>{
-                                            return <AvailableQuestAction key={questAction.quest_id} questAction={questAction} />
-                                            })
-                                        }
-                                    </tbody></table>
-                                </div>
-                            </td>
-                        </tr>                        
-                    </tbody></table>
+                <div className="action-table-container">
+                    <h4>{guild.name}</h4>
+                    <div className="my-adventures-actions">
+                        <div className="my-adventures-actions-title">Accepted Actions</div>
+                        {acceptedQuestActions.filter((v)=>v.guild_id===guild.id).map((questAction)=>{
+                            return <AcceptedQuestAction key={questAction.quest_id} questAction={questAction} />
+                        })}
+                    </div>
+                    <div className="my-adventures-actions">
+                        <div className="my-adventures-actions-title">Available Actions</div>
+                        {availableQuestActions.filter((v)=>v.guild_id===guild.id).map((questAction)=>{
+                            return <AvailableQuestAction key={questAction.quest_id} questAction={questAction} />
+                        })}
+                    </div>
                 </div>                
             </div>
         );
@@ -303,7 +264,7 @@ const MyAdventures = () => {
             </div>
             <div className="cover-content cbttm">
                 <div className="section quests">
-                    <h1 className="section-top">Welcome to Your Adventures, {userName}!</h1>
+                    <h1 className="section-top">Welcome to your adventures, {userName}!</h1>
                     <p className="section-top"><strong>These are the adventure actions you've signed up for along with the ones available!</strong></p>
                 </div>
                     {guilds.map((thisGuild) => {

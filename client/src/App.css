@@ -196,8 +196,6 @@ position:static;
 .section.quests {
 	text-align: left;
 	line-height: 1.4em;
-	margin-top: 20px;
-    margin-bottom: 40px;
 	max-width: 900px;
 	margin-left: auto;
 	margin-right: auto;
@@ -205,10 +203,6 @@ position:static;
 
 .section-quests p{
   font-size: 16px;
-}
-
-.quest-examples {
-  color: #1B474B;
 }
 
 .quest-detail {
@@ -242,7 +236,8 @@ position:static;
     padding: 20px;
     box-shadow: 3px 5px 40px 0px rgba(65, 75, 79, 0.20);
     border-radius: 26px;
-    background: #F1F8F8
+    background: #F1F8F8;
+    margin-bottom: 20px;
 }
 
 .action-table {
@@ -327,4 +322,79 @@ position:static;
 .parallax__layer__6 {
   transform: translateZ(0px) scale(1);
   margin-bottom: -1px;
+}
+
+/* my adventures actions layouts */
+
+.my-adventures-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.my-adventures-actions-title {
+  font-weight: 600;
+  border-top: 1px solid lightgray;
+  padding-top: 20px;
+}
+
+.my-adventures-action {
+  border: 3px solid white;
+  background-color: white;
+  padding: 3px;
+  padding-bottom: 10px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.accepted-action-name {
+  flex: 4;
+  min-width: 300px;
+  width: 100%;
+}
+
+.accepted-action-description {
+  flex: 2;
+  min-width: 200px;
+}
+
+.accepted-action-accepted-date {
+  flex: 2;
+  min-width: 250px;
+}
+
+.accepted-action-experience-points {
+  flex: 1;
+}
+
+.accepted-action-actions {
+  flex: 2;
+  min-width: 200px;
+}
+
+.available-action-name {
+  flex: 4;
+  min-width: 300px;
+  width: 100%;
+}
+
+.available-action-description {
+  flex: 1;
+  min-width: 200px;
+}
+
+.available-action-repeatable {
+  flex: 1;
+  min-width: 100px;
+}
+
+.available-action-experience-points {
+  flex: 1;
+}
+
+.available-action-actions {
+  flex: 1;
+  min-width: 200px;
 }
