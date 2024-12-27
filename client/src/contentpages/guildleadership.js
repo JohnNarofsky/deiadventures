@@ -166,8 +166,9 @@ const GuildLeadership = () => {
       const userId = v.user.id;
       const userName = v.user.name;
       const questDescription = v.quest_description;
+      const adventurerNote = v.adventurer_note;
 
-      return {"completed":completed, "accepted":accepted, "userId":userId, "userName":userName, "questDescription":questDescription};
+      return {"completed":completed, "accepted":accepted, "userId":userId, "userName":userName, "questDescription":questDescription, "adventurerNote": adventurerNote};
 
     });
 

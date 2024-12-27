@@ -55,7 +55,7 @@ const MyAdventures = () => {
 
     }, []);
 
-    const showTargetQuestUsage = (questAction) => {
+    const showTargetQuestDescription = (questAction) => {
         setTargetQuestActionDescription(questAction);
         setActionDescriptionIsOpen(true);
     }
@@ -134,7 +134,7 @@ const MyAdventures = () => {
             <div className="my-adventures-action">
                 <div className="accepted-action-name">{questAction.name}</div>
                 <div className="accepted-action-description">
-                    <Button onClick={(event) => showTargetQuestUsage(questAction)}>Notes & Description</Button>
+                    <Button onClick={(event) => showTargetQuestDescription(questAction)}>Notes & Description</Button>
                 </div>
                 <div className="accepted-action-accepted-date">accepted: {acceptedDate}</div>
                 <div className="accepted-action-experience-points">{questAction.xp} xp</div>
@@ -152,7 +152,7 @@ const MyAdventures = () => {
             <div className="my-adventures-action">
                 <div className="available-action-name">{questAction.name}</div>
                 <div className="available-action-description">
-                    <Button onClick={(event) => showTargetQuestUsage(questAction)}>Description</Button>
+                    <Button onClick={(event) => showTargetQuestDescription(questAction)}>Description</Button>
                 </div>
                 <div className="available-action-repeatable">{questAction.repeatable ? "(repeatable)":""}</div>
                 <div className="available-action-experience-points">{questAction.xp} xp</div>
