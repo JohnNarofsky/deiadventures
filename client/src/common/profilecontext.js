@@ -6,10 +6,9 @@ const ProfileContext = createContext();
 // Create the provider component
 const ProfileProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
-  const [usedGoogleLogin, setUsedGoogleLogin] = useState(null);
 
   return (
-    <ProfileContext.Provider value={{ profile, setProfile, usedGoogleLogin, setUsedGoogleLogin }}>
+    <ProfileContext.Provider value={{ profile, setProfile, }}>
       {children}
     </ProfileContext.Provider>
   );

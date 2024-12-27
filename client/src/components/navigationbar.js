@@ -6,19 +6,14 @@ import Navbar from 'react-bootstrap/Navbar';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 import './navigationbar.css';
 import { ProfileContext } from "../common/profilecontext";
-import { googleLogout } from '@react-oauth/google';
 
 export default function NavigationBar() {
-  const { profile, setProfile, usedGoogleLogin, setUsedGoogleLogin } = useContext(ProfileContext);
+  const { profile, setProfile } = useContext(ProfileContext);
   
   const [navExpanded, setNavExpanded] = useState(false);
 
   const logOut = () => {
-    if (usedGoogleLogin) {
-      googleLogout();
-      setUsedGoogleLogin(false);
-      localStorage.removeItem("profile");
-    }
+    localStorage.removeItem("profile");
     setProfile(null);
   };
 
@@ -50,7 +45,7 @@ export default function NavigationBar() {
       onToggle={setNavExpanded}
     >
       <Container>
-        <Navbar.Brand as={Link} to="/" onClick={handleNavClose}>DEI Adventure</Navbar.Brand>
+        <Navbar.Brand as={Link} to="/" onClick={handleNavClose}>DEI Adventures</Navbar.Brand>
         <Navbar.Toggle aria-controls="responsive-navbar-nav" />
         <Navbar.Collapse id="responsive-navbar-nav">
           <Nav className="me-auto">
@@ -94,10 +89,11 @@ export default function NavigationBar() {
                 }
                 id="collasible-nav-dropdown"
               >
-                <NavDropdown.Item onClick={() => {
+                <Nav.Link as={Link} to="/changeusername" onClick={handleNavClose}>Edit User Name</Nav.Link>
+                <Nav.Link as={Link} to="/login" onClick={()=>{
                   logOut();
                   handleNavClose();
-                }}>Logout</NavDropdown.Item>
+                }}>Logout</Nav.Link>
               </NavDropdown>
             ) : (
               <>
@@ -105,6 +101,7 @@ export default function NavigationBar() {
                 <Nav.Link as={Link} to="/signup" onClick={handleNavClose}>Sign Up</Nav.Link>
               </>
             )}
+
           </Nav>
         </Navbar.Collapse>
       </Container>

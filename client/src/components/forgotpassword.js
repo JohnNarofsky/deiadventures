@@ -14,7 +14,7 @@ export default function ForgotPassword() {
         e.preventDefault();
 
         if (!email.trim() ) {
-            setErrorMessage('Please enter require fields.');
+            setErrorMessage('Please enter required fields.');
             return; // Prevent login when input fields are empty
         }
 
