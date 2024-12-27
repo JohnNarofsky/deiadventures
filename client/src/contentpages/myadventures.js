@@ -1,7 +1,7 @@
 import React from "react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm'; 
-import { useEffect, useCallback, useState, useContext } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { ProfileContext } from '../common/profilecontext';
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
@@ -27,12 +27,13 @@ ReactModal.setAppElement('#root');
 
 
 const MyAdventures = () => {
-    const { profile, setProfile, usedGoogleLogin, setUsedGoogleLogin } = useContext(ProfileContext);
+    const { profile } = useContext(ProfileContext);
     const [acceptedQuestActions, setAcceptedQuestActions] = useState([]);
     const [availableQuestActions, setAvailableGuildQuestActions] = useState([]);
     const [guilds, setGuilds] = useState([]);
     const [actionDescriptionIsOpen, setActionDescriptionIsOpen] = useState(false);
     const [targetQuestActionDescription, setTargetQuestActionDescription] = useState([]);
+    const [userName, setUserName] = useState('');
 
     //initializing UseEffect
     useEffect(()=>{
@@ -40,13 +41,16 @@ const MyAdventures = () => {
             setGuilds(response.data);
         });
 
-        //TODO: GET profile.id FROM CONTEXT THAT IS UPDATED UPON LOGIN
         axios.get(api_config.baseURL + "/user/" + profile.id + "/accepted-quest-actions").then((response) => {
             setAcceptedQuestActions(response.data);
         });
     
         axios.get(api_config.baseURL + "/user/" + profile.id + "/available-quest-actions").then((response) => {
             setAvailableGuildQuestActions(response.data);
+        });
+
+        axios.get(api_config.baseURL + "/user/" + profile.id).then((response) => {
+            setUserName(response.data.name);
         });
 
     }, []);
@@ -299,7 +303,7 @@ const MyAdventures = () => {
             </div>
             <div className="cover-content cbttm">
                 <div className="section quests">
-                    <h1 className="section-top">Welcome to Your Adventures!</h1>
+                    <h1 className="section-top">Welcome to Your Adventures, {userName}!</h1>
                     <p className="section-top"><strong>These are the adventure actions you've signed up for along with the ones available!</strong></p>
                 </div>
                     {guilds.map((thisGuild) => {

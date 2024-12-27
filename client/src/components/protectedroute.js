@@ -10,8 +10,5 @@ export default function ProtectedRoute({ element: Element }) {
     }
 
     const isAuthenticated = !!profile;
-    console.log(profile);
-    console.log(JSON.parse(localStorage.getItem("profile")));
-
     return isAuthenticated? <Outlet /> : <Navigate to="/login" />;
 }

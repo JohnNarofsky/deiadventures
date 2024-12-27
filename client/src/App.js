@@ -10,6 +10,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import GuildLeadership from './contentpages/guildleadership';
 import Login from './components/login';
 import SignUp from './components/signup';
+import ChangeUserName from './components/changeusername';
 import ForgotPassword from './components/forgotpassword';
 import { ProfileProvider } from './common/profilecontext';
 import ProtectedRoute from './components/protectedroute';
@@ -28,6 +29,7 @@ function App() {
             <Route path="myadventures" element={<MyAdventures />} />
             <Route path="myhistory" element={<MyHistory />} />
             <Route path="guildleadership" element={<GuildLeadership />} />
+            <Route path="changeusername" element={<ChangeUserName />} />
           </Route>
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<SignUp />} />

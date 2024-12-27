@@ -12,41 +12,8 @@ export default function Login() {
     const [password, setPassword] = useState('');
     const [ user, setUser ] = useState(null);
     const [ errorMessage, setErrorMessage ] = useState('');
-    const {profile, setProfile, setUsedGoogleLogin} = useContext(ProfileContext);
+    const {profile, setProfile } = useContext(ProfileContext);
     const loginFailMessage = 'Login Failed! Please Try Again!';
-
-    // const loginWithGoogle = useGoogleLogin({
-    //     onSuccess: (codeResponse) => {
-    //         setUser(codeResponse);
-    //         setUsedGoogleLogin(true);
-    //         // regiester with our server???
-    //     },
-    //     onError: (error) => {
-    //         console.log('Login Failed:', error);
-    //         setErrorMessage(loginFailMessage);
-    //     }
-    // });
-    // useEffect(
-    //     () => {
-    //         if (user) {
-    //             axios
-    //                 .get(`https://www.googleapis.com/oauth2/v1/userinfo?access_token=${user.access_token}`, {
-    //                     headers: {
-    //                         Authorization: `Bearer ${user.access_token}`,
-    //                         Accept: 'application/json'
-    //                     }
-    //                 })
-    //                 .then((res) => {
-    //                     console.log(res)
-    //                     setProfile(res.data);
-    //                     // use this to develope the cookie session with server?
-    //                 })
-    //                 .catch((err) => console.log(err));
-    //         }
-    //     },
-    //     [ user ]
-    // );
-
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -64,9 +31,9 @@ export default function Login() {
                     const data = {
                         id: response.data.id,
                         permissions: response.data.permissions
-                      };
-                      setProfile(data);
-                      localStorage.setItem("profile", JSON.stringify(data));
+                    };
+                    setProfile(data);
+                    localStorage.setItem("profile", JSON.stringify(data));
                     });
             });
         } catch (error) {
@@ -116,21 +83,14 @@ export default function Login() {
                                 Submit
                                 </button>
                             </div>
-                            {/* <p className="forgot-password text-center mt-2">
-                                Forgot <a href="#">password?</a>
-                            </p> */}
-                            {/* <h4 className="Auth-form-title text-center">OR</h4> */}
                         </div>
                     </form>
-                    {/* <div className="d-grid gap-2 m-4">
-                        <button className="btn btn-primary " onClick={() => loginWithGoogle()}>Sign in with Google 🚀 </button>
-                    </div> */}
                 </div>
                 {errorMessage && <h3 className='text-center'>{errorMessage}</h3>}
             </>
         )
     } else {
-        return <Navigate replace to="/" />
+        return <Navigate replace to="/MyAdventures" />
     }
 
 }
