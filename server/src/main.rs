@@ -51,7 +51,7 @@ mod env {
         _aws_access_key_id, "AWS_ACCESS_KEY_ID", String,
         "AWS_ACCESS_KEY_ID should be set to the AWS access key ID (used for email sending)";
         _aws_secret_access_key, "AWS_SECRET_ACCESS_KEY", String,
-        "AWS_ACCESS_KEY_ID should be set to the AWS secret access key (used for email sending)";
+        "AWS_SECRET_ACCESS_KEY should be set to the AWS secret access key (used for email sending)";
         _aws_region, "AWS_REGION", String,
         "AWS_REGION should be set to the AWS region (used for email sending)";
 
@@ -1331,7 +1331,7 @@ async fn get_guild_participation(State(state): State<ArcState>, Path(guild_id): 
             .ok_or(Error::GuildNotFound { id: Some(guild_id) })?;
         
         let mut participation = db.prepare_cached("
-            SELECT Adventurer.id, Adventurer.name, QuestTask.name, QuestTask.description, Quest.open_date, Quest.close_date
+            SELECT Adventurer.id, Adventurer.name, QuestTask.name, QuestTask.description, Quest.open_date, Quest.close_date, QuestTask.adventurer_note
             FROM PartyMember
                 INNER JOIN Quest ON Quest.parent_quest_id = :quest_action_id AND Quest.id = PartyMember.quest_id
                 INNER JOIN Adventurer ON Adventurer.id = PartyMember.adventurer_id
@@ -1353,7 +1353,7 @@ async fn get_guild_participation(State(state): State<ArcState>, Path(guild_id): 
                     quest_description: row.get(3)?,
                     accepted_date: row.get(4)?,
                     completed_date: row.get(5)?,
-                    adventurer_note: None,
+                    adventurer_note: row.get(6)?,
                 })
             })?.collect::<Result<Vec<_>, _>>()?;
             quest_actions.push(QuestActionParticipation {
@@ -1893,7 +1893,7 @@ async fn auth_forgot_password(State(state): State<ArcState>, Json(ForgotPassword
                 ":user_email": email,
             },
             |row| Ok((row.get(0)?, row.get(1)?)),
-        ).optional()?.ok_or(Error::AdventurerNotFound { id: None })?;
+        ).optional()?.ok_or_else(|| Error::AdventurerNotFoundByEmail { email: email.clone() })?;
         let password_salt = match Salt::from_b64(&password_salt) {
             Ok(salt) => salt,
             Err(e) => {
