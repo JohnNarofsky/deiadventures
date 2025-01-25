@@ -1,6 +1,6 @@
 import React from "react";
 import ReactMarkdown from 'react-markdown';
-import { useEffect, useCallback, useState, useContext } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { ProfileContext } from '../common/profilecontext';
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
@@ -61,7 +61,7 @@ const GuildLeadership = () => {
       });
     });
 
-  }, []);
+  }, [profile.id]);
 
   //function components
   const editGuildQuestAction = (guildId, guildQuestAction) => {
@@ -143,7 +143,6 @@ const GuildLeadership = () => {
 
   const showTargetQuestUsage = (questAction) => {
     axios.get(api_config.baseURL + "/quest-action/" + questAction.id + "/participation").then((response) => {
-      console.log(response.data);
       setRetrievedUsage(response.data);
       setTargetQuestActionUsage(questAction);
       setActionUsageIsOpen(true);

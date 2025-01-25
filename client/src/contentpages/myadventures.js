@@ -5,7 +5,6 @@ import { useEffect, useState, useContext } from 'react';
 import { ProfileContext } from '../common/profilecontext';
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
-import _ from 'lodash';
 import api_config from '../api_config.json'
 import ReactModal from 'react-modal';
 
@@ -187,7 +186,6 @@ const MyAdventures = () => {
 
     const TargetQuestActionContent = ({action}) => {
         const isAccepted = action.open_date !== undefined;
-        console.log(action);
         const adventurer_note = action.adventurer_note === null ? "" : action.adventurer_note;
         if (isAccepted){
             return (
